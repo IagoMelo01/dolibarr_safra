@@ -116,7 +116,6 @@ class Cultivar extends CommonObject
 		"rowid" => array("type"=>"integer", "label"=>"TechnicalID", "enabled"=>"1", 'position'=>1, 'notnull'=>1, "visible"=>"0", "noteditable"=>"1", "index"=>"1", "css"=>"left", "comment"=>"Id"),
 		"ref" => array("type"=>"varchar(128)", "label"=>"Ref", "enabled"=>"1", 'position'=>20, 'notnull'=>1, "visible"=>"1", "index"=>"1", "searchall"=>"1", "showoncombobox"=>"1", "validate"=>"1", "comment"=>"Reference of object"),
 		"label" => array("type"=>"varchar(255)", "label"=>"Label", "enabled"=>"1", 'position'=>30, 'notnull'=>0, "visible"=>"1", "alwayseditable"=>"1", "searchall"=>"1", "css"=>"minwidth300", "cssview"=>"wordbreak", "help"=>"Help text", "showoncombobox"=>"2", "validate"=>"1",),
-		"amount" => array("type"=>"price", "label"=>"Amount", "enabled"=>"1", 'position'=>40, 'notnull'=>0, "visible"=>"1", "default"=>"null", "isameasure"=>"1", "help"=>"Help text for amount", "validate"=>"1",),
 		"qty" => array("type"=>"real", "label"=>"Qty", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "help"=>"Help text for quantity", "validate"=>"1",),
 		"fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
 		"fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"-1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
@@ -148,11 +147,11 @@ class Cultivar extends CommonObject
 		"grupo_bioclimatico" => array("type"=>"varchar(255)", "label"=>"Grupo Bio Climático", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"observacao" => array("type"=>"text", "label"=>"Observação", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"data_atualizacao" => array("type"=>"date", "label"=>"Data de atualização", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"duracao_ciclo" => array("type"=>"double(28,4)", "label"=>"Duração Ciclo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
 	public $label;
-	public $amount;
 	public $qty;
 	public $fk_soc;
 	public $fk_project;
@@ -184,6 +183,7 @@ class Cultivar extends CommonObject
 	public $grupo_bioclimatico;
 	public $observacao;
 	public $data_atualizacao;
+	public $duracao_ciclo;
 	// END MODULEBUILDER PROPERTIES
 
 

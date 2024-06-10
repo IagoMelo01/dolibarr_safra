@@ -34,6 +34,7 @@ CREATE TABLE llx_safra_municipio(
 	import_key varchar(14), 
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
-	cod_ibge varchar(128) NOT NULL
+	cod_ibge varchar(128) NOT NULL, 
+	data_atualizacao varchar(128)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

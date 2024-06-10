@@ -19,7 +19,6 @@ CREATE TABLE llx_safra_cultivar(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	amount double DEFAULT NULL, 
 	qty real, 
 	fk_soc integer, 
 	fk_project integer, 
@@ -50,6 +49,7 @@ CREATE TABLE llx_safra_cultivar(
 	regiao varchar(255), 
 	grupo_bioclimatico varchar(255), 
 	observacao text, 
-	data_atualizacao date
+	data_atualizacao date, 
+	duracao_ciclo double(28,4)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;
