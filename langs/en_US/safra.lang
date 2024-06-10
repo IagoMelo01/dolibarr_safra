@@ -1,0 +1,54 @@
+# Copyright (C) 2024 SuperAdmin
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see .
+
+#
+# Generic
+#
+
+# Module label 'ModuleSafraName'
+ModuleSafraName = Safra
+# Module description 'ModuleSafraDesc'
+ModuleSafraDesc = Safra description
+
+#
+# Admin page
+#
+SafraSetup = Safra setup
+Settings = Configurações
+SafraSetupPage = Safra - página de configurações
+SAFRA_MYPARAM1 = Meu parâmetro 1
+SAFRA_MYPARAM1Tooltip = My param 1 tooltip
+SAFRA_MYPARAM2=My param 2
+SAFRA_MYPARAM2Tooltip=My param 2 tooltip
+
+
+#
+# About page
+#
+About = Sobre
+SafraAbout = Sobre Safra
+SafraAboutPage = Safra about page
+
+#
+# Sample page
+#
+SafraArea = Módulo Safra
+MyPageName = Nome da Minha Página
+
+#
+# Sample widget
+#
+MyWidget = Meu widget
+MyWidgetDescription = Meu widget - descrição

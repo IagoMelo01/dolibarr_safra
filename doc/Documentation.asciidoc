@@ -1,0 +1,583 @@
+= SAFRA =
+:subtitle: SAFRA DOCUMENTATION
+:source-highlighter: rouge
+:companyname: Farmevo
+:corpname: Farmevo
+:orgname: Farmevo
+:creator: SuperAdmin
+:title: Documentation of module Safra
+:subject: This document is the document of module Safra.
+:keywords: Safra
+// Date du document :
+:docdate: 2024-06-06
+:toc: manual
+:toc-placement: preamble
+
+
+== TOPIC OF DOCUMENT
+
+This is the documentation of module Safra
+
+
+*Log of versions of document*
+
+[options="header",format="csv"]
+|=== 
+Author, Date, Version
+--- SuperAdmin   ---, 2024-06-06, Version 1.0
+|===
+
+
+[NOTE]
+==============
+This document was generated using Dolibarr ERP CRM process
+==============
+
+
+:toc: manual
+:toc-placement: preamble
+
+
+
+== INTRODUCTION
+
+//include::README.md[]
+__README__
+
+== DATA SPECIFICATIONS
+=== Table of fields with properties for object *Zoneamento* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"municipio"*||||50|0|||||||||||||||||
+|*"uf"*||||50|0|||||||||||||||||
+|*"cultura"*||||50|0|||||||||||||||||
+|*"ciclo"*||||50|0|||||||||||||||||
+|*"dia_ini"*||||50|0|||||||||||||||||
+|*"mes_ini"*||||50|0|||||||||||||||||
+|*"dia_fim"*||||50|0|||||||||||||||||
+|*"mes_fim"*||||50|0|||||||||||||||||
+|*"safra_ini"*||||50|0|||||||||||||||||
+|*"safra_fim"*||||50|0|||||||||||||||||
+|*"risco"*||||50|0|||||||||||||||||
+|*"portaria"*||||50|0|||||||||||||||||
+|===
+__ end table for object Zoneamento
+
+=== Table of fields with properties for object *Talhao* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"poligon_points"*||||50|0|||||||||||||||||
+|*"center"*||||50|0|||||||||||||||||
+|*"area"*||||50|0|||||||||||||||||
+|===
+__ end table for object Talhao
+
+=== Table of fields with properties for object *SWIR* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"data"*||||50|1|||||||||||||||||
+|*"talhao"*||||50|0|||||||||||||||||
+|*"imagem"*||||50|1|||||||||||||||||
+|===
+__ end table for object SWIR
+
+=== Table of fields with properties for object *RecomendacaoAdubo* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"analise_solo"*||||50|1|||||||||||||||||
+|*"recomendacao"*||||50|0|||||||||||||||||
+|*"plano_cultivo"*||||50|1|||||||||||||||||
+|===
+__ end table for object RecomendacaoAdubo
+
+=== Table of fields with properties for object *PlanoCultivo* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"cultura"*||||50|1|||||||||||||||||
+|*"cultivar"*||||50|1|||||||||||||||||
+|===
+__ end table for object PlanoCultivo
+
+=== Table of fields with properties for object *NDWI* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"data"*||||50|1|||||||||||||||||
+|*"talhao"*||||50|0|||||||||||||||||
+|*"imagem"*||||50|1|||||||||||||||||
+|===
+__ end table for object NDWI
+
+=== Table of fields with properties for object *NDVI* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"data"*||||50|1|||||||||||||||||
+|*"talhao"*||||50|0|||||||||||||||||
+|*"imagem"*||||50|1|||||||||||||||||
+|===
+__ end table for object NDVI
+
+=== Table of fields with properties for object *Municipio* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"cod_ibge"*||||50|1|||||||||||||||||
+|===
+__ end table for object Municipio
+
+=== Table of fields with properties for object *JanelaPlantio* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|===
+__ end table for object JanelaPlantio
+
+=== Table of fields with properties for object *ExpectativaProdutividade* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|===
+__ end table for object ExpectativaProdutividade
+
+=== Table of fields with properties for object *EVI* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"data"*||||50|1|||||||||||||||||
+|*"talhao"*||||50|0|||||||||||||||||
+|*"imagem"*||||50|1|||||||||||||||||
+|===
+__ end table for object EVI
+
+=== Table of fields with properties for object *Evento* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|===
+__ end table for object Evento
+
+=== Table of fields with properties for object *Cultura* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"embrapa_id"*||||50|0|||||||||||||||||
+|*"necessidade_n"*||||50|1|||||||||||||||||
+|*"necessidade_p"*||||50|1|||||||||||||||||
+|*"necessidade_k"*||||50|1|||||||||||||||||
+|*"saturacao_bases_ideal"*||||50|1|||||||||||||||||
+|===
+__ end table for object Cultura
+
+=== Table of fields with properties for object *Cultivar* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"cultura"*||||50|1|||||||||||||||||
+|*"obtentor_mantenedor"*||||50|0|||||||||||||||||
+|*"rnc"*||||50|0|||||||||||||||||
+|*"embrapa_id"*||||50|0|||||||||||||||||
+|*"safra"*||||50|0|||||||||||||||||
+|*"potencial_produtivo"*||||50|0|||||||||||||||||
+|*"uf"*||||50|0|||||||||||||||||
+|*"grupo"*||||50|0|||||||||||||||||
+|*"floracao"*||||50|0|||||||||||||||||
+|*"maturacao_fisiologica"*||||50|0|||||||||||||||||
+|*"enchimento_graos"*||||50|0|||||||||||||||||
+|*"sistema_cultivo"*||||50|0|||||||||||||||||
+|*"genetica"*||||50|0|||||||||||||||||
+|*"regiao"*||||50|0|||||||||||||||||
+|*"grupo_bioclimatico"*||||50|0|||||||||||||||||
+|*"observacao"*||||50|0|||||||||||||||||
+|*"data_atualizacao"*||||50|0|||||||||||||||||
+|===
+__ end table for object Cultivar
+
+=== Table of fields with properties for object *Colheita* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|===
+__ end table for object Colheita
+
+=== Table of fields with properties for object *Aplicacao* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|===
+__ end table for object Aplicacao
+
+=== Table of fields with properties for object *AnaliseSolo* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|*"data_coleta"*||||50|1|||||||||||||||||
+|*"localizacao"*||||50|1|||||||||||||||||
+|*"profundidade_amostra"*||||50|0|||||||||||||||||
+|*"ph"*||||50|1|||||||||||||||||
+|*"materia_organica"*||||50|1|||||||||||||||||
+|*"n_total"*||||50|1|||||||||||||||||
+|*"fosforo"*||||50|1|||||||||||||||||
+|*"potassio"*||||50|1|||||||||||||||||
+|*"calcio"*||||50|1|||||||||||||||||
+|*"magnesio"*||||50|1|||||||||||||||||
+|*"enxofre"*||||50|0|||||||||||||||||
+|*"textura"*||||50|0|||||||||||||||||
+|*"densidade"*||||50|0|||||||||||||||||
+|*"ctc"*||||50|1|||||||||||||||||
+|*"saturacao_bases"*||||50|1|||||||||||||||||
+|*"aluminio"*||||50|0|||||||||||||||||
+|*"hidrogenio"*||||50|0|||||||||||||||||
+|*"zinco"*||||50|0|||||||||||||||||
+|*"cobre"*||||50|0|||||||||||||||||
+|*"manganes"*||||50|0|||||||||||||||||
+|*"ferro"*||||50|0|||||||||||||||||
+|*"boro"*||||50|0|||||||||||||||||
+|===
+__ end table for object AnaliseSolo
+
+
+__DATA_SPECIFICATION__
+
+
+== MATRIX OF PERMISSIONS
+
+[options='header',grid=rows,width=60%,caption=Organisation]
+|===
+|Objects|Permission
+|*cultivar*|Read Cultivar object of Safra , Create/Update Cultivar object of Safra , Delete Cultivar object of Safra , 
+|*cultura*|Read Cultura object of Safra , Create/Update Cultura object of Safra , Delete Cultura object of Safra , 
+|*talhao*|Read Talhao object of Safra , Create/Update Talhao object of Safra , Delete Talhao object of Safra , 
+|*analisesolo*|Read AnaliseSolo object of Safra , Create/Update AnaliseSolo object of Safra , Delete AnaliseSolo object of Safra , 
+|*planocultivo*|Read PlanoCultivo object of Safra , Create/Update PlanoCultivo object of Safra , Delete PlanoCultivo object of Safra , 
+|*colheita*|Read Colheita object of Safra , Create/Update Colheita object of Safra , Delete Colheita object of Safra , 
+|*evento*|Read Evento object of Safra , Create/Update Evento object of Safra , Delete Evento object of Safra , 
+|*recomendacaoadubo*|Read RecomendacaoAdubo object of Safra , Create/Update RecomendacaoAdubo object of Safra , Delete RecomendacaoAdubo object of Safra , 
+|*aplicacao*|Read Aplicacao object of Safra , Create/Update Aplicacao object of Safra , Delete Aplicacao object of Safra , 
+|*municipio*|Read Municipio object of Safra , Create/Update Municipio object of Safra , Delete Municipio object of Safra , 
+
+|===
+
+
+
+== OTHER
+
+__API_DOC__
+
+
+== CHANGELOG
+
+
+# CHANGELOG SAFRA FOR [DOLIBARR ERP CRM](https://www.dolibarr.org)
+ 1.0
+Initial version
+
