@@ -324,12 +324,14 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 				$plano = new PlanoCultivo($object->db);
 				$plano->fetch($rec->plano_cultivo);
 				
-				$obj_cultura = new Cultura($plano->cultura);
+				$obj_cultura = new Cultura($object->db);
+				$obj_cultura->fetch($plano->cultura);
 				
 				// Função para calcular a recomendação de NPK com base na cultura
 				function recomendarNPK($cultura, $nitrogenio, $fosforo, $potassio) {
 					$ideais = [
 						'arroz' => ['N' => 100, 'P' => 30, 'K' => 30],
+						'arrozirrigado' => ['N' => 100, 'P' => 30, 'K' => 30],
 						'algodao' => ['N' => 110, 'P' => 60, 'K' => 60],
 						'amendoim' => ['N' => 30, 'P' => 60, 'K' => 50],
 						'cevada' => ['N' => 80, 'P' => 55, 'K' => 55],
@@ -369,8 +371,30 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 						['N' => 25, 'P' => 5,  'K' => 5,  'descricao' => '25-5-5'],
 						['N' => 5,  'P' => 25, 'K' => 5,  'descricao' => '5-25-5'],
 						['N' => 5,  'P' => 5,  'K' => 25, 'descricao' => '5-5-25'],
-						['N' => 40, 'P' => 20, 'K' => 20, 'descricao' => '40-20-20']
+						['N' => 40, 'P' => 20, 'K' => 20, 'descricao' => '40-20-20'],
+						['N' => 20, 'P' => 20, 'K' => 20, 'descricao' => '20-20-20'],
+						['N' => 18, 'P' => 18, 'K' => 18, 'descricao' => '18-18-18'],
+						['N' => 12, 'P' => 24, 'K' => 12, 'descricao' => '12-24-12'],
+						['N' => 12, 'P' => 12, 'K' => 17, 'descricao' => '12-12-17'],
+						['N' => 30, 'P' => 6,  'K' => 6,  'descricao' => '30-6-6'],
+						['N' => 28, 'P' => 14, 'K' => 14, 'descricao' => '28-14-14'],
+						['N' => 13, 'P' => 13, 'K' => 21, 'descricao' => '13-13-21'],
+						['N' => 8,  'P' => 24, 'K' => 24, 'descricao' => '8-24-24'],
+						['N' => 16, 'P' => 8,  'K' => 8,  'descricao' => '16-8-8'],
+						['N' => 7,  'P' => 7,  'K' => 14, 'descricao' => '7-7-14'],
+						['N' => 20, 'P' => 5,  'K' => 10, 'descricao' => '20-5-10'],
+						['N' => 9,  'P' => 18, 'K' => 9,  'descricao' => '9-18-9'],
+						['N' => 14, 'P' => 14, 'K' => 14, 'descricao' => '14-14-14'],
+						['N' => 17, 'P' => 17, 'K' => 17, 'descricao' => '17-17-17'],
+						['N' => 19, 'P' => 19, 'K' => 19, 'descricao' => '19-19-19'],
+						['N' => 21, 'P' => 0,  'K' => 0,  'descricao' => '21-0-0'],
+						['N' => 0,  'P' => 46, 'K' => 0,  'descricao' => '0-46-0'],
+						['N' => 0,  'P' => 0,  'K' => 60, 'descricao' => '0-0-60'],
+						['N' => 15, 'P' => 9,  'K' => 20, 'descricao' => '15-9-20'],
+						['N' => 11, 'P' => 22, 'K' => 16, 'descricao' => '11-22-16'],
+						['N' => 22, 'P' => 11, 'K' => 2,  'descricao' => '22-11-2']
 					];
+
 
 					$melhorFormulacao = null;
 					$menorDiferenca = PHP_INT_MAX;
@@ -409,7 +433,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 					return $metodos[$cultura] ?? 'Método não especificado; consulte um agrônomo';
 				}
 
-				// Receber dados de entrada via GET
+				// Receber dados de entrada via objetos
 				$cultura = strtolower($obj_cultura->label);
 				$nitrogenio = $analise->n_total ?? 0; // mg/kg
 				$fosforo = $analise->fosforo ?? 0; // mg/kg
@@ -433,9 +457,11 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 					// pH ideal para cada cultura
 					$pH_ideais = [
 						'arroz' => 6.0,
+						'arroz irrigado' => 6.0,
 						'algodao' => 6.0,
 						'amendoim' => 6.0,
 						'cevada' => 6.0,
+						'cevada irrigada' => 6.0,
 						'feijao' => 6.0,
 						'feijaocaupi' => 5.5,
 						'girassol' => 6.5,
@@ -461,14 +487,14 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 				}
 				
 				// Receber dados de entrada via GET
-				$cultura = strtolower($obj_cultura->label);
+				// $cultura = strtolower($obj_cultura->label);
 				$pH_atual = $analise->ph ?? 5.5; // pH atual do solo
 				$ctc = $analise->ctc ?? 10; // Capacidade de Troca Catiônica (mmolc/dm³)
 				
 				// Chamar a função de cálculo de calcário
-				$quantidade_calcario = calcularCalcario($pH_atual, $pH_desejado, $ctc);
+				$quantidade_calcario = calcularCalcario($cultura, $pH_atual, $ctc);
 
-				$res .= "<h3>Observações Adubação: </2h3> 1. A análise de uma amostra de solo é instrumento importante para auxiliar no processo de recomendação de adubação, contudo requer a coleta de uma amostra representativa. Deve-se coletar uma amostra de cada gleba da propriedade, resultante da mistura de várias sub-amostras. (Sugere-se consultar arquivo WebAgritec-amostragem do solo); \n2. Adubação nitrogenada - A quantidade total de N recomendada pode ser reduzida em cerca de 30% quando o solo apresentar teor alto de matéria orgânica. A dosagem de N em cobertura, quando recomendada, deve ser aplicada durante o desenvolvimento da cultura. Caso esta dosagem seja superior a 60 kg/ha, pode-se parcelar em duas aplicações. A aplicação deve ser feita em solo úmido e, quando possível, com leve incorporação ao solo; \n3. Adubação potássica - Quando o solo for arenoso ou a recomendação de adubação exceder 60 kg/ha de K2O, sugere-se aplicar metade da dose no plantio e metade junto com a cobertura de nitrogênio; \n4. Em lavouras aonde vem sendo utilizadas fontes de fertilizantes ou formulações de alta concentração (soma de N+P2O5+K2O acima de 35), existe grande probabilidade de ocorrer deficiência de enxofre (S) (veja foto ilustrativa). Neste caso, aplicar de 15 a 30 kg/ha de S; \n5. Em solos da região do cerrado e em solos arenosos, tem sido comum a deficiência de micronutrientes (Zn, Mn, Cu e B), (veja fotos ilustrativas). Neste caso, avaliar a disponibilidade, mediante análise de amostra de solo e aplicar fórmula NPK, com micronutrientes; \n6. A eficiência da adubação pode ser limitada pela ocorrência de camada compactada no solo, problema mais freqüente em lavouras sob preparo convencional. A solução deste problema abrange desde o cultivo de plantas descompactadoras até a subsolagem. (Veja detalhes no arquivo WebAgritec-compactação); \n7. Informações adicionais podem ser obtidas:\nDocumentos:\n- Manual de adubação e calagem para os estados do Rio Grande do Sul e Santa Catarina, 2004.\n- CERRADO. Correção do solo e adubação, 2002.\n-Recomendações para o uso de corretivos e fertilizantes em Minas gerais, 1999.\n- Boletim Técnico 100, IAC, 1996.\nInstituições:\nEmbrapa.\nInstituições estaduais de pesquisa.<hr>";
+				$res .= "<h3>Observações Adubação: </h3> 1. A análise de uma amostra de solo é instrumento importante para auxiliar no processo de recomendação de adubação, contudo requer a coleta de uma amostra representativa. Deve-se coletar uma amostra de cada gleba da propriedade, resultante da mistura de várias sub-amostras. (Sugere-se consultar arquivo WebAgritec-amostragem do solo); \n2. Adubação nitrogenada - A quantidade total de N recomendada pode ser reduzida em cerca de 30% quando o solo apresentar teor alto de matéria orgânica. A dosagem de N em cobertura, quando recomendada, deve ser aplicada durante o desenvolvimento da cultura. Caso esta dosagem seja superior a 60 kg/ha, pode-se parcelar em duas aplicações. A aplicação deve ser feita em solo úmido e, quando possível, com leve incorporação ao solo; \n3. Adubação potássica - Quando o solo for arenoso ou a recomendação de adubação exceder 60 kg/ha de K2O, sugere-se aplicar metade da dose no plantio e metade junto com a cobertura de nitrogênio; \n4. Em lavouras aonde vem sendo utilizadas fontes de fertilizantes ou formulações de alta concentração (soma de N+P2O5+K2O acima de 35), existe grande probabilidade de ocorrer deficiência de enxofre (S) (veja foto ilustrativa). Neste caso, aplicar de 15 a 30 kg/ha de S; \n5. Em solos da região do cerrado e em solos arenosos, tem sido comum a deficiência de micronutrientes (Zn, Mn, Cu e B), (veja fotos ilustrativas). Neste caso, avaliar a disponibilidade, mediante análise de amostra de solo e aplicar fórmula NPK, com micronutrientes; \n6. A eficiência da adubação pode ser limitada pela ocorrência de camada compactada no solo, problema mais freqüente em lavouras sob preparo convencional. A solução deste problema abrange desde o cultivo de plantas descompactadoras até a subsolagem. (Veja detalhes no arquivo WebAgritec-compactação); \n7. Informações adicionais podem ser obtidas:\nDocumentos:\n- Manual de adubação e calagem para os estados do Rio Grande do Sul e Santa Catarina, 2004.\n- CERRADO. Correção do solo e adubação, 2002.\n-Recomendações para o uso de corretivos e fertilizantes em Minas gerais, 1999.\n- Boletim Técnico 100, IAC, 1996.\nInstituições:\nEmbrapa.\nInstituições estaduais de pesquisa.<hr>";
 				
 				$res .= "Quantidade recomendada de calcário (ton/ha): " . round($quantidade_calcario, 2) . "\n<br>";
 

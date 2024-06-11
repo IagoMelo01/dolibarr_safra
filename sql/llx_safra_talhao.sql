@@ -34,8 +34,9 @@ CREATE TABLE llx_safra_talhao(
 	import_key varchar(14), 
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
-	poligon_points text, 
-	center varchar(255), 
-	area double(28,4)
+	poligon_points text NOT NULL, 
+	center varchar(255) NOT NULL, 
+	area double(28,4), 
+	map text
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

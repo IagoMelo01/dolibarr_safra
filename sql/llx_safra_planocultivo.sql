@@ -35,6 +35,7 @@ CREATE TABLE llx_safra_planocultivo(
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
 	cultura integer NOT NULL, 
-	cultivar integer NOT NULL
+	cultivar integer NOT NULL, 
+	municipio integer NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

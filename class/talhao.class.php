@@ -131,9 +131,10 @@ class Talhao extends CommonObject
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
-		"poligon_points" => array("type"=>"text", "label"=>"poligon_points", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"0",),
-		"center" => array("type"=>"varchar(255)", "label"=>"center", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"0",),
+		"poligon_points" => array("type"=>"text", "label"=>"poligon_points", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"0",),
+		"center" => array("type"=>"varchar(255)", "label"=>"center", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"0",),
 		"area" => array("type"=>"double(28,4)", "label"=>"Área", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "isameasure"=>"1",),
+		"map" => array("type"=>"html", "label"=>"Map", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -156,6 +157,7 @@ class Talhao extends CommonObject
 	public $poligon_points;
 	public $center;
 	public $area;
+	public $map;
 	// END MODULEBUILDER PROPERTIES
 
 

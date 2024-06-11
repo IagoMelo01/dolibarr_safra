@@ -133,6 +133,7 @@ class PlanoCultivo extends CommonObject
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
 		"cultura" => array("type"=>"integer:cultura:safra/class/cultura.class.php", "label"=>"Cultura", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 		"cultivar" => array("type"=>"integer:cultivar:safra/class/cultivar.class.php:1", "label"=>"Cultivar", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
+		"municipio" => array("type"=>"integer:municipio:safra/class/municipio.class.php", "label"=>"Município", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -154,6 +155,7 @@ class PlanoCultivo extends CommonObject
 	public $status;
 	public $cultura;
 	public $cultivar;
+	public $municipio;
 	// END MODULEBUILDER PROPERTIES
 
 
