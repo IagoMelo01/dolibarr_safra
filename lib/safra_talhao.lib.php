@@ -108,3 +108,9 @@ function talhaoPrepareHead($object)
 
 	return $head;
 }
+
+
+
+echo '<script src="https://unpkg.com/wellknown/wellknown.js"></script>';
+echo '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />';
+echo '<link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />';

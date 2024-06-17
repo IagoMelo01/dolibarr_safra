@@ -108,4 +108,119 @@ div.mainmenu.safra {
 	/* ... */
 }
 
+.hidden{
+	display: none;
+}
+
+#map {
+	width: 100%;
+	height: 500px;
+}
+
+<style>
+
+	.container {
+		justify-content: start;
+		align-items: auto;
+		align-content: start;
+	}
+	.item {
+		margin: 10px;
+	}
+
+	#mapIndex {
+		width: 70%;
+		height: 350px;
+	}
+	#mapList {
+		z-index: 0;
+		width: 95%;
+		height: 300px;
+	}
+	#mapCRUD {
+		z-index: 0;
+		width: 100%;
+		height: 300px;
+	}
+	#mapShow {
+		z-index: 0; 
+		width: 95%;
+		height: 300px;
+	}
+	#mapSetup {
+		z-index: 0;
+		width: 95%;
+		height: 400px;
+	}
+	#mapcadastre {
+		z-index: 0;
+		width: 100%;
+		height: 650px;
+	}
+
+@media only screen and (min-width: 1024px) {
+	.container {
+		display: flex;
+		flex-wrap: nowrap;
+		flex-direction: row;
+		justify-content: start;
+		align-items: auto;
+		align-content: start;
+	}
+	.item {
+		flex: 0 0 auto;
+		margin: 10px;
+	}
+	#mapList {
+		z-index: 0;
+		width: 45%;
+		height: 650px;
+	}
+	#mapCRUD {
+		z-index: 0;
+		width: 45%;
+		height: 650px;
+	}
+	#mapShow {
+		z-index: 0;
+		width: 95%;
+		height: 380px;
+	}
+	#mapSetup {
+		z-index: 0;
+		width: 55%;
+		height: 400px;
+	}
+	#mapcadastre {
+		z-index: 0;
+		width: 95%;
+		height: 650px;
+	}
+}
+
+
+
+	/* creating css loader */
+
+#boxLoading {
+    width: 6rem;
+    height: 6rem;
+    border: 5px solid #ffffff;
+    border-top: 6px solid #49729e;
+    border-radius: 100%;
+    margin: auto;
+    animation: spin 1s infinite linear;
+}
+#boxLoading.display {
+    visibility: visible;
+}
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+</style>
 

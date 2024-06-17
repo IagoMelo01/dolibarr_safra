@@ -19,9 +19,6 @@ CREATE TABLE llx_safra_talhao(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	amount double DEFAULT NULL, 
-	qty real, 
-	fk_soc integer, 
 	fk_project integer, 
 	description text, 
 	note_public text, 
@@ -37,6 +34,9 @@ CREATE TABLE llx_safra_talhao(
 	poligon_points text NOT NULL, 
 	center varchar(255) NOT NULL, 
 	area double(28,4), 
-	map text
+	map text DEFAULT <div id='MapDiv'></div>, 
+	wkt text NOT NULL, 
+	bbox text NOT NULL, 
+	geo_json text NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

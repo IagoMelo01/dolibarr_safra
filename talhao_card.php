@@ -262,6 +262,13 @@ if ($action == 'create') {
 		accessforbidden('NotEnoughPermissions', 0, 1);
 	}
 
+	print '<div class="container">';
+
+	// debut div item 1 / map
+	print '<div class="item" id="mapCRUD"></div>';
+	
+	print '<div class="item">';
+
 	print load_fiche_titre($title, '', 'object_'.$object->picto);
 
 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
@@ -294,13 +301,21 @@ if ($action == 'create') {
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
 
 	print '</table>'."\n";
-
+	
 	print dol_get_fiche_end();
-
+	
 	print $form->buttonsSaveCancel("Create");
-
+	
 	print '</form>';
 
+	// fin div item 2
+	print '</div>';
+	// fin div container
+	print '</div>';
+	
+	include_once './js/talhao_create.js.php';
+	// echo 'testers';
+	// echo '<script> alert("test"); </script>';
 	//dol_set_focus('input[name="ref"]');
 }
 

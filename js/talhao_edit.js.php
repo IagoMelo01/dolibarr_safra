@@ -96,5 +96,8 @@ if (empty($dolibarr_nocache)) {
 ?>
 
 /* Javascript library of module Safra */
+<script src="./js/leaflet.js"></script>
+<script src="./js/leaflet.draw.js"></script>
+<script src="./js/wellknown.js"></script>
 
-<!-- <script src="./js/script.js"></script> -->
+<script src="./js/script.js"></script>
