@@ -1,9 +1,8 @@
 <link rel="stylesheet" href="./css/leaflet.css" />
-<link rel="stylesheet" href="./css/leaflet-geoman.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
 
 <script src="./js/leaflet.js"></script>
-<script src="./js/leaflet-geoman.min.js"></script>
-<script src="./js/turf.js"></script>
+<script src="./js/leaflet.draw.js"></script>
 <script src="./js/wellknown.js"></script>
 
 
@@ -11,8 +10,6 @@
 <script>
     
 var map = L.map('mapCRUD').setView([-17.047558, -46.824176], 13);
-
-map.pm.setLang('pt');
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: 'Map data &copy; OpenStreetMap contributors'
@@ -27,26 +24,21 @@ googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}'
 });
 googleHybrid.addTo(map);
 
-// add leaflet-geoman controls with some options to the map
-map.pm.addControls({
-		position: 'topleft',
-		drawMarker: false,
-		drawCircleMarker: false,
-		drawPolyline: false,
-		drawRectangle: false,
-		drawCircle: false,
-	})
+var drawControl = new L.Control.Draw({
+    edit: {
+        featureGroup: drawnItems
+    },
+    draw: {
+        polygon: true,
+        polyline: false,
+        rectangle: false,
+        circle: false,
+        marker: false
+    }
+});
+map.addControl(drawControl);
 
-    // enable polygon draw mode
-	map.pm.enableDraw('Polygon', {
-		layerGroup: map,
-		snappable: true,
-		snapDistance: 10,
-	})
-
-	map.pm.disableDraw()
-
-map.on('pm:create', function (event) {
+map.on(L.Draw.Event.CREATED, function (event) {
     var layer = event.layer;
     drawnItems.addLayer(layer);
     var bounds = layer.getBounds();
@@ -68,38 +60,41 @@ map.on('pm:create', function (event) {
     var input_area = document.getElementById("area")
     input_area.value = areaHa;
     // fetchNDVIData(layer);
-    
-        layer.on('pm:update', function (event) {
-            var layer = event.layer;
-            drawnItems.addLayer(layer);
-            var bounds = layer.getBounds();
-            var bbox = bounds.toBBoxString();
-            var geojson = layer.toGeoJSON();
-            var wkt = wellknown.stringify(geojson);
-            var encondedWKT = encodeURIComponent(wkt);
-            var input_geojson = document.getElementById("geo_json")
-            input_geojson.value = JSON.stringify(geojson);
-            var input_wkt = document.getElementById("wkt")
-            input_wkt.value = encondedWKT;
-            var input_bbox = document.getElementById("bbox")
-            input_bbox.value = bbox;
-            
-            createAreaTooltip(layer);
-            var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]); // Get polygon area
-            // console.log(area + 'm2');
-            var areaHa = area / 10000; // Convert area to hectares
-            var input_area = document.getElementById("area")
-            input_area.value = areaHa;
-            // fetchNDVIData(layer);
-        });
-    });
-    
-    function fetchNDVIData(layer) {
-        var wkt = wellknown.stringify(layer.toGeoJSON());
-        var encodedWKT = encodeURIComponent(wkt);
-        var url = `https://services.sentinel-hub.com/ogc/wms/3f380032-35a2-468e-83b2-0363da66b000?service=WMS&request=GetMap&layers=NDVI&styles=&format=application/json&transparent=true&RESX=10m&RESY=10m&srs=CRS:84&geometry=${encodedWKT}/`;
-        console.log(url);
-        
+});
+
+map.on('draw:edited', function (e) {
+    var layers = e.layers;
+    layers.eachLayer(function (layer) {
+        // var layer = event.layer;
+        drawnItems.addLayer(layer);
+        var bounds = layer.getBounds();
+        var bbox = bounds.toBBoxString();
+        var geojson = layer.toGeoJSON();
+        var wkt = wellknown.stringify(geojson);
+        var encondedWKT = encodeURIComponent(wkt);
+        var input_geojson = document.getElementById("geo_json")
+        input_geojson.value = JSON.stringify(geojson);
+        var input_wkt = document.getElementById("wkt")
+        input_wkt.value = encondedWKT;
+        var input_bbox = document.getElementById("bbox")
+        input_bbox.value = bbox;
+
+        createAreaTooltip(layer);
+        var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]); // Get polygon area
+        // console.log(area + 'm2');
+        var areaHa = area / 10000; // Convert area to hectares
+        var input_area = document.getElementById("area")
+        input_area.value = areaHa;
+        // fetchNDVIData(layer);
+    })
+});
+
+function fetchNDVIData(layer) {
+    var wkt = wellknown.stringify(layer.toGeoJSON());
+    var encodedWKT = encodeURIComponent(wkt);
+    var url = `https://services.sentinel-hub.com/ogc/wms/3f380032-35a2-468e-83b2-0363da66b000?service=WMS&request=GetMap&layers=NDVI&styles=&format=application/json&transparent=true&RESX=10m&RESY=10m&srs=CRS:84&geometry=${encodedWKT}/`;
+    console.log(url);
+
     // Fetch NDVI data in GeoJSON
     fetch(url)
         .then(response => response.json())
