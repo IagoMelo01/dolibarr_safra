@@ -43,7 +43,7 @@ class modSafra extends DolibarrModules
 		global $langs, $conf;
 		$this->db = $db;
 
-		// Id for module (must be unique).
+		// Id for module (must be unique). 
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 500000; // TODO Go on page https://wiki.dolibarr.org/index.php/List_of_modules_id to reserve an id number for your module
 

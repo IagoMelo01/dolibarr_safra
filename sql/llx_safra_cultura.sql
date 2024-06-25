@@ -31,11 +31,11 @@ CREATE TABLE llx_safra_cultura(
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
 	model_pdf varchar(255), 
-	status integer NOT NULL, 
+	status integer DEFAULT 1 NOT NULL, 
 	embrapa_id integer, 
-	necessidade_n double(28,4) NOT NULL, 
-	necessidade_p double(28,4) NOT NULL, 
-	necessidade_k double(28,4) NOT NULL, 
-	saturacao_bases_ideal double(28,4) NOT NULL
+	necessidade_n double(28,4), 
+	necessidade_p double(28,4), 
+	necessidade_k double(28,4), 
+	saturacao_bases_ideal double(28,4)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

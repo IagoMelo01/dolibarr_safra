@@ -129,7 +129,7 @@ class Cultivar extends CommonObject
 		"last_main_doc" => array("type"=>"varchar(255)", "label"=>"LastMainDoc", "enabled"=>"1", 'position'=>600, 'notnull'=>0, "visible"=>"0",),
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
-		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
+		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "default"=>"1", "index"=>"1", "arrayofkeyval"=>array("{0:Rascunho" => "1:Validado,9:Cancelado}"), "validate"=>"1",),
 		"cultura" => array("type"=>"integer:cultura:safra/class/cultura.class.php[:1[:filter]]", "label"=>"Cultura", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 		"obtentor_mantenedor" => array("type"=>"varchar(255)", "label"=>"Obtentor/Mantenedor", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"rnc" => array("type"=>"varchar(128)", "label"=>"Número RNC (Registro Nacional de Cultivares)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
@@ -148,6 +148,7 @@ class Cultivar extends CommonObject
 		"observacao" => array("type"=>"text", "label"=>"Observação", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"data_atualizacao" => array("type"=>"date", "label"=>"Data de atualização", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"duracao_ciclo" => array("type"=>"double(28,4)", "label"=>"Duração Ciclo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"cultivar" => array("type"=>"varchar(255)", "label"=>"cultivar", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -184,6 +185,7 @@ class Cultivar extends CommonObject
 	public $observacao;
 	public $data_atualizacao;
 	public $duracao_ciclo;
+	public $cultivar;
 	// END MODULEBUILDER PROPERTIES
 
 

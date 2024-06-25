@@ -128,13 +128,11 @@ class Talhao extends CommonObject
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
-		"poligon_points" => array("type"=>"text", "label"=>"poligon_points", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"0", "css"=>"hidden", "cssview"=>"hidden", "csslist"=>"hidden",),
-		"center" => array("type"=>"varchar(255)", "label"=>"center", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"0",),
+		"center" => array("type"=>"varchar(255)", "label"=>"center", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"0",),
 		"area" => array("type"=>"double(28,4)", "label"=>"Área", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "isameasure"=>"1",),
-		"map" => array("type"=>"html", "label"=>"Map", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "default"=>"<div id='MapDiv'></div>",),
-		"wkt" => array("type"=>"text", "label"=>"wkt", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "css"=>"hidden", "cssview"=>"hidden", "csslist"=>"hidden",),
-		"bbox" => array("type"=>"text", "label"=>"bbox", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "css"=>"hidden", "cssview"=>"hidden", "csslist"=>"hidden",),
-		"geo_json" => array("type"=>"text", "label"=>"geo_json", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "css"=>"hidden", "cssview"=>"hidden", "csslist"=>"hidden",),
+		"wkt" => array("type"=>"text", "label"=>"wkt", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "cssview"=>"hidden",),
+		"bbox" => array("type"=>"text", "label"=>"bbox", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "cssview"=>"hidden",),
+		"geo_json" => array("type"=>"text", "label"=>"geo_json", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
 	);
 	public $rowid;
 	public $ref;
@@ -151,10 +149,8 @@ class Talhao extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
-	public $poligon_points;
 	public $center;
 	public $area;
-	public $map;
 	public $wkt;
 	public $bbox;
 	public $geo_json;

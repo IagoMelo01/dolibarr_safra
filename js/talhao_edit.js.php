@@ -1,103 +1,178 @@
-<?php
-/* Copyright (C) 2024 SuperAdmin
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
- * Library javascript to enable Browser notifications
- */
+<link rel="stylesheet" href="./css/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
 
-if (!defined('NOREQUIREUSER')) {
-	define('NOREQUIREUSER', '1');
-}
-if (!defined('NOREQUIREDB')) {
-	define('NOREQUIREDB', '1');
-}
-if (!defined('NOREQUIRESOC')) {
-	define('NOREQUIRESOC', '1');
-}
-if (!defined('NOREQUIRETRAN')) {
-	define('NOREQUIRETRAN', '1');
-}
-if (!defined('NOCSRFCHECK')) {
-	define('NOCSRFCHECK', 1);
-}
-if (!defined('NOTOKENRENEWAL')) {
-	define('NOTOKENRENEWAL', 1);
-}
-if (!defined('NOLOGIN')) {
-	define('NOLOGIN', 1);
-}
-if (!defined('NOREQUIREMENU')) {
-	define('NOREQUIREMENU', 1);
-}
-if (!defined('NOREQUIREHTML')) {
-	define('NOREQUIREHTML', 1);
-}
-if (!defined('NOREQUIREAJAX')) {
-	define('NOREQUIREAJAX', '1');
-}
-
-
-/**
- * \file    safra/js/safra.js.php
- * \ingroup safra
- * \brief   JavaScript file for module Safra.
- */
-
-// Load Dolibarr environment
-$res = 0;
-// Try main.inc.php into web root known defined into CONTEXT_DOCUMENT_ROOT (not always defined)
-if (!$res && !empty($_SERVER["CONTEXT_DOCUMENT_ROOT"])) {
-	$res = @include $_SERVER["CONTEXT_DOCUMENT_ROOT"]."/main.inc.php";
-}
-// Try main.inc.php into web root detected using web root calculated from SCRIPT_FILENAME
-$tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME']; $tmp2 = realpath(__FILE__); $i = strlen($tmp) - 1; $j = strlen($tmp2) - 1;
-while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
-	$i--;
-	$j--;
-}
-if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1))."/main.inc.php")) {
-	$res = @include substr($tmp, 0, ($i + 1))."/main.inc.php";
-}
-if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1))."/../main.inc.php")) {
-	$res = @include substr($tmp, 0, ($i + 1))."/../main.inc.php";
-}
-// Try main.inc.php using relative path
-if (!$res && file_exists("../../main.inc.php")) {
-	$res = @include "../../main.inc.php";
-}
-if (!$res && file_exists("../../../main.inc.php")) {
-	$res = @include "../../../main.inc.php";
-}
-if (!$res) {
-	die("Include of main fails");
-}
-
-// Define js type
-header('Content-Type: application/javascript');
-// Important: Following code is to cache this file to avoid page request by browser at each Dolibarr page access.
-// You can use CTRL+F5 to refresh your browser cache.
-if (empty($dolibarr_nocache)) {
-	header('Cache-Control: max-age=3600, public, must-revalidate');
-} else {
-	header('Cache-Control: no-cache');
-}
-?>
-
-/* Javascript library of module Safra */
 <script src="./js/leaflet.js"></script>
 <script src="./js/leaflet.draw.js"></script>
 <script src="./js/wellknown.js"></script>
 
-<script src="./js/script.js"></script>
+
+
+<script>
+    
+var map = L.map('mapCRUD').setView([-17.047558, -46.824176], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: 'Map data &copy; OpenStreetMap contributors'
+}).addTo(map);
+
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+});
+googleHybrid.addTo(map);
+
+var drawControl = new L.Control.Draw({
+    edit: {
+        featureGroup: drawnItems
+    },
+    draw: {
+        polygon: {
+            allowIntersection: false,
+            showArea: true
+        },
+        polyline: false,
+        rectangle: {
+            showArea: true
+        },
+        circle: false,
+        marker: false
+    }
+});
+map.addControl(drawControl);
+
+// Variável para armazenar o polígono desenhado
+var drawnPolygon
+drawnPolygon = renderGeoJSON();
+
+map.on(L.Draw.Event.CREATED, function (event) {
+    var layer = event.layer;
+	// drawnItems.removeLayer()
+
+    // Verifica se um polígono já foi desenhado
+    if (drawnPolygon) {
+        drawnItems.removeLayer(drawnPolygon);
+    }
+
+    // Adiciona o novo polígono e atualiza a variável
+    drawnItems.addLayer(layer);
+    drawnPolygon = layer;
+
+    updateInputs(layer);
+});
+
+map.on('draw:edited', function (e) {
+    var layers = e.layers;
+    layers.eachLayer(function (layer) {
+        drawnItems.addLayer(layer);
+        updateInputs(layer);
+    });
+});
+
+
+function renderGeoJSON() {
+	var geojsonInput = document.getElementById("geo_json").value;
+	if (geojsonInput) {
+		var geojsonObject = JSON.parse(geojsonInput);
+		var geojsonLayer = L.geoJSON(geojsonObject);
+		drawnItems.addLayer(geojsonLayer);
+		map.fitBounds(geojsonLayer.getBounds());
+		return geojsonLayer;
+	}
+	return null;
+}
+
+
+function updateInputs(layer) {
+    var bounds = layer.getBounds();
+    var bbox = bounds.toBBoxString();
+    var geojson = layer.toGeoJSON();
+    var wkt = wellknown.stringify(geojson);
+    var encondedWKT = encodeURIComponent(wkt);
+    var input_geojson = document.getElementById("geo_json")
+    input_geojson.value = JSON.stringify(geojson);
+    var input_wkt = document.getElementById("wkt")
+    input_wkt.value = encondedWKT;
+    var input_bbox = document.getElementById("bbox")
+    input_bbox.value = bbox;
+
+    createAreaTooltip(layer);
+    var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]); // Get polygon area
+    var areaHa = area / 10000; // Convert area to hectares
+    var input_area = document.getElementById("area")
+    input_area.value = areaHa;
+}
+
+
+
+function fetchNDVIData(layer) {
+    var wkt = wellknown.stringify(layer.toGeoJSON());
+    var encodedWKT = encodeURIComponent(wkt);
+    var url = `https://services.sentinel-hub.com/ogc/wms/3f380032-35a2-468e-83b2-0363da66b000?service=WMS&request=GetMap&layers=NDVI&styles=&format=application/json&transparent=true&RESX=10m&RESY=10m&srs=CRS:84&geometry=${encodedWKT}/`;
+    console.log(url);
+
+    // Fetch NDVI data in GeoJSON
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            let counter = 0;
+            var geoJsonLayer = L.geoJSON(data, {
+                onEachFeature: function (feature, layer) {
+                    layer.setStyle({
+                        color: `#${feature.properties.COLOR_HEX}`,
+                        stroke: true,
+                        weight: 1,
+                        fill: true,
+                        fillOpacity: 1,
+                        fillColor: `#${feature.properties.COLOR_HEX}`
+                    });
+                    counter++;
+                }
+            }).addTo(map);
+            map.fitBounds(geoJsonLayer.getBounds());
+        })
+        .catch(error => console.error('Error fetching NDVI data:', error));
+}
+
+
+function createAreaTooltip(layer) {
+	if (layer.areaTooltip) {
+		updateAreaTooltip(layer);
+		return;
+	}
+
+	layer.areaTooltip = L.tooltip({
+		permanent: true,
+		direction: 'center',
+		className: 'area-tooltip'
+	});
+
+	layer.on('remove', function(event) {
+		layer.areaTooltip.remove();
+	});
+
+	layer.on('add', function(event) {
+		updateAreaTooltip(layer);
+		layer.areaTooltip.addTo(map);
+	});
+
+	if (map.hasLayer(layer)) {
+		updateAreaTooltip(layer);
+		layer.areaTooltip.addTo(map);
+	}
+}
+
+function updateAreaTooltip(layer) {
+	var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
+	var readableArea = L.GeometryUtil.readableArea(area, true);
+	var latlng = layer.getCenter();
+
+	layer.areaTooltip
+		.setContent(readableArea)
+		.setLatLng(latlng);
+}
+
+
+</script>

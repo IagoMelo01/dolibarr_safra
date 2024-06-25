@@ -267,7 +267,7 @@ if ($action == 'create') {
 	// debut div item 1 / map
 	print '<div class="item" id="mapCRUD"></div>';
 	
-	print '<div class="item">';
+	print '<div class="item">'; 
 
 	print load_fiche_titre($title, '', 'object_'.$object->picto);
 
@@ -321,6 +321,14 @@ if ($action == 'create') {
 
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
+
+	print '<div class="container">';
+
+	// debut div item 1 / map
+	print '<div class="item" id="mapCRUD"></div>';
+	
+	print '<div class="item">'; 
+
 	print load_fiche_titre($langs->trans("Talhao"), '', 'object_'.$object->picto);
 
 	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
@@ -351,6 +359,14 @@ if (($id || $ref) && $action == 'edit') {
 	print $form->buttonsSaveCancel();
 
 	print '</form>';
+
+	// fin div item 2
+	print '</div>';
+	// fin div container
+	print '</div>';
+
+	
+	include_once './js/talhao_edit.js.php';
 }
 
 // Part to show record
@@ -473,6 +489,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
 	print '</table>';
+	//  ---- mostrar mapa
+	print '<div class="info" id="mapShow"></div>';
 	print '</div>';
 	print '</div>';
 
@@ -659,6 +677,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$trackid = 'talhao'.$object->id;
 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/card_presend.tpl.php';
+
+	include_once "./js/talhao_show.js.php";
 }
 
 // End of page

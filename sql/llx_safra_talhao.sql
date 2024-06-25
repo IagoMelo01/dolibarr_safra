@@ -31,12 +31,10 @@ CREATE TABLE llx_safra_talhao(
 	import_key varchar(14), 
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
-	poligon_points text NOT NULL, 
-	center varchar(255) NOT NULL, 
+	center varchar(255), 
 	area double(28,4), 
-	map text DEFAULT <div id='MapDiv'></div>, 
-	wkt text NOT NULL, 
-	bbox text NOT NULL, 
-	geo_json text NOT NULL
+	wkt text, 
+	bbox text, 
+	geo_json text
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

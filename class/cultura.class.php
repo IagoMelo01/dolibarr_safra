@@ -128,12 +128,12 @@ class Cultura extends CommonObject
 		"last_main_doc" => array("type"=>"varchar(255)", "label"=>"LastMainDoc", "enabled"=>"1", 'position'=>600, 'notnull'=>0, "visible"=>"0",),
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
-		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
-		"embrapa_id" => array("type"=>"integer", "label"=>"Id Embrapa", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"necessidade_n" => array("type"=>"double(28,4)", "label"=>"Necessidade Nitrogênio(N) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
-		"necessidade_p" => array("type"=>"double(28,4)", "label"=>"Necessidade Fósforo(P2O5) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
-		"necessidade_k" => array("type"=>"double(28,4)", "label"=>"Necessidade Potássio(K2O) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
-		"saturacao_bases_ideal" => array("type"=>"double(28,4)", "label"=>"Saturação por Bases Ideal (V%)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
+		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "default"=>"1", "index"=>"1", "arrayofkeyval"=>array("{0:Rascunho" => "1:Validado,9:Cancelado}"), "validate"=>"1",),
+		"embrapa_id" => array("type"=>"integer", "label"=>"Id Embrapa", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "index"=>"1",),
+		"necessidade_n" => array("type"=>"double(28,4)", "label"=>"Necessidade Nitrogênio(N) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"necessidade_p" => array("type"=>"double(28,4)", "label"=>"Necessidade Fósforo(P2O5) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"necessidade_k" => array("type"=>"double(28,4)", "label"=>"Necessidade Potássio(K2O) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"saturacao_bases_ideal" => array("type"=>"double(28,4)", "label"=>"Saturação por Bases Ideal (V%)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;

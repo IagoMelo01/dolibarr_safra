@@ -32,7 +32,7 @@ CREATE TABLE llx_safra_cultivar(
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
 	model_pdf varchar(255), 
-	status integer NOT NULL, 
+	status integer DEFAULT 1 NOT NULL, 
 	cultura integer NOT NULL, 
 	obtentor_mantenedor varchar(255), 
 	rnc varchar(128), 
@@ -50,6 +50,7 @@ CREATE TABLE llx_safra_cultivar(
 	grupo_bioclimatico varchar(255), 
 	observacao text, 
 	data_atualizacao date, 
-	duracao_ciclo double(28,4)
+	duracao_ciclo double(28,4), 
+	cultivar varchar(255)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

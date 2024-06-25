@@ -130,9 +130,10 @@ class Municipio extends CommonObject
 		"last_main_doc" => array("type"=>"varchar(255)", "label"=>"LastMainDoc", "enabled"=>"1", 'position'=>600, 'notnull'=>0, "visible"=>"0",),
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
-		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
+		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "default"=>"1", "index"=>"1", "arrayofkeyval"=>array("{0:Rascunho" => "1:Validado,9:Cancelado}"), "validate"=>"1",),
 		"cod_ibge" => array("type"=>"varchar(128)", "label"=>"Código IBGE", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 		"data_atualizacao" => array("type"=>"varchar(128)", "label"=>"Data de atualização", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"uf" => array("type"=>"varchar(4)", "label"=>"uf", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -154,6 +155,7 @@ class Municipio extends CommonObject
 	public $status;
 	public $cod_ibge;
 	public $data_atualizacao;
+	public $uf;
 	// END MODULEBUILDER PROPERTIES
 
 

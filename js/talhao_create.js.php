@@ -29,18 +29,48 @@ var drawControl = new L.Control.Draw({
         featureGroup: drawnItems
     },
     draw: {
-        polygon: true,
+        polygon: {
+            allowIntersection: false,
+            showArea: true
+        },
         polyline: false,
-        rectangle: false,
+        rectangle: {
+            showArea: true
+        },
         circle: false,
         marker: false
     }
 });
 map.addControl(drawControl);
 
+// Variável para armazenar o polígono desenhado
+var drawnPolygon;
+
 map.on(L.Draw.Event.CREATED, function (event) {
     var layer = event.layer;
+
+    // Verifica se um polígono já foi desenhado
+    if (drawnPolygon) {
+        drawnItems.removeLayer(drawnPolygon);
+    }
+
+    // Adiciona o novo polígono e atualiza a variável
     drawnItems.addLayer(layer);
+    drawnPolygon = layer;
+
+    updateInputs(layer);
+});
+
+map.on('draw:edited', function (e) {
+    var layers = e.layers;
+    layers.eachLayer(function (layer) {
+        drawnItems.addLayer(layer);
+        updateInputs(layer);
+        // fetchNDVIData(layer);
+    });
+});
+
+function updateInputs(layer) {
     var bounds = layer.getBounds();
     var bbox = bounds.toBBoxString();
     var geojson = layer.toGeoJSON();
@@ -55,39 +85,12 @@ map.on(L.Draw.Event.CREATED, function (event) {
 
     createAreaTooltip(layer);
     var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]); // Get polygon area
-    // console.log(area + 'm2');
     var areaHa = area / 10000; // Convert area to hectares
     var input_area = document.getElementById("area")
     input_area.value = areaHa;
-    // fetchNDVIData(layer);
-});
+}
 
-map.on('draw:edited', function (e) {
-    var layers = e.layers;
-    layers.eachLayer(function (layer) {
-        // var layer = event.layer;
-        drawnItems.addLayer(layer);
-        var bounds = layer.getBounds();
-        var bbox = bounds.toBBoxString();
-        var geojson = layer.toGeoJSON();
-        var wkt = wellknown.stringify(geojson);
-        var encondedWKT = encodeURIComponent(wkt);
-        var input_geojson = document.getElementById("geo_json")
-        input_geojson.value = JSON.stringify(geojson);
-        var input_wkt = document.getElementById("wkt")
-        input_wkt.value = encondedWKT;
-        var input_bbox = document.getElementById("bbox")
-        input_bbox.value = bbox;
 
-        createAreaTooltip(layer);
-        var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]); // Get polygon area
-        // console.log(area + 'm2');
-        var areaHa = area / 10000; // Convert area to hectares
-        var input_area = document.getElementById("area")
-        input_area.value = areaHa;
-        // fetchNDVIData(layer);
-    })
-});
 
 function fetchNDVIData(layer) {
     var wkt = wellknown.stringify(layer.toGeoJSON());
@@ -121,6 +124,7 @@ function fetchNDVIData(layer) {
 
 function createAreaTooltip(layer) {
             if (layer.areaTooltip) {
+                updateAreaTooltip(layer);
                 return;
             }
 
