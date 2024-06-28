@@ -19,8 +19,6 @@ CREATE TABLE llx_safra_cultura(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	qty real, 
-	fk_soc integer, 
 	description text, 
 	note_public text, 
 	note_private text, 

@@ -133,7 +133,7 @@ div.mainmenu.safra {
 	.item {
 		margin: 10px;
 		/* border: 5px solid red; */
-		width: 40rem;
+		width: 46rem;
 	}
 
 	#mapIndex {
@@ -177,7 +177,7 @@ div.mainmenu.safra {
 	}
 	.item {
 		flex: 0 0 auto;
-		margin: 10px;
+		margin: 10px 0 0 10px;
 	}
 	#mapList {
 		z-index: 0;
@@ -186,7 +186,7 @@ div.mainmenu.safra {
 	}
 	#mapCRUD {
 		z-index: 0;
-		width: 45%;
+		width: 29rem;
 		height: 40rem;
 	}
 	#mapShow {

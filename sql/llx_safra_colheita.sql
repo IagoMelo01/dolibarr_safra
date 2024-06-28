@@ -19,9 +19,6 @@ CREATE TABLE llx_safra_colheita(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	amount double DEFAULT NULL, 
-	qty real, 
-	fk_soc integer, 
 	fk_project integer, 
 	description text, 
 	note_public text, 
@@ -33,6 +30,8 @@ CREATE TABLE llx_safra_colheita(
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
 	model_pdf varchar(255), 
-	status integer NOT NULL
+	status integer NOT NULL, 
+	quantidade_colhida double(28,4) NOT NULL, 
+	data_colheita date NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

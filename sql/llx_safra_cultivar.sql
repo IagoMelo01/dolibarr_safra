@@ -19,8 +19,6 @@ CREATE TABLE llx_safra_cultivar(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	qty real, 
-	fk_soc integer, 
 	fk_project integer, 
 	description text, 
 	note_public text, 

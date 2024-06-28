@@ -558,7 +558,6 @@ __DATA_SPECIFICATION__
 |*cultura*|Read Cultura object of Safra , Create/Update Cultura object of Safra , Delete Cultura object of Safra , 
 |*talhao*|Read Talhao object of Safra , Create/Update Talhao object of Safra , Delete Talhao object of Safra , 
 |*analisesolo*|Read AnaliseSolo object of Safra , Create/Update AnaliseSolo object of Safra , Delete AnaliseSolo object of Safra , 
-|*planocultivo*|Read PlanoCultivo object of Safra , Create/Update PlanoCultivo object of Safra , Delete PlanoCultivo object of Safra , 
 |*colheita*|Read Colheita object of Safra , Create/Update Colheita object of Safra , Delete Colheita object of Safra , 
 |*evento*|Read Evento object of Safra , Create/Update Evento object of Safra , Delete Evento object of Safra , 
 |*recomendacaoadubo*|Read RecomendacaoAdubo object of Safra , Create/Update RecomendacaoAdubo object of Safra , Delete RecomendacaoAdubo object of Safra , 

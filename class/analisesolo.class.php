@@ -116,9 +116,6 @@ class AnaliseSolo extends CommonObject
 		"rowid" => array("type"=>"integer", "label"=>"TechnicalID", "enabled"=>"1", 'position'=>1, 'notnull'=>1, "visible"=>"0", "noteditable"=>"1", "index"=>"1", "css"=>"left", "comment"=>"Id"),
 		"ref" => array("type"=>"varchar(128)", "label"=>"Ref", "enabled"=>"1", 'position'=>20, 'notnull'=>1, "visible"=>"1", "index"=>"1", "searchall"=>"1", "showoncombobox"=>"1", "validate"=>"1", "comment"=>"Reference of object"),
 		"label" => array("type"=>"varchar(255)", "label"=>"Label", "enabled"=>"1", 'position'=>30, 'notnull'=>0, "visible"=>"1", "alwayseditable"=>"1", "searchall"=>"1", "css"=>"minwidth300", "cssview"=>"wordbreak", "help"=>"Help text", "showoncombobox"=>"2", "validate"=>"1",),
-		"amount" => array("type"=>"price", "label"=>"Amount", "enabled"=>"1", 'position'=>40, 'notnull'=>0, "visible"=>"1", "default"=>"null", "isameasure"=>"1", "help"=>"Help text for amount", "validate"=>"1",),
-		"qty" => array("type"=>"real", "label"=>"Qty", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "help"=>"Help text for quantity", "validate"=>"1",),
-		"fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
 		"fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"-1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
 		"description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
 		"note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
@@ -132,34 +129,31 @@ class AnaliseSolo extends CommonObject
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
 		"data_coleta" => array("type"=>"date", "label"=>"Data da coleta", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
-		"localizacao" => array("type"=>"varchar(255)", "label"=>"Localização", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Coordenadas GPS ou descrição do local de onde a amostra foi coletada.",),
+		"localizacao" => array("type"=>"varchar(255)", "label"=>"Localização", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Coordenadas GPS ou descrição do local de onde a amostra foi coletada.",),
 		"profundidade_amostra" => array("type"=>"double(28,4)", "label"=>"Profundidade da amostra", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"ph" => array("type"=>"double(28,4)", "label"=>"pH do solo", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
-		"materia_organica" => array("type"=>"double(28,4)", "label"=>"Matéria Orgânica", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Percentual de matéria orgânica presente no solo.",),
-		"n_total" => array("type"=>"double(28,4)", "label"=>"Nitrogênio Total", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Quantidade de nitrogênio disponível no solo (mg/kg ou ppm).",),
-		"fosforo" => array("type"=>"double(28,4)", "label"=>"Fósforo Disponível (P2O5)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Quantidade de fósforo disponível no solo (mg/kg ou ppm).",),
-		"potassio" => array("type"=>"double(28,4)", "label"=>"Potássio Disponível (K2O)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Quantidade de potássio disponível no solo (mg/kg ou ppm).",),
-		"calcio" => array("type"=>"double(28,4)", "label"=>"Cálcio (Ca)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Quantidade de cálcio disponível no solo (cmolc/kg).",),
-		"magnesio" => array("type"=>"double(28,4)", "label"=>"Magnésio (Mg)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Quantidade de magnésio disponível no solo (cmolc/kg).",),
-		"enxofre" => array("type"=>"double(28,4)", "label"=>"Enxofre (S)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de enxofre disponível no solo (mg/kg ou ppm).",),
-		"textura" => array("type"=>"varchar(128)", "label"=>"Textura do Solo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Classificação da textura do solo (arenoso, argiloso, siltoso, etc.).",),
-		"densidade" => array("type"=>"double(28,4)", "label"=>"Densidade do Solo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Densidade do solo (g/cm³).",),
-		"ctc" => array("type"=>"integer", "label"=>"Capacidade de Troca de Cátions (CTC)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Medida da capacidade do solo de reter cátions (cmolc/kg).",),
-		"saturacao_bases" => array("type"=>"integer", "label"=>"Saturação por Bases (V%)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1", "help"=>"Percentual de saturação por bases.",),
-		"aluminio" => array("type"=>"double(28,4)", "label"=>"Alumínio (Al)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de alumínio trocável no solo (cmolc/kg).",),
-		"hidrogenio" => array("type"=>"double(28,4)", "label"=>"Hidrogênio (H)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de hidrogênio trocável no solo (cmolc/kg).",),
-		"zinco" => array("type"=>"double(28,4)", "label"=>"Zinco (Zn)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de zinco disponível no solo (mg/kg ou ppm).",),
-		"cobre" => array("type"=>"double(28,4)", "label"=>"Cobre (Cu)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de cobre disponível no solo (mg/kg ou ppm).",),
-		"manganes" => array("type"=>"double(28,4)", "label"=>"Manganês (Mn)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de manganês disponível no solo (mg/kg ou ppm).",),
-		"ferro" => array("type"=>"double(28,4)", "label"=>"Ferro (Fe)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de ferro disponível no solo (mg/kg ou ppm).",),
-		"boro" => array("type"=>"double(28,4)", "label"=>"Boro (B)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "help"=>"Quantidade de boro disponível no solo (mg/kg ou ppm).",),
+		"materia_organica" => array("type"=>"double(28,4)", "label"=>"Matéria Orgânica", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Percentual de matéria orgânica presente no solo.",),
+		"n_total" => array("type"=>"double(28,4)", "label"=>"Nitrogênio Total", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Quantidade de nitrogênio disponível no solo (mg/kg ou ppm).",),
+		"fosforo" => array("type"=>"double(28,4)", "label"=>"Fósforo Disponível (P2O5)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Quantidade de fósforo disponível no solo (mg/kg ou ppm).",),
+		"potassio" => array("type"=>"double(28,4)", "label"=>"Potássio Disponível (K2O)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Quantidade de potássio disponível no solo (mg/kg ou ppm).",),
+		"calcio" => array("type"=>"double(28,4)", "label"=>"Cálcio (Ca)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Quantidade de cálcio disponível no solo (cmolc/kg).",),
+		"magnesio" => array("type"=>"double(28,4)", "label"=>"Magnésio (Mg)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Quantidade de magnésio disponível no solo (cmolc/kg).",),
+		"enxofre" => array("type"=>"double(28,4)", "label"=>"Enxofre (S)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de enxofre disponível no solo (mg/kg ou ppm).",),
+		"textura" => array("type"=>"varchar(128)", "label"=>"Textura do Solo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Classificação da textura do solo (arenoso, argiloso, siltoso, etc.).",),
+		"densidade" => array("type"=>"double(28,4)", "label"=>"Densidade do Solo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Densidade do solo (g/cm³).",),
+		"ctc" => array("type"=>"integer", "label"=>"Capacidade de Troca de Cátions (CTC)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Medida da capacidade do solo de reter cátions (cmolc/kg).",),
+		"saturacao_bases" => array("type"=>"integer", "label"=>"Saturação por Bases (V%)", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"3", "help"=>"Percentual de saturação por bases.",),
+		"aluminio" => array("type"=>"double(28,4)", "label"=>"Alumínio (Al)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de alumínio trocável no solo (cmolc/kg).",),
+		"hidrogenio" => array("type"=>"double(28,4)", "label"=>"Hidrogênio (H)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de hidrogênio trocável no solo (cmolc/kg).",),
+		"zinco" => array("type"=>"double(28,4)", "label"=>"Zinco (Zn)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de zinco disponível no solo (mg/kg ou ppm).",),
+		"cobre" => array("type"=>"double(28,4)", "label"=>"Cobre (Cu)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de cobre disponível no solo (mg/kg ou ppm).",),
+		"manganes" => array("type"=>"double(28,4)", "label"=>"Manganês (Mn)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de manganês disponível no solo (mg/kg ou ppm).",),
+		"ferro" => array("type"=>"double(28,4)", "label"=>"Ferro (Fe)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de ferro disponível no solo (mg/kg ou ppm).",),
+		"boro" => array("type"=>"double(28,4)", "label"=>"Boro (B)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "help"=>"Quantidade de boro disponível no solo (mg/kg ou ppm).",),
 	);
 	public $rowid;
 	public $ref;
 	public $label;
-	public $amount;
-	public $qty;
-	public $fk_soc;
 	public $fk_project;
 	public $description;
 	public $note_public;

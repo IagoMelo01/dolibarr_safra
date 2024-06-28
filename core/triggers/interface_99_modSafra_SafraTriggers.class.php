@@ -465,7 +465,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 						'feijao' => 6.0,
 						'feijaocaupi' => 5.5,
 						'girassol' => 6.5,
-						'mamona' => 6.0,
+						'mamona' => 6.0,   
 						'milho' => 6.0,
 						'soja' => 6.5,
 						'sorgo' => 6.0,

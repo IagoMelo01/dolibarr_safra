@@ -17,7 +17,6 @@
 -- BEGIN MODULEBUILDER INDEXES
 ALTER TABLE llx_safra_municipio ADD INDEX idx_safra_municipio_rowid (rowid);
 ALTER TABLE llx_safra_municipio ADD INDEX idx_safra_municipio_ref (ref);
-ALTER TABLE llx_safra_municipio ADD INDEX idx_safra_municipio_fk_soc (fk_soc);
 ALTER TABLE llx_safra_municipio ADD INDEX idx_safra_municipio_fk_project (fk_project);
 ALTER TABLE llx_safra_municipio ADD INDEX idx_safra_municipio_status (status);
 -- END MODULEBUILDER INDEXES

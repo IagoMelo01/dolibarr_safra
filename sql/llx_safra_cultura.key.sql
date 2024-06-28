@@ -17,7 +17,6 @@
 -- BEGIN MODULEBUILDER INDEXES
 ALTER TABLE llx_safra_cultura ADD INDEX idx_safra_cultura_rowid (rowid);
 ALTER TABLE llx_safra_cultura ADD INDEX idx_safra_cultura_ref (ref);
-ALTER TABLE llx_safra_cultura ADD INDEX idx_safra_cultura_fk_soc (fk_soc);
 ALTER TABLE llx_safra_cultura ADD INDEX idx_safra_cultura_status (status);
 ALTER TABLE llx_safra_cultura ADD INDEX idx_safra_cultura_embrapa_id (embrapa_id);
 -- END MODULEBUILDER INDEXES

@@ -116,8 +116,6 @@ class Cultivar extends CommonObject
 		"rowid" => array("type"=>"integer", "label"=>"TechnicalID", "enabled"=>"1", 'position'=>1, 'notnull'=>1, "visible"=>"0", "noteditable"=>"1", "index"=>"1", "css"=>"left", "comment"=>"Id"),
 		"ref" => array("type"=>"varchar(128)", "label"=>"Ref", "enabled"=>"1", 'position'=>20, 'notnull'=>1, "visible"=>"1", "index"=>"1", "searchall"=>"1", "showoncombobox"=>"1", "validate"=>"1", "comment"=>"Reference of object"),
 		"label" => array("type"=>"varchar(255)", "label"=>"Label", "enabled"=>"1", 'position'=>30, 'notnull'=>0, "visible"=>"1", "alwayseditable"=>"1", "searchall"=>"1", "css"=>"minwidth300", "cssview"=>"wordbreak", "help"=>"Help text", "showoncombobox"=>"2", "validate"=>"1",),
-		"qty" => array("type"=>"real", "label"=>"Qty", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "help"=>"Help text for quantity", "validate"=>"1",),
-		"fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
 		"fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"-1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
 		"description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
 		"note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
@@ -130,31 +128,29 @@ class Cultivar extends CommonObject
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "default"=>"1", "index"=>"1", "arrayofkeyval"=>array("{0:Rascunho" => "1:Validado,9:Cancelado}"), "validate"=>"1",),
-		"cultura" => array("type"=>"integer:cultura:safra/class/cultura.class.php[:1[:filter]]", "label"=>"Cultura", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
+		"cultura" => array("type"=>"integer:cultura:safra/class/cultura.class.php", "label"=>"Cultura", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 		"obtentor_mantenedor" => array("type"=>"varchar(255)", "label"=>"Obtentor/Mantenedor", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"rnc" => array("type"=>"varchar(128)", "label"=>"Número RNC (Registro Nacional de Cultivares)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"embrapa_id" => array("type"=>"integer", "label"=>"Id Embrapa", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"safra" => array("type"=>"varchar(128)", "label"=>"Safra (AAAA-AAAA) ex: 2023-2024", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"potencial_produtivo" => array("type"=>"double(28,4)", "label"=>"Potencial Produtivo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"uf" => array("type"=>"varchar(4)", "label"=>"UF", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"grupo" => array("type"=>"varchar(128)", "label"=>"Grupo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"floracao" => array("type"=>"double(28,4)", "label"=>"Floração", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"maturacao_fisiologica" => array("type"=>"double(28,4)", "label"=>"Maturação Fisiológica", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"enchimento_graos" => array("type"=>"double(28,4)", "label"=>"Enchimento de grãos", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"sistema_cultivo" => array("type"=>"varchar(255)", "label"=>"Sistema de cultivo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"genetica" => array("type"=>"varchar(255)", "label"=>"Genética", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"regiao" => array("type"=>"varchar(255)", "label"=>"Região", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"grupo_bioclimatico" => array("type"=>"varchar(255)", "label"=>"Grupo Bio Climático", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"observacao" => array("type"=>"text", "label"=>"Observação", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"data_atualizacao" => array("type"=>"date", "label"=>"Data de atualização", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"duracao_ciclo" => array("type"=>"double(28,4)", "label"=>"Duração Ciclo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"rnc" => array("type"=>"varchar(128)", "label"=>"Número RNC (Registro Nacional de Cultivares)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"embrapa_id" => array("type"=>"integer", "label"=>"Id Embrapa", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"safra" => array("type"=>"varchar(128)", "label"=>"Safra (AAAA-AAAA) ex: 2023-2024", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"potencial_produtivo" => array("type"=>"double(28,4)", "label"=>"Potencial Produtivo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"uf" => array("type"=>"varchar(4)", "label"=>"UF", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"grupo" => array("type"=>"varchar(128)", "label"=>"Grupo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"floracao" => array("type"=>"double(28,4)", "label"=>"Floração", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"maturacao_fisiologica" => array("type"=>"double(28,4)", "label"=>"Maturação Fisiológica", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"enchimento_graos" => array("type"=>"double(28,4)", "label"=>"Enchimento de grãos", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"sistema_cultivo" => array("type"=>"varchar(255)", "label"=>"Sistema de cultivo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"genetica" => array("type"=>"varchar(255)", "label"=>"Genética", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"regiao" => array("type"=>"varchar(255)", "label"=>"Região", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"grupo_bioclimatico" => array("type"=>"varchar(255)", "label"=>"Grupo Bio Climático", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"observacao" => array("type"=>"text", "label"=>"Observação", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"data_atualizacao" => array("type"=>"date", "label"=>"Data de atualização", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"duracao_ciclo" => array("type"=>"double(28,4)", "label"=>"Duração Ciclo", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
 		"cultivar" => array("type"=>"varchar(255)", "label"=>"cultivar", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
 	public $label;
-	public $qty;
-	public $fk_soc;
 	public $fk_project;
 	public $description;
 	public $note_public;

@@ -130,8 +130,8 @@ class Talhao extends CommonObject
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
 		"center" => array("type"=>"varchar(255)", "label"=>"center", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"0",),
 		"area" => array("type"=>"double(28,4)", "label"=>"Área", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "isameasure"=>"1",),
-		"wkt" => array("type"=>"text", "label"=>"wkt", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "cssview"=>"hidden",),
-		"bbox" => array("type"=>"text", "label"=>"bbox", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "cssview"=>"hidden",),
+		"wkt" => array("type"=>"text", "label"=>"wkt", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
+		"bbox" => array("type"=>"text", "label"=>"bbox", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
 		"geo_json" => array("type"=>"text", "label"=>"geo_json", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
 	);
 	public $rowid;

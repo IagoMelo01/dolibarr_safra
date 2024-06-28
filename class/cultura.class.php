@@ -62,7 +62,7 @@ class Cultura extends CommonObject
 	/**
 	 * @var string String with name of icon for cultura. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'cultura@safra' if picto is file 'img/object_cultura.png'.
 	 */
-	public $picto = 'fa-file';
+	public $picto = 'fa-seedling';
 
 
 	const STATUS_DRAFT = 0;
@@ -116,8 +116,6 @@ class Cultura extends CommonObject
 		"rowid" => array("type"=>"integer", "label"=>"TechnicalID", "enabled"=>"1", 'position'=>1, 'notnull'=>1, "visible"=>"0", "noteditable"=>"1", "index"=>"1", "css"=>"left", "comment"=>"Id"),
 		"ref" => array("type"=>"varchar(128)", "label"=>"Ref", "enabled"=>"1", 'position'=>20, 'notnull'=>1, "visible"=>"1", "index"=>"1", "searchall"=>"1", "showoncombobox"=>"1", "validate"=>"1", "comment"=>"Reference of object"),
 		"label" => array("type"=>"varchar(255)", "label"=>"Cultura", "enabled"=>"1", 'position'=>30, 'notnull'=>0, "visible"=>"1", "searchall"=>"1", "css"=>"minwidth300", "cssview"=>"wordbreak", "help"=>"Help text", "validate"=>"1",),
-		"qty" => array("type"=>"real", "label"=>"Qty", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "help"=>"Help text for quantity", "validate"=>"1",),
-		"fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
 		"description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
 		"note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
 		"note_private" => array("type"=>"html", "label"=>"NotePrivate", "enabled"=>"1", 'position'=>62, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
@@ -129,17 +127,15 @@ class Cultura extends CommonObject
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "default"=>"1", "index"=>"1", "arrayofkeyval"=>array("{0:Rascunho" => "1:Validado,9:Cancelado}"), "validate"=>"1",),
-		"embrapa_id" => array("type"=>"integer", "label"=>"Id Embrapa", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1", "index"=>"1",),
-		"necessidade_n" => array("type"=>"double(28,4)", "label"=>"Necessidade Nitrogênio(N) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"necessidade_p" => array("type"=>"double(28,4)", "label"=>"Necessidade Fósforo(P2O5) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"necessidade_k" => array("type"=>"double(28,4)", "label"=>"Necessidade Potássio(K2O) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"saturacao_bases_ideal" => array("type"=>"double(28,4)", "label"=>"Saturação por Bases Ideal (V%)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"embrapa_id" => array("type"=>"integer", "label"=>"Id Embrapa", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "index"=>"1",),
+		"necessidade_n" => array("type"=>"double(28,4)", "label"=>"Necessidade Nitrogênio(N) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"necessidade_p" => array("type"=>"double(28,4)", "label"=>"Necessidade Fósforo(P2O5) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"necessidade_k" => array("type"=>"double(28,4)", "label"=>"Necessidade Potássio(K2O) (kg/ha)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
+		"saturacao_bases_ideal" => array("type"=>"double(28,4)", "label"=>"Saturação por Bases Ideal (V%)", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3",),
 	);
 	public $rowid;
 	public $ref;
 	public $label;
-	public $qty;
-	public $fk_soc;
 	public $description;
 	public $note_public;
 	public $note_private;

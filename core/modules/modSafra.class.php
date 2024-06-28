@@ -336,91 +336,76 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][5] = 'delete';
 		$r++;
 		$this->rights[$r][0] = $this->numero . sprintf('%02d', (4 * 10) + 0 + 1);
-		$this->rights[$r][1] = 'Read PlanoCultivo object of Safra';
-		$this->rights[$r][4] = 'planocultivo';
-		$this->rights[$r][5] = 'read';
-		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (4 * 10) + 1 + 1);
-		$this->rights[$r][1] = 'Create/Update PlanoCultivo object of Safra';
-		$this->rights[$r][4] = 'planocultivo';
-		$this->rights[$r][5] = 'write';
-		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (4 * 10) + 2 + 1);
-		$this->rights[$r][1] = 'Delete PlanoCultivo object of Safra';
-		$this->rights[$r][4] = 'planocultivo';
-		$this->rights[$r][5] = 'delete';
-		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (5 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read Colheita object of Safra';
 		$this->rights[$r][4] = 'colheita';
 		$this->rights[$r][5] = 'read';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (5 * 10) + 1 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (4 * 10) + 1 + 1);
 		$this->rights[$r][1] = 'Create/Update Colheita object of Safra';
 		$this->rights[$r][4] = 'colheita';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (5 * 10) + 2 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (4 * 10) + 2 + 1);
 		$this->rights[$r][1] = 'Delete Colheita object of Safra';
 		$this->rights[$r][4] = 'colheita';
 		$this->rights[$r][5] = 'delete';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 0 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (5 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read Evento object of Safra';
 		$this->rights[$r][4] = 'evento';
 		$this->rights[$r][5] = 'read';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 1 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (5 * 10) + 1 + 1);
 		$this->rights[$r][1] = 'Create/Update Evento object of Safra';
 		$this->rights[$r][4] = 'evento';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 2 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (5 * 10) + 2 + 1);
 		$this->rights[$r][1] = 'Delete Evento object of Safra';
 		$this->rights[$r][4] = 'evento';
 		$this->rights[$r][5] = 'delete';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 0 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read RecomendacaoAdubo object of Safra';
 		$this->rights[$r][4] = 'recomendacaoadubo';
 		$this->rights[$r][5] = 'read';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 1 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 1 + 1);
 		$this->rights[$r][1] = 'Create/Update RecomendacaoAdubo object of Safra';
 		$this->rights[$r][4] = 'recomendacaoadubo';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 2 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 2 + 1);
 		$this->rights[$r][1] = 'Delete RecomendacaoAdubo object of Safra';
 		$this->rights[$r][4] = 'recomendacaoadubo';
 		$this->rights[$r][5] = 'delete';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (8 * 10) + 0 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read Aplicacao object of Safra';
 		$this->rights[$r][4] = 'aplicacao';
 		$this->rights[$r][5] = 'read';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (8 * 10) + 1 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 1 + 1);
 		$this->rights[$r][1] = 'Create/Update Aplicacao object of Safra';
 		$this->rights[$r][4] = 'aplicacao';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (8 * 10) + 2 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 2 + 1);
 		$this->rights[$r][1] = 'Delete Aplicacao object of Safra';
 		$this->rights[$r][4] = 'aplicacao';
 		$this->rights[$r][5] = 'delete';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (9 * 10) + 0 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (8 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read Municipio object of Safra';
 		$this->rights[$r][4] = 'municipio';
 		$this->rights[$r][5] = 'read';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (9 * 10) + 1 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (8 * 10) + 1 + 1);
 		$this->rights[$r][1] = 'Create/Update Municipio object of Safra';
 		$this->rights[$r][4] = 'municipio';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (9 * 10) + 2 + 1);
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (8 * 10) + 2 + 1);
 		$this->rights[$r][1] = 'Delete Municipio object of Safra';
 		$this->rights[$r][4] = 'municipio';
 		$this->rights[$r][5] = 'delete';
@@ -450,790 +435,776 @@ class modSafra extends DolibarrModules
 		);
 		/* END MODULEBUILDER TOPMENU */
 		/* BEGIN MODULEBUILDER LEFTMENU MYOBJECT */
-
-
-		/*LEFTMENU CULTURA*/
+		/* LEFTMENU CULTURA */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Cultura',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'cultura',
-			'url'=>'/safra/cultura_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "cultura", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Cultura',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'cultura',
+			 'url' => '/safra/cultura_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'cultura\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=cultura',
-            'type'=>'left',
-            'titre'=>'List Cultura',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_cultura_list',
-            'url'=>'/safra/cultura_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "cultura", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=cultura',
-            'type'=>'left',
-            'titre'=>'New Cultura',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_cultura_new',
-            'url'=>'/safra/cultura_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "cultura", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU CULTURA*/
-		/*LEFTMENU CULTIVAR*/
+		/* END LEFTMENU CULTURA */
+		/* LEFTMENU LIST CULTURA */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Cultivar',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'cultivar',
-			'url'=>'/safra/cultivar_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "cultivar", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultura',
+			 'type' => 'left',
+			 'titre' => 'List Cultura',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_cultura_list',
+			 'url' => '/safra/cultura_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'cultura\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=cultivar',
-            'type'=>'left',
-            'titre'=>'List Cultivar',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_cultivar_list',
-            'url'=>'/safra/cultivar_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "cultivar", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=cultivar',
-            'type'=>'left',
-            'titre'=>'New Cultivar',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_cultivar_new',
-            'url'=>'/safra/cultivar_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "cultivar", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU CULTIVAR*/
-		/*LEFTMENU TALHAO*/
+		/* END LEFTMENU LIST CULTURA */
+		/* LEFTMENU NEW CULTURA */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Talhao',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'talhao',
-			'url'=>'/safra/talhao_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "talhao", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultura',
+			 'type' => 'left',
+			 'titre' => 'New Cultura',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_cultura_new',
+			 'url' => '/safra/cultura_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'cultura\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=talhao',
-            'type'=>'left',
-            'titre'=>'List Talhao',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_talhao_list',
-            'url'=>'/safra/talhao_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "talhao", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=talhao',
-            'type'=>'left',
-            'titre'=>'New Talhao',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_talhao_new',
-            'url'=>'/safra/talhao_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "talhao", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU TALHAO*/
-		/*LEFTMENU NDVI*/
+		/* END LEFTMENU NEW CULTURA */
+		/* LEFTMENU CULTIVAR */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'NDVI',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'ndvi',
-			'url'=>'/safra/ndvi_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndvi", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Cultivar',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'cultivar',
+			 'url' => '/safra/cultivar_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'cultivar\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndvi',
-            'type'=>'left',
-            'titre'=>'List NDVI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_ndvi_list',
-            'url'=>'/safra/ndvi_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndvi", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndvi',
-            'type'=>'left',
-            'titre'=>'New NDVI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_ndvi_new',
-            'url'=>'/safra/ndvi_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndvi", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU NDVI*/
-		/*LEFTMENU SWIR*/
+		/* END LEFTMENU CULTIVAR */
+		/* LEFTMENU LIST CULTIVAR */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'SWIR',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'swir',
-			'url'=>'/safra/swir_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "swir", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultivar',
+			 'type' => 'left',
+			 'titre' => 'List Cultivar',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_cultivar_list',
+			 'url' => '/safra/cultivar_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'cultivar\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=swir',
-            'type'=>'left',
-            'titre'=>'List SWIR',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_swir_list',
-            'url'=>'/safra/swir_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "swir", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=swir',
-            'type'=>'left',
-            'titre'=>'New SWIR',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_swir_new',
-            'url'=>'/safra/swir_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "swir", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU SWIR*/
-		/*LEFTMENU NDWI*/
+		/* END LEFTMENU LIST CULTIVAR */
+		/* LEFTMENU NEW CULTIVAR */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'NDWI',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'ndwi',
-			'url'=>'/safra/ndwi_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndwi", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultivar',
+			 'type' => 'left',
+			 'titre' => 'New Cultivar',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_cultivar_new',
+			 'url' => '/safra/cultivar_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'cultivar\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndwi',
-            'type'=>'left',
-            'titre'=>'List NDWI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_ndwi_list',
-            'url'=>'/safra/ndwi_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndwi", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndwi',
-            'type'=>'left',
-            'titre'=>'New NDWI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_ndwi_new',
-            'url'=>'/safra/ndwi_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndwi", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU NDWI*/
-		/*LEFTMENU ANALISESOLO*/
+		/* END LEFTMENU NEW CULTIVAR */
+		/* LEFTMENU TALHAO */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'AnaliseSolo',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'analisesolo',
-			'url'=>'/safra/analisesolo_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "analisesolo", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Talhao',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'talhao',
+			 'url' => '/safra/talhao_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'talhao\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=analisesolo',
-            'type'=>'left',
-            'titre'=>'List AnaliseSolo',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_analisesolo_list',
-            'url'=>'/safra/analisesolo_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "analisesolo", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=analisesolo',
-            'type'=>'left',
-            'titre'=>'New AnaliseSolo',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_analisesolo_new',
-            'url'=>'/safra/analisesolo_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "analisesolo", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU ANALISESOLO*/
-		/*LEFTMENU PLANOCULTIVO*/
+		/* END LEFTMENU TALHAO */
+		/* LEFTMENU LIST TALHAO */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'PlanoCultivo',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'planocultivo',
-			'url'=>'/safra/planocultivo_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "planocultivo", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=talhao',
+			 'type' => 'left',
+			 'titre' => 'List Talhao',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_talhao_list',
+			 'url' => '/safra/talhao_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'talhao\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=planocultivo',
-            'type'=>'left',
-            'titre'=>'List PlanoCultivo',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_planocultivo_list',
-            'url'=>'/safra/planocultivo_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "planocultivo", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=planocultivo',
-            'type'=>'left',
-            'titre'=>'New PlanoCultivo',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_planocultivo_new',
-            'url'=>'/safra/planocultivo_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "planocultivo", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU PLANOCULTIVO*/
-		/*LEFTMENU JANELAPLANTIO*/
+		/* END LEFTMENU LIST TALHAO */
+		/* LEFTMENU NEW TALHAO */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'JanelaPlantio',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'janelaplantio',
-			'url'=>'/safra/janelaplantio_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "janelaplantio", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=talhao',
+			 'type' => 'left',
+			 'titre' => 'New Talhao',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_talhao_new',
+			 'url' => '/safra/talhao_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'talhao\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=janelaplantio',
-            'type'=>'left',
-            'titre'=>'List JanelaPlantio',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_janelaplantio_list',
-            'url'=>'/safra/janelaplantio_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "janelaplantio", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=janelaplantio',
-            'type'=>'left',
-            'titre'=>'New JanelaPlantio',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_janelaplantio_new',
-            'url'=>'/safra/janelaplantio_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "janelaplantio", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU JANELAPLANTIO*/
-		/*LEFTMENU ZONEAMENTO*/
+		/* END LEFTMENU NEW TALHAO */
+		/* LEFTMENU NDVI */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Zoneamento',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'zoneamento',
-			'url'=>'/safra/zoneamento_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "zoneamento", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'NDVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'ndvi',
+			 'url' => '/safra/ndvi_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=zoneamento',
-            'type'=>'left',
-            'titre'=>'List Zoneamento',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_zoneamento_list',
-            'url'=>'/safra/zoneamento_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "zoneamento", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=zoneamento',
-            'type'=>'left',
-            'titre'=>'New Zoneamento',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_zoneamento_new',
-            'url'=>'/safra/zoneamento_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "zoneamento", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU ZONEAMENTO*/
-		/*LEFTMENU EXPECTATIVAPRODUTIVIDADE*/
+		/* END LEFTMENU NDVI */
+		/* LEFTMENU LIST NDVI */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'ExpectativaProdutividade',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'expectativaprodutividade',
-			'url'=>'/safra/expectativaprodutividade_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "expectativaprodutividade", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
+			 'type' => 'left',
+			 'titre' => 'List NDVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_ndvi_list',
+			 'url' => '/safra/ndvi_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=expectativaprodutividade',
-            'type'=>'left',
-            'titre'=>'List ExpectativaProdutividade',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_expectativaprodutividade_list',
-            'url'=>'/safra/expectativaprodutividade_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "expectativaprodutividade", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=expectativaprodutividade',
-            'type'=>'left',
-            'titre'=>'New ExpectativaProdutividade',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_expectativaprodutividade_new',
-            'url'=>'/safra/expectativaprodutividade_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "expectativaprodutividade", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU EXPECTATIVAPRODUTIVIDADE*/
-		/*LEFTMENU COLHEITA*/
+		/* END LEFTMENU LIST NDVI */
+		/* LEFTMENU NEW NDVI */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Colheita',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'colheita',
-			'url'=>'/safra/colheita_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "colheita", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
+			 'type' => 'left',
+			 'titre' => 'New NDVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_ndvi_new',
+			 'url' => '/safra/ndvi_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=colheita',
-            'type'=>'left',
-            'titre'=>'List Colheita',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_colheita_list',
-            'url'=>'/safra/colheita_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "colheita", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=colheita',
-            'type'=>'left',
-            'titre'=>'New Colheita',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_colheita_new',
-            'url'=>'/safra/colheita_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "colheita", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU COLHEITA*/
-		/*LEFTMENU EVENTO*/
+		/* END LEFTMENU NEW NDVI */
+		/* LEFTMENU SWIR */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Evento',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'evento',
-			'url'=>'/safra/evento_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "evento", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'SWIR',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'swir',
+			 'url' => '/safra/swir_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'swir\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=evento',
-            'type'=>'left',
-            'titre'=>'List Evento',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_evento_list',
-            'url'=>'/safra/evento_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "evento", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=evento',
-            'type'=>'left',
-            'titre'=>'New Evento',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_evento_new',
-            'url'=>'/safra/evento_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "evento", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU EVENTO*/
-		/*LEFTMENU RECOMENDACAOADUBO*/
+		/* END LEFTMENU SWIR */
+		/* LEFTMENU LIST SWIR */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'RecomendacaoAdubo',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'recomendacaoadubo',
-			'url'=>'/safra/recomendacaoadubo_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "recomendacaoadubo", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
+			 'type' => 'left',
+			 'titre' => 'List SWIR',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_swir_list',
+			 'url' => '/safra/swir_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'swir\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=recomendacaoadubo',
-            'type'=>'left',
-            'titre'=>'List RecomendacaoAdubo',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_recomendacaoadubo_list',
-            'url'=>'/safra/recomendacaoadubo_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "recomendacaoadubo", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=recomendacaoadubo',
-            'type'=>'left',
-            'titre'=>'New RecomendacaoAdubo',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_recomendacaoadubo_new',
-            'url'=>'/safra/recomendacaoadubo_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "recomendacaoadubo", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU RECOMENDACAOADUBO*/
-		/*LEFTMENU EVI*/
+		/* END LEFTMENU LIST SWIR */
+		/* LEFTMENU NEW SWIR */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'EVI',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'evi',
-			'url'=>'/safra/evi_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "evi", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
+			 'type' => 'left',
+			 'titre' => 'New SWIR',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_swir_new',
+			 'url' => '/safra/swir_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'swir\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=evi',
-            'type'=>'left',
-            'titre'=>'List EVI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_evi_list',
-            'url'=>'/safra/evi_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "evi", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=evi',
-            'type'=>'left',
-            'titre'=>'New EVI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_evi_new',
-            'url'=>'/safra/evi_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "evi", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU EVI*/
-		/*LEFTMENU APLICACAO*/
+		/* END LEFTMENU NEW SWIR */
+		/* LEFTMENU NDWI */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Aplicacao',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'aplicacao',
-			'url'=>'/safra/aplicacao_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "aplicacao", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'NDWI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'ndwi',
+			 'url' => '/safra/ndwi_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=aplicacao',
-            'type'=>'left',
-            'titre'=>'List Aplicacao',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_aplicacao_list',
-            'url'=>'/safra/aplicacao_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "aplicacao", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=aplicacao',
-            'type'=>'left',
-            'titre'=>'New Aplicacao',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_aplicacao_new',
-            'url'=>'/safra/aplicacao_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "aplicacao", "write")',
-            'target'=>'',
-            'user'=>2
-        );
-
-		/*END LEFTMENU APLICACAO*/
-		/*LEFTMENU MUNICIPIO*/
+		/* END LEFTMENU NDWI */
+		/* LEFTMENU LIST NDWI */
 		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'Municipio',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'municipio',
-			'url'=>'/safra/municipio_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "municipio", "read")',
-			'target'=>'',
-			'user'=>2,
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
+			 'type' => 'left',
+			 'titre' => 'List NDWI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_ndwi_list',
+			 'url' => '/safra/ndwi_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
 		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=municipio',
-            'type'=>'left',
-            'titre'=>'List Municipio',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_municipio_list',
-            'url'=>'/safra/municipio_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "municipio", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=municipio',
-            'type'=>'left',
-            'titre'=>'New Municipio',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_municipio_new',
-            'url'=>'/safra/municipio_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "municipio", "write")',
-            'target'=>'',
-            'user'=>2
-        );
+		/* END LEFTMENU LIST NDWI */
+		/* LEFTMENU NEW NDWI */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
+			 'type' => 'left',
+			 'titre' => 'New NDWI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_ndwi_new',
+			 'url' => '/safra/ndwi_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW NDWI */
+		/* LEFTMENU ANALISESOLO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'AnaliseSolo',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'analisesolo',
+			 'url' => '/safra/analisesolo_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'analisesolo\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU ANALISESOLO */
+		/* LEFTMENU LIST ANALISESOLO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=analisesolo',
+			 'type' => 'left',
+			 'titre' => 'List AnaliseSolo',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_analisesolo_list',
+			 'url' => '/safra/analisesolo_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'analisesolo\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST ANALISESOLO */
+		/* LEFTMENU NEW ANALISESOLO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=analisesolo',
+			 'type' => 'left',
+			 'titre' => 'New AnaliseSolo',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_analisesolo_new',
+			 'url' => '/safra/analisesolo_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'analisesolo\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW ANALISESOLO */
+		/* LEFTMENU JANELAPLANTIO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'JanelaPlantio',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'janelaplantio',
+			 'url' => '/safra/janelaplantio_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'janelaplantio\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU JANELAPLANTIO */
+		/* LEFTMENU LIST JANELAPLANTIO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=janelaplantio',
+			 'type' => 'left',
+			 'titre' => 'List JanelaPlantio',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_janelaplantio_list',
+			 'url' => '/safra/janelaplantio_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'janelaplantio\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST JANELAPLANTIO */
+		/* LEFTMENU NEW JANELAPLANTIO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=janelaplantio',
+			 'type' => 'left',
+			 'titre' => 'New JanelaPlantio',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_janelaplantio_new',
+			 'url' => '/safra/janelaplantio_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'janelaplantio\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW JANELAPLANTIO */
+		/* LEFTMENU ZONEAMENTO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Zoneamento',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'zoneamento',
+			 'url' => '/safra/zoneamento_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'zoneamento\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU ZONEAMENTO */
+		/* LEFTMENU LIST ZONEAMENTO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=zoneamento',
+			 'type' => 'left',
+			 'titre' => 'List Zoneamento',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_zoneamento_list',
+			 'url' => '/safra/zoneamento_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'zoneamento\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST ZONEAMENTO */
+		/* LEFTMENU NEW ZONEAMENTO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=zoneamento',
+			 'type' => 'left',
+			 'titre' => 'New Zoneamento',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_zoneamento_new',
+			 'url' => '/safra/zoneamento_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'zoneamento\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW ZONEAMENTO */
+		/* LEFTMENU EXPECTATIVAPRODUTIVIDADE */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'ExpectativaProdutividade',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'expectativaprodutividade',
+			 'url' => '/safra/expectativaprodutividade_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'expectativaprodutividade\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU EXPECTATIVAPRODUTIVIDADE */
+		/* LEFTMENU LIST EXPECTATIVAPRODUTIVIDADE */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=expectativaprodutividade',
+			 'type' => 'left',
+			 'titre' => 'List ExpectativaProdutividade',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_expectativaprodutividade_list',
+			 'url' => '/safra/expectativaprodutividade_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'expectativaprodutividade\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST EXPECTATIVAPRODUTIVIDADE */
+		/* LEFTMENU NEW EXPECTATIVAPRODUTIVIDADE */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=expectativaprodutividade',
+			 'type' => 'left',
+			 'titre' => 'New ExpectativaProdutividade',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_expectativaprodutividade_new',
+			 'url' => '/safra/expectativaprodutividade_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'expectativaprodutividade\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW EXPECTATIVAPRODUTIVIDADE */
+		/* LEFTMENU COLHEITA */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Colheita',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'colheita',
+			 'url' => '/safra/colheita_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'colheita\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU COLHEITA */
+		/* LEFTMENU LIST COLHEITA */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=colheita',
+			 'type' => 'left',
+			 'titre' => 'List Colheita',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_colheita_list',
+			 'url' => '/safra/colheita_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'colheita\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST COLHEITA */
+		/* LEFTMENU NEW COLHEITA */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=colheita',
+			 'type' => 'left',
+			 'titre' => 'New Colheita',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_colheita_new',
+			 'url' => '/safra/colheita_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'colheita\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW COLHEITA */
+		/* LEFTMENU EVENTO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Evento',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'evento',
+			 'url' => '/safra/evento_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'evento\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU EVENTO */
+		/* LEFTMENU LIST EVENTO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evento',
+			 'type' => 'left',
+			 'titre' => 'List Evento',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_evento_list',
+			 'url' => '/safra/evento_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'evento\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST EVENTO */
+		/* LEFTMENU NEW EVENTO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evento',
+			 'type' => 'left',
+			 'titre' => 'New Evento',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_evento_new',
+			 'url' => '/safra/evento_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'evento\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW EVENTO */
+		/* LEFTMENU RECOMENDACAOADUBO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'RecomendacaoAdubo',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'recomendacaoadubo',
+			 'url' => '/safra/recomendacaoadubo_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'recomendacaoadubo\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU RECOMENDACAOADUBO */
+		/* LEFTMENU LIST RECOMENDACAOADUBO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=recomendacaoadubo',
+			 'type' => 'left',
+			 'titre' => 'List RecomendacaoAdubo',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_recomendacaoadubo_list',
+			 'url' => '/safra/recomendacaoadubo_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'recomendacaoadubo\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST RECOMENDACAOADUBO */
+		/* LEFTMENU NEW RECOMENDACAOADUBO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=recomendacaoadubo',
+			 'type' => 'left',
+			 'titre' => 'New RecomendacaoAdubo',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_recomendacaoadubo_new',
+			 'url' => '/safra/recomendacaoadubo_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'recomendacaoadubo\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW RECOMENDACAOADUBO */
+		/* LEFTMENU EVI */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'EVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'evi',
+			 'url' => '/safra/evi_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU EVI */
+		/* LEFTMENU LIST EVI */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
+			 'type' => 'left',
+			 'titre' => 'List EVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_evi_list',
+			 'url' => '/safra/evi_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST EVI */
+		/* LEFTMENU NEW EVI */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
+			 'type' => 'left',
+			 'titre' => 'New EVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_evi_new',
+			 'url' => '/safra/evi_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'evi\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW EVI */
+		/* LEFTMENU APLICACAO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Aplicacao',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'aplicacao',
+			 'url' => '/safra/aplicacao_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'aplicacao\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU APLICACAO */
+		/* LEFTMENU LIST APLICACAO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=aplicacao',
+			 'type' => 'left',
+			 'titre' => 'List Aplicacao',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_aplicacao_list',
+			 'url' => '/safra/aplicacao_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'aplicacao\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST APLICACAO */
+		/* LEFTMENU NEW APLICACAO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=aplicacao',
+			 'type' => 'left',
+			 'titre' => 'New Aplicacao',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_aplicacao_new',
+			 'url' => '/safra/aplicacao_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'aplicacao\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW APLICACAO */
+		/* LEFTMENU MUNICIPIO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra',
+			 'type' => 'left',
+			 'titre' => 'Municipio',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'municipio',
+			 'url' => '/safra/municipio_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'municipio\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU MUNICIPIO */
+		/* LEFTMENU LIST MUNICIPIO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=municipio',
+			 'type' => 'left',
+			 'titre' => 'List Municipio',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_municipio_list',
+			 'url' => '/safra/municipio_list.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'municipio\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU LIST MUNICIPIO */
+		/* LEFTMENU NEW MUNICIPIO */
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=municipio',
+			 'type' => 'left',
+			 'titre' => 'New Municipio',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_municipio_new',
+			 'url' => '/safra/municipio_card.php?action=create',
+			 'langs' => 'safra@safra',
+			 'position' => 1000,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'municipio\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		/* END LEFTMENU NEW MUNICIPIO */
 
-		/*END LEFTMENU MUNICIPIO*/
+
 		/* END MODULEBUILDER LEFTMENU MYOBJECT */
 		// Exports profiles provided by this module
 		$r = 1;
