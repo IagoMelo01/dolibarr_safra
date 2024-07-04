@@ -45,17 +45,17 @@ class modSafra extends DolibarrModules
 
 		// Id for module (must be unique). 
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
-		$this->numero = 500000; // TODO Go on page https://wiki.dolibarr.org/index.php/List_of_modules_id to reserve an id number for your module
+		$this->numero = 500010; // TODO Go on page https://wiki.dolibarr.org/index.php/List_of_modules_id to reserve an id number for your module
 
 		// Key text used to identify module (for permissions, menus, etc...)
 		$this->rights_class = 'safra';
 
 		// Family can be 'base' (core modules),'crm','financial','hr','projects','products','ecm','technic' (transverse modules),'interface' (link with external tools),'other','...'
 		// It is used to group modules by family in module setup page
-		$this->family = "other";
+		$this->family = "Farmevo";
 
 		// Module position in the family on 2 digits ('01', '10', '20', ...)
-		$this->module_position = '90';
+		$this->module_position = '10';
 
 		// Gives the possibility for the module, to provide his own family info and position of this family (Overwrite $this->family and $this->module_position. Avoid this)
 		//$this->familyinfo = array('myownfamily' => array('position' => '01', 'label' => $langs->trans("MyOwnFamily")));
@@ -69,10 +69,10 @@ class modSafra extends DolibarrModules
 
 		// Author
 		$this->editor_name = 'Farmevo';
-		$this->editor_url = '';
+		$this->editor_url = 'farmevo.com.br';
 
 		// Possible values for version are: 'development', 'experimental', 'dolibarr', 'dolibarr_deprecated', 'experimental_deprecated' or a version string like 'x.y.z'
-		$this->version = '1.0';
+		$this->version = 'development';
 		// Url to the file with your last numberversion of this module
 		//$this->url_last_version = 'http://www.example.com/versionmodule.txt';
 
@@ -127,7 +127,7 @@ class modSafra extends DolibarrModules
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/safra/temp","/safra/subdir");
-		$this->dirs = array("/safra/temp");
+		$this->dirs = array("/safra/temp", "/safra/json/ndvi", "/safra/json/ndmi", "/safra/json/evi", "/safra/json/savi");
 
 		// Config pages. Put here list of php page, stored into safra/admin directory, to use to setup module.
 		$this->config_page_url = array("setup.php@safra");
@@ -136,7 +136,7 @@ class modSafra extends DolibarrModules
 		// A condition to hide module
 		$this->hidden = false;
 		// List of module class names that must be enabled if this module is enabled. Example: array('always'=>array('modModuleToEnable1','modModuleToEnable2'), 'FR'=>array('modModuleToEnableFR')...)
-		$this->depends = array();
+		$this->depends = array('always'=>array('modProjet','modEventOrganization','modSociete','modHoliday','modExpenseReport','modRecruitment','modHRM','modPropale','modCommande','modExpedition','modContrat','modFicheinter','modTicket','modKnowledgeManagement','modPartnership','modFournisseur','modSupplierProposal','modReception','modIncoterm','modFacture','modTax','modSalaries','modLoan','modDon','modBanque','modPaymentByBankTransfer','modPrelevement','modMargin','modComptabilite','modProduct','modService','modStock','modProductBatch','modVariants','modBom','modMrp','modWorkstation','modAgenda','modResource','modMultiCurrency','modExternalRss','modBookmark','modBarcode','modWorkflow','modStripe','modPaypal','modPrinting','modReceiptPrinter','modCron','modSyslog'));
 		// List of module class names to disable if this one is disabled. Example: array('modModuleToDisable1', ...)
 		$this->requiredby = array();
 		// List of module class names this module is in conflict with. Example: array('modModuleToDisable1', ...)
@@ -455,7 +455,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultura',
 			 'type' => 'left',
-			 'titre' => 'List Cultura',
+			 'titre' => 'Lista Cultura',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_cultura_list',
 			 'url' => '/safra/cultura_list.php',
@@ -471,7 +471,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultura',
 			 'type' => 'left',
-			 'titre' => 'New Cultura',
+			 'titre' => 'Nova Cultura',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_cultura_new',
 			 'url' => '/safra/cultura_card.php?action=create',
@@ -503,7 +503,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultivar',
 			 'type' => 'left',
-			 'titre' => 'List Cultivar',
+			 'titre' => 'Lista Cultivar',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_cultivar_list',
 			 'url' => '/safra/cultivar_list.php',
@@ -519,7 +519,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=cultivar',
 			 'type' => 'left',
-			 'titre' => 'New Cultivar',
+			 'titre' => 'Novo Cultivar',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_cultivar_new',
 			 'url' => '/safra/cultivar_card.php?action=create',
@@ -535,7 +535,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra',
 			 'type' => 'left',
-			 'titre' => 'Talhao',
+			 'titre' => 'Talhão',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'talhao',
 			 'url' => '/safra/talhao_list.php',
@@ -551,7 +551,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=talhao',
 			 'type' => 'left',
-			 'titre' => 'List Talhao',
+			 'titre' => 'Lista Talhão',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_talhao_list',
 			 'url' => '/safra/talhao_list.php',
@@ -567,7 +567,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=talhao',
 			 'type' => 'left',
-			 'titre' => 'New Talhao',
+			 'titre' => 'Novo Talhão',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_talhao_new',
 			 'url' => '/safra/talhao_card.php?action=create',
@@ -599,7 +599,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
-			 'titre' => 'List NDVI',
+			 'titre' => 'Lista NDVI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_ndvi_list',
 			 'url' => '/safra/ndvi_list.php',
@@ -615,7 +615,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
-			 'titre' => 'New NDVI',
+			 'titre' => 'Novo NDVI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_ndvi_new',
 			 'url' => '/safra/ndvi_card.php?action=create',
@@ -647,7 +647,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
 			 'type' => 'left',
-			 'titre' => 'List SWIR',
+			 'titre' => 'Lista SWIR',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_swir_list',
 			 'url' => '/safra/swir_list.php',
@@ -663,7 +663,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
 			 'type' => 'left',
-			 'titre' => 'New SWIR',
+			 'titre' => 'Novo SWIR',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_swir_new',
 			 'url' => '/safra/swir_card.php?action=create',
@@ -695,7 +695,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
 			 'type' => 'left',
-			 'titre' => 'List NDWI',
+			 'titre' => 'Lista NDWI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_ndwi_list',
 			 'url' => '/safra/ndwi_list.php',
@@ -711,7 +711,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
 			 'type' => 'left',
-			 'titre' => 'New NDWI',
+			 'titre' => 'Novo NDWI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_ndwi_new',
 			 'url' => '/safra/ndwi_card.php?action=create',
@@ -743,7 +743,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=analisesolo',
 			 'type' => 'left',
-			 'titre' => 'List AnaliseSolo',
+			 'titre' => 'Lista AnaliseSolo',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_analisesolo_list',
 			 'url' => '/safra/analisesolo_list.php',
@@ -759,7 +759,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=analisesolo',
 			 'type' => 'left',
-			 'titre' => 'New AnaliseSolo',
+			 'titre' => 'Novo AnaliseSolo',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_analisesolo_new',
 			 'url' => '/safra/analisesolo_card.php?action=create',
@@ -791,7 +791,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=janelaplantio',
 			 'type' => 'left',
-			 'titre' => 'List JanelaPlantio',
+			 'titre' => 'Lista JanelaPlantio',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_janelaplantio_list',
 			 'url' => '/safra/janelaplantio_list.php',
@@ -807,7 +807,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=janelaplantio',
 			 'type' => 'left',
-			 'titre' => 'New JanelaPlantio',
+			 'titre' => 'Novo JanelaPlantio',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_janelaplantio_new',
 			 'url' => '/safra/janelaplantio_card.php?action=create',
@@ -839,7 +839,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=zoneamento',
 			 'type' => 'left',
-			 'titre' => 'List Zoneamento',
+			 'titre' => 'Lista Zoneamento',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_zoneamento_list',
 			 'url' => '/safra/zoneamento_list.php',
@@ -855,7 +855,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=zoneamento',
 			 'type' => 'left',
-			 'titre' => 'New Zoneamento',
+			 'titre' => 'Novo Zoneamento',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_zoneamento_new',
 			 'url' => '/safra/zoneamento_card.php?action=create',
@@ -887,7 +887,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=expectativaprodutividade',
 			 'type' => 'left',
-			 'titre' => 'List ExpectativaProdutividade',
+			 'titre' => 'Lista ExpectativaProdutividade',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_expectativaprodutividade_list',
 			 'url' => '/safra/expectativaprodutividade_list.php',
@@ -903,7 +903,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=expectativaprodutividade',
 			 'type' => 'left',
-			 'titre' => 'New ExpectativaProdutividade',
+			 'titre' => 'Novo ExpectativaProdutividade',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_expectativaprodutividade_new',
 			 'url' => '/safra/expectativaprodutividade_card.php?action=create',
@@ -935,7 +935,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=colheita',
 			 'type' => 'left',
-			 'titre' => 'List Colheita',
+			 'titre' => 'Lista Colheita',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_colheita_list',
 			 'url' => '/safra/colheita_list.php',
@@ -951,7 +951,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=colheita',
 			 'type' => 'left',
-			 'titre' => 'New Colheita',
+			 'titre' => 'Novo Colheita',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_colheita_new',
 			 'url' => '/safra/colheita_card.php?action=create',
@@ -983,7 +983,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evento',
 			 'type' => 'left',
-			 'titre' => 'List Evento',
+			 'titre' => 'Lista Evento',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_evento_list',
 			 'url' => '/safra/evento_list.php',
@@ -999,7 +999,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evento',
 			 'type' => 'left',
-			 'titre' => 'New Evento',
+			 'titre' => 'Novo Evento',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_evento_new',
 			 'url' => '/safra/evento_card.php?action=create',
@@ -1031,7 +1031,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=recomendacaoadubo',
 			 'type' => 'left',
-			 'titre' => 'List RecomendacaoAdubo',
+			 'titre' => 'Lista RecomendacaoAdubo',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_recomendacaoadubo_list',
 			 'url' => '/safra/recomendacaoadubo_list.php',
@@ -1047,7 +1047,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=recomendacaoadubo',
 			 'type' => 'left',
-			 'titre' => 'New RecomendacaoAdubo',
+			 'titre' => 'Novo RecomendacaoAdubo',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_recomendacaoadubo_new',
 			 'url' => '/safra/recomendacaoadubo_card.php?action=create',
@@ -1079,7 +1079,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
 			 'type' => 'left',
-			 'titre' => 'List EVI',
+			 'titre' => 'Lista EVI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_evi_list',
 			 'url' => '/safra/evi_list.php',
@@ -1095,7 +1095,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
 			 'type' => 'left',
-			 'titre' => 'New EVI',
+			 'titre' => 'Novo EVI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_evi_new',
 			 'url' => '/safra/evi_card.php?action=create',
@@ -1127,7 +1127,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=aplicacao',
 			 'type' => 'left',
-			 'titre' => 'List Aplicacao',
+			 'titre' => 'Lista Aplicacao',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_aplicacao_list',
 			 'url' => '/safra/aplicacao_list.php',
@@ -1143,7 +1143,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=aplicacao',
 			 'type' => 'left',
-			 'titre' => 'New Aplicacao',
+			 'titre' => 'Novo Aplicacao',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_aplicacao_new',
 			 'url' => '/safra/aplicacao_card.php?action=create',
@@ -1175,7 +1175,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=municipio',
 			 'type' => 'left',
-			 'titre' => 'List Municipio',
+			 'titre' => 'Lista Municipio',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_municipio_list',
 			 'url' => '/safra/municipio_list.php',
@@ -1191,7 +1191,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=municipio',
 			 'type' => 'left',
-			 'titre' => 'New Municipio',
+			 'titre' => 'Novo Municipio',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_municipio_new',
 			 'url' => '/safra/municipio_card.php?action=create',

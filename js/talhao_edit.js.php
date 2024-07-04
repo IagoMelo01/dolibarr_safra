@@ -139,7 +139,7 @@ function fetchNDVIData(layer) {
 
 function createAreaTooltip(layer) {
 	if (layer.areaTooltip) {
-		updateAreaTooltip(layer);
+		updateAreaTooltip(layer); 
 		return;
 	}
 
