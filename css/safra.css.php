@@ -181,8 +181,8 @@ div.mainmenu.safra {
 	}
 	#mapList {
 		z-index: 0;
-		width: 45%;
-		height: 650px;
+		width: 29rem;
+		height: 40rem;
 	}
 	#mapCRUD {
 		z-index: 0;

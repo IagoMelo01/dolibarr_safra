@@ -1292,6 +1292,13 @@ class modSafra extends DolibarrModules
 			return -1; // Do not activate module if error 'not allowed' returned when loading module SQL queries (the _load_table run sql with run_sql with the error allowed parameter set to 'default')
 		}
 
+		// include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+
+		// $extrafields = new ExtraFields($this->db);
+
+		// $r1 = $extrafields->addExtraField('talhao', 'Talhão', 'link', 100, null, 'projet', 0, 1, null, array('options' => ""))
+
+
 		// Create extrafields during init
 		//include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 		//$extrafields = new ExtraFields($this->db);

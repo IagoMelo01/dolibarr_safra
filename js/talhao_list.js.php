@@ -6,7 +6,7 @@
 <script src="./js/wellknown.js"></script>
 
 <script>
-    var map = L.map('mapShow').setView([-17.047558, -46.824176], 13);
+    var map = L.map('mapList').setView([-17.047558, -46.824176], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: 'Map data &copy; OpenStreetMap contributors'
@@ -23,14 +23,21 @@ googleHybrid.addTo(map);
 
 
 var drawnPolygon
-drawnPolygon = renderGeoJSON();
+// drawnPolygon = renderGeoJSON();
+
+if(json_pol){
+	console.log(json_pol);
+	json_pol.forEach((data) => {
+		renderGeoJSON(data);
+	});
+}
 
 
-function renderGeoJSON() {
-	var geojsonInput = document.getElementsByClassName("fieldname_geo_json")[1].children[0].innerHTML;
-    console.log(geojsonInput);
-	if (geojsonInput) {
-		var geojsonObject = JSON.parse(geojsonInput);
+function renderGeoJSON(data) {
+	// var geojsonInput = document.getElementsByClassName("fieldname_geo_json")[1].children[0].innerHTML;
+    // console.log(geojsonInput);
+	if (data) {
+		var geojsonObject = JSON.parse(data);
 		var geojsonLayer = L.geoJSON(geojsonObject);
 		drawnItems.addLayer(geojsonLayer);
 		map.fitBounds(geojsonLayer.getBounds());

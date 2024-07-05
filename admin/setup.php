@@ -95,24 +95,19 @@ $formSetup = new FormSetup($db);
 // Enter here all parameters in your setup page
 
 // Setup conf for selection of an URL
-$item = $formSetup->newItem('SAFRA_MYPARAM1');
-$item->fieldOverride = (empty($_SERVER['HTTPS']) ? 'http://' : 'https://') . $_SERVER['HTTP_HOST'];
-$item->cssClass = 'minwidth500';
+$item = $formSetup->newItem('SAFRA_FAZENDA')->setAsString();
 
 // Setup conf for selection of a simple string input
-$item = $formSetup->newItem('SAFRA_MYPARAM2');
-$item->defaultFieldValue = 'default value';
+$item = $formSetup->newItem('SAFRA_LATITUDE')->setAsString();
 
 // Setup conf for selection of a simple textarea input but we replace the text of field title
-$item = $formSetup->newItem('SAFRA_MYPARAM3');
-$item->nameText = $item->getNameText().' more html text ';
+$item = $formSetup->newItem('SAFRA_LONGITUDE')->setAsString();
 
 // Setup conf for a selection of a thirdparty
-$item = $formSetup->newItem('SAFRA_MYPARAM4');
-$item->setAsThirdpartyType();
+$item = $formSetup->newItem('SAFRA_API_SENTINELHUB')->setAsString();
 
 // Setup conf for a selection of a boolean
-$formSetup->newItem('SAFRA_MYPARAM5')->setAsYesNo();
+$formSetup->newItem('SAFRA_API_EMBRAPA')->setAsString();
 
 // Setup conf for a selection of an email template of type thirdparty
 $formSetup->newItem('SAFRA_MYPARAM6')->setAsEmailTemplate('thirdparty');
