@@ -204,6 +204,10 @@ div.mainmenu.safra {
 		width: 95%;
 		height: 650px;
 	}
+	#mapIndex {
+		width: 100%;
+		height: 30rem;
+	}
 }
 
 

@@ -73,7 +73,7 @@ map.on('draw:edited', function (e) {
 function updateInputs(layer) {
     var bounds = layer.getBounds();
     var bbox = bounds.toBBoxString();
-    var geojson = layer.toGeoJSON();
+    var geojson = layer.toGeoJSON(); 
     var wkt = wellknown.stringify(geojson);
     var encondedWKT = encodeURIComponent(wkt);
     var input_geojson = document.getElementById("geo_json")

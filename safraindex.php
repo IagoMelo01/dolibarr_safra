@@ -57,6 +57,7 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+include_once './class/talhao.class.php';
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
@@ -106,7 +107,27 @@ llxHeader("", $langs->trans("SafraArea"), '', '', 0, 0, '', '', '', 'mod-safra p
 
 print load_fiche_titre($langs->trans("SafraArea"), '', 'safra.png@safra');
 
-print '<div class="fichecenter"><div class="fichethirdleft">';
+print '<div class="fichecenter">';
+
+?>
+
+<div class="container">
+	<div id="mapIndex" class="item"></div>
+</div>
+
+<?php
+
+print '<div class="fichethirdleft">';
+
+$obj_talhao = new Talhao($db);
+$list_talho = $obj_talhao->fetchAll();
+$json_data = [];
+$area_array = [];
+foreach ($list_talho as $key => $talhao) {
+	$json_data[] = $talhao->geo_json;
+	$area_array[] = $talhao->area;
+	print $talhao->getKanbanView();
+}
 
 
 /* BEGIN MODULEBUILDER DRAFT MYOBJECT
@@ -187,7 +208,7 @@ print '</div><div class="fichetwothirdright">';
 $NBMAX = getDolGlobalInt('MAIN_SIZE_SHORTLIST_LIMIT');
 $max = getDolGlobalInt('MAIN_SIZE_SHORTLIST_LIMIT');
 
-/* BEGIN MODULEBUILDER LASTMODIFIED MYOBJECT
+/* BEGIN MODULEBUILDER LASTMODIFIED MYOBJECT */
 // Last modified myobject
 if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 	$sql = "SELECT s.rowid, s.ref, s.label, s.date_creation, s.tms";
@@ -237,9 +258,24 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 		print "</table><br>";
 	}
 }
-*/
+/**/
+
+
+
+
+?>
+
+<script>
+	let json = <?php echo json_encode($json_data); ?>;
+	let area_array = <?php echo json_encode($area_array); ?>
+</script>
+
+<?php
 
 print '</div></div>';
+
+// include do script
+include_once "./js/talhao_index.js.php";
 
 // End of page
 llxFooter();

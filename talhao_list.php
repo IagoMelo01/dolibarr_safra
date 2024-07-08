@@ -841,7 +841,7 @@ while ($i < $imaxinloop) {
 
 		print '</tr>'."\n";
 	}
-	$josn_pol[]=$object->geo_json;
+	$json_pol[]=$object->geo_json;
 	$i++;
 }
 
@@ -897,7 +897,7 @@ if (in_array('builddoc', array_keys($arrayofmassactions)) && ($nbtotalofrecords 
 ?>
 
 <script>
-	let json_pol = <?php echo json_encode($josn_pol); ?>
+	let json_pol = <?php echo json_encode($json_pol); ?>
 </script>
 
 <?php
