@@ -20,3 +20,5 @@
 *.back
 /.editorconfig
 /.gitattributes
+/json/ndvi/*.json
+/json/ndmi/*.json

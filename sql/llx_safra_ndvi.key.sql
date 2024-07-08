@@ -17,9 +17,6 @@
 -- BEGIN MODULEBUILDER INDEXES
 ALTER TABLE llx_safra_ndvi ADD INDEX idx_safra_ndvi_rowid (rowid);
 ALTER TABLE llx_safra_ndvi ADD INDEX idx_safra_ndvi_ref (ref);
-ALTER TABLE llx_safra_ndvi ADD INDEX idx_safra_ndvi_fk_soc (fk_soc);
-ALTER TABLE llx_safra_ndvi ADD INDEX idx_safra_ndvi_fk_project (fk_project);
-ALTER TABLE llx_safra_ndvi ADD CONSTRAINT llx_safra_ndvi_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES llx_user(rowid);
 ALTER TABLE llx_safra_ndvi ADD INDEX idx_safra_ndvi_status (status);
 -- END MODULEBUILDER INDEXES
 

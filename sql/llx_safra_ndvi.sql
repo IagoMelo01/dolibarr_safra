@@ -19,10 +19,6 @@ CREATE TABLE llx_safra_ndvi(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	amount double DEFAULT NULL, 
-	qty real, 
-	fk_soc integer, 
-	fk_project integer, 
 	description text, 
 	note_public text, 
 	note_private text, 
@@ -33,6 +29,9 @@ CREATE TABLE llx_safra_ndvi(
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
 	model_pdf varchar(255), 
-	status integer NOT NULL
+	status integer NOT NULL, 
+	data date NOT NULL, 
+	talhao integer, 
+	caminho_json text NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

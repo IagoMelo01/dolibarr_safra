@@ -58,6 +58,7 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
+include_once './class/ndvi.class.php';
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
@@ -271,6 +272,8 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 </script>
 
 <?php
+$ndvi = new NDVI($db);
+$ndvi->requestNDVIData($user);
 
 print '</div></div>';
 

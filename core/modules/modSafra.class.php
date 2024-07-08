@@ -263,6 +263,20 @@ class modSafra extends DolibarrModules
 			//      'test' => 'isModEnabled("safra")',
 			//      'priority' => 50,
 			//  ),
+			 0 => array(
+			     'label' => 'Request NDVI',
+			     'jobtype' => 'method',
+			     'class' => '/safra/class/ndvi.class.php',
+			     'objectname' => 'ndvi',
+			     'method' => 'requestNDVIData',
+			     'parameters' => '',
+			     'comment' => 'Busca o geojson ndvi do sentinel hub',
+			     'frequency' => 1,
+			     'unitfrequency' => 604800,
+			     'status' => 0,
+			     'test' => 'isModEnabled("safra")',
+			     'priority' => 50,
+			 ),
 		);
 		/* END MODULEBUILDER CRON */
 		// Example: $this->cronjobs=array(
