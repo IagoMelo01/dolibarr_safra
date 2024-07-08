@@ -30,7 +30,7 @@ CREATE TABLE llx_safra_ndvi(
 	import_key varchar(14), 
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
-	data date NOT NULL, 
+	data date, 
 	talhao integer, 
 	caminho_json text NOT NULL
 	-- END MODULEBUILDER FIELDS

@@ -127,7 +127,7 @@ class NDVI extends CommonObject
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
-		"data" => array("type"=>"date", "label"=>"Data", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
+		"data" => array("type"=>"date", "label"=>"Data", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"talhao" => array("type"=>"integer:talhao:safra/class/talhao.class.php", "label"=>"Talhão", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"caminho_json" => array("type"=>"text", "label"=>"caminho json", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 	);
@@ -1288,7 +1288,7 @@ class NDVI extends CommonObject
 			$ndvi->talhao = $key->id;
 			$ndvi->date_creation = dol_now();
 			$ndvi->caminho_json = $file_path;
-			$ndvi->create($user, true);
+			$ndvi->create($user);
 
 		}
 	}
