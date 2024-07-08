@@ -32,8 +32,9 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
-include_once './class/talhao.class.php';
-include_once './class/ndvi.class.php';
+include_once DOL_DOCUMENT_ROOT.'/custom/safra/class/talhao.class.php';
+include_once DOL_DOCUMENT_ROOT.'/custom/safra/class/ndvi.class.php';
+include_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
@@ -52,6 +53,16 @@ if (isset($user->socid) && $user->socid > 0) {
 global $conf;
 echo '<pre>';
 print_r($conf);
+echo '</pre>';
+echo '<hr>';
+
+
+
+$user = new User($db);
+$user->fetch(1);
+
+echo '<pre>';
+print_r($user);
 echo '</pre>';
 
 

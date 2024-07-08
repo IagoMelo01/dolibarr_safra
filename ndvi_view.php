@@ -121,14 +121,29 @@ print '<div class="fichecenter">';
 print '<div class="fichethirdleft">';
 
 $obj_talhao = new Talhao($db);
-$list_talho = $obj_talhao->fetchAll();
+$list_talhao = $obj_talhao->fetchAll();
 $json_data = [];
 $area_array = [];
-foreach ($list_talho as $key => $talhao) {
+$name_array = [];
+foreach ($list_talhao as $key => $talhao) {
+    if($talhao->label){
+        $name_array[] = $talhao->label;
+    } else {
+        $name_array[] = $talhao->ref;
+    }
 	$json_data[] = $talhao->geo_json;
 	$area_array[] = $talhao->area;
-	print $talhao->getKanbanView();
+	// print $talhao->getKanbanView();
 }
+
+?>
+
+<div id="seletores-ndvi">
+    <strong>Talhão: </strong><select name="talhao_list" id="talhao_list"></select>
+</div>
+
+
+<?php
 
 
 /* BEGIN MODULEBUILDER DRAFT MYOBJECT
@@ -267,6 +282,7 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 ?>
 
 <script>
+    let talhao_array = [<?php foreach($name_array as $key){echo "'".$key."'" . ',';}; ?>]
 	let json = <?php echo json_encode($json_data); ?>;
 	let area_array = <?php echo json_encode($area_array); ?>
 </script>
@@ -278,7 +294,7 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 print '</div></div>';
 
 // include do script
-include_once "./js/talhao_index.js.php";
+include_once "./js/ndvi_view.js.php";
 
 // End of page
 llxFooter();

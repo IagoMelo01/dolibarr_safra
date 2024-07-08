@@ -88,4 +88,29 @@
             .setContent(readableArea)
             .setLatLng(latlng);
     }
+
+    const selectElement = document.getElementById('talhao_list');
+
+    // Função para adicionar opções ao <select>
+    function adicionarOpcoes(select, opcoes) {
+        let i = 0;
+        opcoes.forEach(opcao => {
+            const optionElement = document.createElement('option');
+            optionElement.value = i;
+            optionElement.textContent = opcao;
+            select.appendChild(optionElement);
+            i++;
+        });
+    }
+
+    // Adiciona as opções ao <select>
+    adicionarOpcoes(selectElement, talhao_array);
+
+    function aoMudar(event) {
+        const opcaoSelecionada = event.target.value;
+        mensagemElement.textContent = `Você selecionou: ${opcaoSelecionada}`;
+    }
+
+    // Adiciona o ouvinte de eventos para o evento de mudança
+    selectElement.addEventListener('change', aoMudar);
 </script>

@@ -1209,9 +1209,16 @@ class NDVI extends CommonObject
 	 * @param Talhao $talhao The specific talhao to fetch data for (optional)
 	 * @return void
 	 */
-	public function requestNDVIData($user = null, $time = null, Talhao $talhao = null)
+	public function requestNDVIData(User $user = null, $time = null, Talhao $talhao = null)
 	{
 		include_once DOL_DOCUMENT_ROOT.'/custom/safra/class/talhao.class.php';
+		include_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
+		
+		if(!$user){
+			$user = new User($this->db);
+			$user->fetch(1);
+		}
+
 		if(!$talhao){
 			$talhao = new Talhao($this->db);
 			$talhao = $talhao->fetchAll();
@@ -1285,9 +1292,10 @@ class NDVI extends CommonObject
 			
 			$ndvi = new NDVI($this->db);
 			$ndvi->ref = $file_name;
+			$ndvi->label = $time;
 			$ndvi->talhao = $key->id;
 			$ndvi->date_creation = dol_now();
-			$ndvi->caminho_json = $file_path;
+			$ndvi->caminho_json = './json/ndvi/'. $file_name .'.json';
 			$ndvi->create($user);
 
 		}

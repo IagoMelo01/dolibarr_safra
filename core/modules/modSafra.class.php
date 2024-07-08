@@ -424,6 +424,11 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'municipio';
 		$this->rights[$r][5] = 'delete';
 		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (9 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read NDVI object of Safra';
+		$this->rights[$r][4] = 'ndvi';
+		$this->rights[$r][5] = 'read';
+		$r++;
 		
 		/* END MODULEBUILDER PERMISSIONS */
 
@@ -600,7 +605,7 @@ class modSafra extends DolibarrModules
 			 'titre' => 'NDVI',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'ndvi',
-			 'url' => '/safra/ndvi_list.php',
+			 'url' => '/safra/ndvi_view.php',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
 			 'enabled' => 'isModEnabled(\'safra\')',
