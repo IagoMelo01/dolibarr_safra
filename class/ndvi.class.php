@@ -1222,6 +1222,10 @@ class NDVI extends CommonObject
 		if(!$talhao){
 			$talhao = new Talhao($this->db);
 			$talhao = $talhao->fetchAll();
+		} else {
+			$t_id = $talhao;
+			$talhao = new Talhao($this->db);
+			$talhao = $talhao->fetch($t_id);
 		}
 		global $conf;
 		// print_r($conf);
@@ -1233,6 +1237,8 @@ class NDVI extends CommonObject
 			$t2 = date('Y-m-d', strtotime('+5 day'));
 			$time = $t1 . '/' . $t2;
 		}
+
+		$cont = 0;
 
 		foreach($talhao as $key){
 			// Configuração inicial do cURL
@@ -1259,11 +1265,12 @@ class NDVI extends CommonObject
 				'CRS' => 'CRS:84',      // Sistema de referência coordenado
 				'TIME' => $time,  // Intervalo de tempo para dados de satélite
 				'GEOMETRY' => $key->wkt,
-				'SHOWLOGO' => 'false'
+				'SHOWLOGO' => 'false',
+				'MAXCC' => '100'
 			);
 	
 			// Configura a URL com os parâmetros
-			echo $url . '?' . http_build_query($params);
+			// echo $url . '?' . http_build_query($params);
 			curl_setopt($ch, CURLOPT_URL, $url . '?' . http_build_query($params));
 	
 			// Executa a sessão cURL
@@ -1277,7 +1284,10 @@ class NDVI extends CommonObject
 			// Fecha a sessão cURL
 			curl_close($ch);
 
-			$file_name = str_replace('/', '_', $time).'_'.time().'_'.$key->ref;
+			$file_name = str_replace('/', '_', $time).'_'.$key->id;
+			// echo '<pre>';
+			// print_r($key);
+			// echo '</pre>';
 	
 			// Define o caminho do arquivo para salvar a resposta
 			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/ndvi/'. $file_name .'.json'; // Altere para o diretório desejado
@@ -1285,9 +1295,12 @@ class NDVI extends CommonObject
 			
 			// Salva a resposta em um arquivo
 			if (!file_put_contents($file_path, $response)) {
-				echo "Erro ao salvar o arquivo.";
+				// echo "Erro ao salvar o arquivo.";
 			} else {
-				echo "Arquivo salvo com sucesso em: " . $file_path;
+				if(filesize($file_path)<1000 && $cont == 0){
+					echo "sem dados para esse periodo!";
+					$cont++;
+				}
 			}
 			
 			$ndvi = new NDVI($this->db);
