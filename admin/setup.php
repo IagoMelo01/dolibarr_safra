@@ -107,10 +107,11 @@ $item = $formSetup->newItem('SAFRA_LONGITUDE')->setAsString();
 $item = $formSetup->newItem('SAFRA_API_SENTINELHUB')->setAsString();
 
 // Setup conf for a selection of a boolean
-$formSetup->newItem('SAFRA_API_EMBRAPA')->setAsString();
+$formSetup->newItem('SAFRA_API_EMBRAPA_PUBLIC')->setAsString();
+$formSetup->newItem('SAFRA_API_EMBRAPA_PRIVATE')->setAsString();
 
 // Setup conf for a selection of an email template of type thirdparty
-$formSetup->newItem('SAFRA_MYPARAM6')->setAsEmailTemplate('thirdparty');
+$formSetup->newItem('SAFRA_MUNICIPIO')->setAsMultiSelect('llx_safra_municipio');
 
 // Setup conf for a selection of a secured key
 //$formSetup->newItem('SAFRA_MYPARAM7')->setAsSecureKey();

@@ -19,9 +19,6 @@ CREATE TABLE llx_safra_recomendacaoadubo(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	amount double DEFAULT NULL, 
-	qty real, 
-	fk_soc integer, 
 	fk_project integer, 
 	description text, 
 	note_public text, 
@@ -35,7 +32,6 @@ CREATE TABLE llx_safra_recomendacaoadubo(
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
 	analise_solo integer NOT NULL, 
-	recomendacao text, 
-	plano_cultivo integer NOT NULL
+	recomendacao text
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

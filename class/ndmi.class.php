@@ -18,20 +18,20 @@
  */
 
 /**
- * \file        class/ndvi.class.php
+ * \file        class/ndmi.class.php
  * \ingroup     safra
- * \brief       This file is a CRUD class file for NDVI (Create/Read/Update/Delete)
+ * \brief       This file is a CRUD class file for NDMI (Create/Read/Update/Delete)
  */
 
 // Put here all includes required by your class file
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
 /**
- * Class for NDVI
+ * Class for NDMI
  */
-class NDVI extends CommonObject
+class NDMI extends CommonObject
 {
 	/**
 	 * @var string ID of module.
@@ -41,12 +41,12 @@ class NDVI extends CommonObject
 	/**
 	 * @var string ID to identify managed object.
 	 */
-	public $element = 'ndvi';
+	public $element = 'ndmi';
 
 	/**
 	 * @var string Name of table without prefix where object is stored. This is also the key used for extrafields management.
 	 */
-	public $table_element = 'safra_ndvi';
+	public $table_element = 'safra_ndmi';
 
 	/**
 	 * @var int  	Does this object support multicompany module ?
@@ -60,7 +60,7 @@ class NDVI extends CommonObject
 	public $isextrafieldmanaged = 1;
 
 	/**
-	 * @var string String with name of icon for ndvi. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'ndvi@safra' if picto is file 'img/object_ndvi.png'.
+	 * @var string String with name of icon for ndmi. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'ndmi@safra' if picto is file 'img/object_ndmi.png'.
 	 */
 	public $picto = 'fa-file';
 
@@ -156,32 +156,32 @@ class NDVI extends CommonObject
 	// /**
 	//  * @var string    Name of subtable line
 	//  */
-	// public $table_element_line = 'safra_ndviline';
+	// public $table_element_line = 'safra_ndmiline';
 
 	// /**
 	//  * @var string    Field with ID of parent key if this object has a parent
 	//  */
-	// public $fk_element = 'fk_ndvi';
+	// public $fk_element = 'fk_ndmi';
 
 	// /**
 	//  * @var string    Name of subtable class that manage subtable lines
 	//  */
-	// public $class_element_line = 'NDVIline';
+	// public $class_element_line = 'NDMIline';
 
 	// /**
 	//  * @var array	List of child tables. To test if we can delete object.
 	//  */
-	// protected $childtables = array('mychildtable' => array('name'=>'NDVI', 'fk_element'=>'fk_ndvi'));
+	// protected $childtables = array('mychildtable' => array('name'=>'NDMI', 'fk_element'=>'fk_ndmi'));
 
 	// /**
 	//  * @var array    List of child tables. To know object to delete on cascade.
 	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
 	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
 	//  */
-	// protected $childtablesoncascade = array('safra_ndvidet');
+	// protected $childtablesoncascade = array('safra_ndmidet');
 
 	// /**
-	//  * @var NDVILine[]     Array of subtable lines
+	//  * @var NDMILine[]     Array of subtable lines
 	//  */
 	// public $lines = array();
 
@@ -206,7 +206,7 @@ class NDVI extends CommonObject
 		}
 
 		// Example to show how to set values of fields definition dynamically
-		/*if ($user->hasRight('safra', 'ndvi', 'read')) {
+		/*if ($user->hasRight('safra', 'ndmi', 'read')) {
 			$this->fields['myfield']['visible'] = 1;
 			$this->fields['myfield']['noteditable'] = 0;
 		}*/
@@ -281,10 +281,10 @@ class NDVI extends CommonObject
 
 		// Clear fields
 		if (property_exists($object, 'ref')) {
-			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_" . $object->ref : $this->fields['ref']['default'];
+			$object->ref = empty($this->fields['ref']['default']) ? "Copy_Of_".$object->ref : $this->fields['ref']['default'];
 		}
 		if (property_exists($object, 'label')) {
-			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf") . " " . $object->label : $this->fields['label']['default'];
+			$object->label = empty($this->fields['label']['default']) ? $langs->trans("CopyOf")." ".$object->label : $this->fields['label']['default'];
 		}
 		if (property_exists($object, 'status')) {
 			$object->status = self::STATUS_DRAFT;
@@ -397,12 +397,12 @@ class NDVI extends CommonObject
 
 		$sql = "SELECT ";
 		$sql .= $this->getFieldList('t');
-		$sql .= " FROM " . $this->db->prefix() . $this->table_element . " as t";
+		$sql .= " FROM ".$this->db->prefix().$this->table_element." as t";
 		if (isset($this->isextrafieldmanaged) && $this->isextrafieldmanaged == 1) {
-			$sql .= " LEFT JOIN " . $this->db->prefix() . $this->table_element . "_extrafields as te ON te.fk_object = t.rowid";
+			$sql .= " LEFT JOIN ".$this->db->prefix().$this->table_element."_extrafields as te ON te.fk_object = t.rowid";
 		}
 		if (isset($this->ismultientitymanaged) && $this->ismultientitymanaged == 1) {
-			$sql .= " WHERE t.entity IN (" . getEntity($this->element) . ")";
+			$sql .= " WHERE t.entity IN (".getEntity($this->element).")";
 		} else {
 			$sql .= " WHERE 1 = 1";
 		}
@@ -450,7 +450,7 @@ class NDVI extends CommonObject
 			}
 		}
 		if (count($sqlwhere) > 0) {
-			$sql .= " AND (" . implode(" " . $filtermode . " ", $sqlwhere) . ")";
+			$sql .= " AND (".implode(" ".$filtermode." ", $sqlwhere).")";
 		}
 
 		if (!empty($sortfield)) {
@@ -478,8 +478,8 @@ class NDVI extends CommonObject
 
 			return $records;
 		} else {
-			$this->errors[] = 'Error ' . $this->db->lasterror();
-			dol_syslog(__METHOD__ . ' ' . join(',', $this->errors), LOG_ERR);
+			$this->errors[] = 'Error '.$this->db->lasterror();
+			dol_syslog(__METHOD__.' '.join(',', $this->errors), LOG_ERR);
 
 			return -1;
 		}
@@ -540,18 +540,18 @@ class NDVI extends CommonObject
 	{
 		global $conf, $langs;
 
-		require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
 		$error = 0;
 
 		// Protection
 		if ($this->status == self::STATUS_VALIDATED) {
-			dol_syslog(get_class($this) . "::validate action abandonned: already validated", LOG_WARNING);
+			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
 			return 0;
 		}
 
-		/* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra', 'ndvi', 'write'))
-		 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra', 'ndvi_advance', 'validate')))
+		/* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra', 'ndmi', 'write'))
+		 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra', 'ndmi_advance', 'validate')))
 		 {
 		 $this->error='NotEnoughPermissions';
 		 dol_syslog(get_class($this)."::valid ".$this->error, LOG_ERR);
@@ -572,18 +572,18 @@ class NDVI extends CommonObject
 
 		if (!empty($num)) {
 			// Validate
-			$sql = "UPDATE " . MAIN_DB_PREFIX . $this->table_element;
-			$sql .= " SET ref = '" . $this->db->escape($num) . "',";
-			$sql .= " status = " . self::STATUS_VALIDATED;
+			$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
+			$sql .= " SET ref = '".$this->db->escape($num)."',";
+			$sql .= " status = ".self::STATUS_VALIDATED;
 			if (!empty($this->fields['date_validation'])) {
-				$sql .= ", date_validation = '" . $this->db->idate($now) . "'";
+				$sql .= ", date_validation = '".$this->db->idate($now)."'";
 			}
 			if (!empty($this->fields['fk_user_valid'])) {
-				$sql .= ", fk_user_valid = " . ((int) $user->id);
+				$sql .= ", fk_user_valid = ".((int) $user->id);
 			}
-			$sql .= " WHERE rowid = " . ((int) $this->id);
+			$sql .= " WHERE rowid = ".((int) $this->id);
 
-			dol_syslog(get_class($this) . "::validate()", LOG_DEBUG);
+			dol_syslog(get_class($this)."::validate()", LOG_DEBUG);
 			$resql = $this->db->query($sql);
 			if (!$resql) {
 				dol_print_error($this->db);
@@ -607,15 +607,15 @@ class NDVI extends CommonObject
 			// Rename directory if dir was a temporary ref
 			if (preg_match('/^[\(]?PROV/i', $this->ref)) {
 				// Now we rename also files into index
-				$sql = 'UPDATE ' . MAIN_DB_PREFIX . "ecm_files set filename = CONCAT('" . $this->db->escape($this->newref) . "', SUBSTR(filename, " . (strlen($this->ref) + 1) . ")), filepath = 'ndvi/" . $this->db->escape($this->newref) . "'";
-				$sql .= " WHERE filename LIKE '" . $this->db->escape($this->ref) . "%' AND filepath = 'ndvi/" . $this->db->escape($this->ref) . "' and entity = " . $conf->entity;
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'ndmi/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'ndmi/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++;
 					$this->error = $this->db->lasterror();
 				}
-				$sql = 'UPDATE ' . MAIN_DB_PREFIX . "ecm_files set filepath = 'ndvi/" . $this->db->escape($this->newref) . "'";
-				$sql .= " WHERE filepath = 'ndvi/" . $this->db->escape($this->ref) . "' and entity = " . $conf->entity;
+				$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'ndmi/".$this->db->escape($this->newref)."'";
+				$sql .= " WHERE filepath = 'ndmi/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
 				$resql = $this->db->query($sql);
 				if (!$resql) {
 					$error++;
@@ -625,20 +625,20 @@ class NDVI extends CommonObject
 				// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
 				$oldref = dol_sanitizeFileName($this->ref);
 				$newref = dol_sanitizeFileName($num);
-				$dirsource = $conf->safra->dir_output . '/ndvi/' . $oldref;
-				$dirdest = $conf->safra->dir_output . '/ndvi/' . $newref;
+				$dirsource = $conf->safra->dir_output.'/ndmi/'.$oldref;
+				$dirdest = $conf->safra->dir_output.'/ndmi/'.$newref;
 				if (!$error && file_exists($dirsource)) {
-					dol_syslog(get_class($this) . "::validate() rename dir " . $dirsource . " into " . $dirdest);
+					dol_syslog(get_class($this)."::validate() rename dir ".$dirsource." into ".$dirdest);
 
 					if (@rename($dirsource, $dirdest)) {
 						dol_syslog("Rename ok");
 						// Rename docs starting with $oldref with $newref
-						$listoffiles = dol_dir_list($conf->safra->dir_output . '/ndvi/' . $newref, 'files', 1, '^' . preg_quote($oldref, '/'));
+						$listoffiles = dol_dir_list($conf->safra->dir_output.'/ndmi/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
 						foreach ($listoffiles as $fileentry) {
 							$dirsource = $fileentry['name'];
-							$dirdest = preg_replace('/^' . preg_quote($oldref, '/') . '/', $newref, $dirsource);
-							$dirsource = $fileentry['path'] . '/' . $dirsource;
-							$dirdest = $fileentry['path'] . '/' . $dirdest;
+							$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
+							$dirsource = $fileentry['path'].'/'.$dirsource;
+							$dirdest = $fileentry['path'].'/'.$dirdest;
 							@rename($dirsource, $dirdest);
 						}
 					}
@@ -748,17 +748,17 @@ class NDVI extends CommonObject
 		$datas = [];
 
 		if (getDolGlobalInt('MAIN_OPTIMIZEFORTEXTBROWSER')) {
-			return ['optimize' => $langs->trans("ShowNDVI")];
+			return ['optimize' => $langs->trans("ShowNDMI")];
 		}
-		$datas['picto'] = img_picto('', $this->picto) . ' <u>' . $langs->trans("NDVI") . '</u>';
+		$datas['picto'] = img_picto('', $this->picto).' <u>'.$langs->trans("NDMI").'</u>';
 		if (isset($this->status)) {
-			$datas['picto'] .= ' ' . $this->getLibStatut(5);
+			$datas['picto'] .= ' '.$this->getLibStatut(5);
 		}
 		if (property_exists($this, 'ref')) {
-			$datas['ref'] = '<br><b>' . $langs->trans('Ref') . ':</b> ' . $this->ref;
+			$datas['ref'] = '<br><b>'.$langs->trans('Ref').':</b> '.$this->ref;
 		}
 		if (property_exists($this, 'label')) {
-			$datas['ref'] = '<br>' . $langs->trans('Label') . ':</b> ' . $this->label;
+			$datas['ref'] = '<br>'.$langs->trans('Label').':</b> '.$this->label;
 		}
 
 		return $datas;
@@ -785,20 +785,20 @@ class NDVI extends CommonObject
 		$result = '';
 		$params = [
 			'id' => $this->id,
-			'objecttype' => $this->element . ($this->module ? '@' . $this->module : ''),
+			'objecttype' => $this->element.($this->module ? '@'.$this->module : ''),
 			'option' => $option,
 		];
 		$classfortooltip = 'classfortooltip';
 		$dataparams = '';
 		if (getDolGlobalInt('MAIN_ENABLE_AJAX_TOOLTIP')) {
 			$classfortooltip = 'classforajaxtooltip';
-			$dataparams = ' data-params="' . dol_escape_htmltag(json_encode($params)) . '"';
+			$dataparams = ' data-params="'.dol_escape_htmltag(json_encode($params)).'"';
 			$label = '';
 		} else {
 			$label = implode($this->getTooltipContentArray($params));
 		}
 
-		$url = dol_buildpath('/safra/ndvi_card.php', 1) . '?id=' . $this->id;
+		$url = dol_buildpath('/safra/ndmi_card.php', 1).'?id='.$this->id;
 
 		if ($option !== 'nolink') {
 			// Add param to save lastsearch_values or not
@@ -814,21 +814,21 @@ class NDVI extends CommonObject
 		$linkclose = '';
 		if (empty($notooltip)) {
 			if (getDolGlobalInt('MAIN_OPTIMIZEFORTEXTBROWSER')) {
-				$label = $langs->trans("ShowNDVI");
-				$linkclose .= ' alt="' . dol_escape_htmltag($label, 1) . '"';
+				$label = $langs->trans("ShowNDMI");
+				$linkclose .= ' alt="'.dol_escape_htmltag($label, 1).'"';
 			}
-			$linkclose .= ($label ? ' title="' . dol_escape_htmltag($label, 1) . '"' : ' title="tocomplete"');
-			$linkclose .= $dataparams . ' class="' . $classfortooltip . ($morecss ? ' ' . $morecss : '') . '"';
+			$linkclose .= ($label ? ' title="'.dol_escape_htmltag($label, 1).'"' : ' title="tocomplete"');
+			$linkclose .= $dataparams.' class="'.$classfortooltip.($morecss ? ' '.$morecss : '').'"';
 		} else {
-			$linkclose = ($morecss ? ' class="' . $morecss . '"' : '');
+			$linkclose = ($morecss ? ' class="'.$morecss.'"' : '');
 		}
 
 		if ($option == 'nolink' || empty($url)) {
 			$linkstart = '<span';
 		} else {
-			$linkstart = '<a href="' . $url . '"';
+			$linkstart = '<a href="'.$url.'"';
 		}
-		$linkstart .= $linkclose . '>';
+		$linkstart .= $linkclose.'>';
 		if ($option == 'nolink' || empty($url)) {
 			$linkend = '</span>';
 		} else {
@@ -843,25 +843,25 @@ class NDVI extends CommonObject
 			}
 		} else {
 			if ($withpicto) {
-				require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
+				require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 
 				list($class, $module) = explode('@', $this->picto);
-				$upload_dir = $conf->$module->multidir_output[$conf->entity] . "/$class/" . dol_sanitizeFileName($this->ref);
+				$upload_dir = $conf->$module->multidir_output[$conf->entity]."/$class/".dol_sanitizeFileName($this->ref);
 				$filearray = dol_dir_list($upload_dir, "files");
 				$filename = $filearray[0]['name'];
 				if (!empty($filename)) {
 					$pospoint = strpos($filearray[0]['name'], '.');
 
-					$pathtophoto = $class . '/' . $this->ref . '/thumbs/' . substr($filename, 0, $pospoint) . '_mini' . substr($filename, $pospoint);
-					if (!getDolGlobalString(strtoupper($module . '_' . $class) . '_FORMATLISTPHOTOSASUSERS')) {
-						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><div class="photoref"><img class="photo' . $module . '" alt="No photo" border="0" src="' . DOL_URL_ROOT . '/viewimage.php?modulepart=' . $module . '&entity=' . $conf->entity . '&file=' . urlencode($pathtophoto) . '"></div></div>';
+					$pathtophoto = $class.'/'.$this->ref.'/thumbs/'.substr($filename, 0, $pospoint).'_mini'.substr($filename, $pospoint);
+					if (!getDolGlobalString(strtoupper($module.'_'.$class).'_FORMATLISTPHOTOSASUSERS')) {
+						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><div class="photoref"><img class="photo'.$module.'" alt="No photo" border="0" src="'.DOL_URL_ROOT.'/viewimage.php?modulepart='.$module.'&entity='.$conf->entity.'&file='.urlencode($pathtophoto).'"></div></div>';
 					} else {
-						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><img class="photouserphoto userphoto" alt="No photo" border="0" src="' . DOL_URL_ROOT . '/viewimage.php?modulepart=' . $module . '&entity=' . $conf->entity . '&file=' . urlencode($pathtophoto) . '"></div>';
+						$result .= '<div class="floatleft inline-block valignmiddle divphotoref"><img class="photouserphoto userphoto" alt="No photo" border="0" src="'.DOL_URL_ROOT.'/viewimage.php?modulepart='.$module.'&entity='.$conf->entity.'&file='.urlencode($pathtophoto).'"></div>';
 					}
 
 					$result .= '</div>';
 				} else {
-					$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="' . (($withpicto != 2) ? 'paddingright ' : '') . '"'), 0, 0, $notooltip ? 0 : 1);
+					$result .= img_object(($notooltip ? '' : $label), ($this->picto ? $this->picto : 'generic'), ($notooltip ? (($withpicto != 2) ? 'class="paddingright"' : '') : 'class="'.(($withpicto != 2) ? 'paddingright ' : '').'"'), 0, 0, $notooltip ? 0 : 1);
 				}
 			}
 		}
@@ -874,7 +874,7 @@ class NDVI extends CommonObject
 		//if ($withpicto != 2) $result.=(($addlabel && $this->label) ? $sep . dol_trunc($this->label, ($addlabel > 1 ? $addlabel : 0)) : '');
 
 		global $action, $hookmanager;
-		$hookmanager->initHooks(array($this->element . 'dao'));
+		$hookmanager->initHooks(array($this->element.'dao'));
 		$parameters = array('id' => $this->id, 'getnomurl' => &$result);
 		$reshook = $hookmanager->executeHooks('getNomUrl', $parameters, $this, $action); // Note that $action and $object may have been modified by some hooks
 		if ($reshook > 0) {
@@ -905,22 +905,22 @@ class NDVI extends CommonObject
 		$return .= img_picto('', $this->picto);
 		$return .= '</span>';
 		$return .= '<div class="info-box-content">';
-		$return .= '<span class="info-box-ref inline-block tdoverflowmax150 valignmiddle">' . (method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref) . '</span>';
+		$return .= '<span class="info-box-ref inline-block tdoverflowmax150 valignmiddle">'.(method_exists($this, 'getNomUrl') ? $this->getNomUrl() : $this->ref).'</span>';
 		if ($selected >= 0) {
-			$return .= '<input id="cb' . $this->id . '" class="flat checkforselect fright" type="checkbox" name="toselect[]" value="' . $this->id . '"' . ($selected ? ' checked="checked"' : '') . '>';
+			$return .= '<input id="cb'.$this->id.'" class="flat checkforselect fright" type="checkbox" name="toselect[]" value="'.$this->id.'"'.($selected ? ' checked="checked"' : '').'>';
 		}
 		if (property_exists($this, 'label')) {
-			$return .= ' <div class="inline-block opacitymedium valignmiddle tdoverflowmax100">' . $this->label . '</div>';
+			$return .= ' <div class="inline-block opacitymedium valignmiddle tdoverflowmax100">'.$this->label.'</div>';
 		}
 		if (property_exists($this, 'thirdparty') && is_object($this->thirdparty)) {
-			$return .= '<br><div class="info-box-ref tdoverflowmax150">' . $this->thirdparty->getNomUrl(1) . '</div>';
+			$return .= '<br><div class="info-box-ref tdoverflowmax150">'.$this->thirdparty->getNomUrl(1).'</div>';
 		}
 		if (property_exists($this, 'amount')) {
 			$return .= '<br>';
-			$return .= '<span class="info-box-label amount">' . price($this->amount, 0, $langs, 1, -1, -1, $conf->currency) . '</span>';
+			$return .= '<span class="info-box-label amount">'.price($this->amount, 0, $langs, 1, -1, -1, $conf->currency).'</span>';
 		}
 		if (method_exists($this, 'getLibStatut')) {
-			$return .= '<br><div class="info-box-status">' . $this->getLibStatut(3) . '</div>';
+			$return .= '<br><div class="info-box-status">'.$this->getLibStatut(3).'</div>';
 		}
 		$return .= '</div>';
 		$return .= '</div>';
@@ -977,7 +977,7 @@ class NDVI extends CommonObject
 			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
 		}
 
-		$statusType = 'status' . $status;
+		$statusType = 'status'.$status;
 		//if ($status == self::STATUS_VALIDATED) $statusType = 'status1';
 		if ($status == self::STATUS_CANCELED) {
 			$statusType = 'status6';
@@ -1008,8 +1008,8 @@ class NDVI extends CommonObject
 		if (!empty($this->fields['fk_user_valid'])) {
 			$sql .= ", fk_user_valid";
 		}
-		$sql .= " FROM " . MAIN_DB_PREFIX . $this->table_element . " as t";
-		$sql .= " WHERE t.rowid = " . ((int) $id);
+		$sql .= " FROM ".MAIN_DB_PREFIX.$this->table_element." as t";
+		$sql .= " WHERE t.rowid = ".((int) $id);
 
 		$result = $this->db->query($sql);
 		if ($result) {
@@ -1064,8 +1064,8 @@ class NDVI extends CommonObject
 	{
 		$this->lines = array();
 
-		$objectline = new NDVILine($this->db);
-		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql' => 'fk_ndvi = ' . ((int) $this->id)));
+		$objectline = new NDMILine($this->db);
+		$result = $objectline->fetchAll('ASC', 'position', 0, 0, array('customsql'=>'fk_ndmi = '.((int) $this->id)));
 
 		if (is_numeric($result)) {
 			$this->setErrorsFromObject($objectline);
@@ -1087,26 +1087,26 @@ class NDVI extends CommonObject
 		$langs->load("safra@safra");
 
 		if (!getDolGlobalString('SAFRA_MYOBJECT_ADDON')) {
-			$conf->global->SAFRA_MYOBJECT_ADDON = 'mod_ndvi_standard';
+			$conf->global->SAFRA_MYOBJECT_ADDON = 'mod_ndmi_standard';
 		}
 
 		if (getDolGlobalString('SAFRA_MYOBJECT_ADDON')) {
 			$mybool = false;
 
-			$file = getDolGlobalString('SAFRA_MYOBJECT_ADDON') . ".php";
+			$file = getDolGlobalString('SAFRA_MYOBJECT_ADDON').".php";
 			$classname = getDolGlobalString('SAFRA_MYOBJECT_ADDON');
 
 			// Include file with class
 			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
 			foreach ($dirmodels as $reldir) {
-				$dir = dol_buildpath($reldir . "core/modules/safra/");
+				$dir = dol_buildpath($reldir."core/modules/safra/");
 
 				// Load file with numbering class (if found)
-				$mybool |= @include_once $dir . $file;
+				$mybool |= @include_once $dir.$file;
 			}
 
 			if ($mybool === false) {
-				dol_print_error('', "Failed to include file " . $file);
+				dol_print_error('', "Failed to include file ".$file);
 				return '';
 			}
 
@@ -1122,7 +1122,7 @@ class NDVI extends CommonObject
 					return "";
 				}
 			} else {
-				print $langs->trans("Error") . " " . $langs->trans("ClassNotFound") . ' ' . $classname;
+				print $langs->trans("Error")." ".$langs->trans("ClassNotFound").' '.$classname;
 				return "";
 			}
 		} else {
@@ -1152,7 +1152,7 @@ class NDVI extends CommonObject
 		$langs->load("safra@safra");
 
 		if (!dol_strlen($modele)) {
-			$modele = 'standard_ndvi';
+			$modele = 'standard_ndmi';
 
 			if (!empty($this->model_pdf)) {
 				$modele = $this->model_pdf;
@@ -1187,7 +1187,7 @@ class NDVI extends CommonObject
 		$this->output = '';
 		$this->error = '';
 
-		dol_syslog(__METHOD__ . " start", LOG_INFO);
+		dol_syslog(__METHOD__." start", LOG_INFO);
 
 		$now = dol_now();
 
@@ -1197,20 +1197,21 @@ class NDVI extends CommonObject
 
 		$this->db->commit();
 
-		dol_syslog(__METHOD__ . " end", LOG_INFO);
+		dol_syslog(__METHOD__." end", LOG_INFO);
 
 		return $error;
 	}
 
+
 	/**
-	 * Regist the ndvi data from a specific talhao or the latest ndvi data from all talhaos
+	 * Regist the ndmi data from a specific talhao or the latest ndmi data from all talhaos
 	 *
 	 * @param User $user user for creating the register (optional)
 	 * @param string $time The time range for the NDVI data (optional)
 	 * @param Talhao $talhao The specific talhao to fetch data for (optional)
 	 * @return void
 	 */
-	public function requestNDVIData(User $user = null, $time = null, Talhao $talhao = null)
+	public function requestNDMIData(User $user = null, $time = null, Talhao $talhao = null)
 	{
 		dol_include_once('/safra/class/talhao.class.php', 'Talhao');
 		dol_include_once('/user/class/user.class.php', 'User');
@@ -1259,11 +1260,11 @@ class NDVI extends CommonObject
 			$params = array(
 				'SERVICE' => 'WMS',
 				'REQUEST' => 'GetMap',
-				'LAYERS' => 'NDVI',  // Substitua por sua camada de dados configurada
+				'LAYERS' => 'MOISTURE-INDEX',  // Substitua por sua camada de dados configurada
 				'TRANSPARENT' => 'true',
 				'FORMAT' => 'application/json',  // Formato da resposta
-				'RESX' => '10m',         // Altura da imagem
-				'RESY' => '10m',          // Largura da imagem
+				'RESX' => '20m',         // Altura da imagem
+				'RESY' => '20m',          // Largura da imagem
 				'CRS' => 'CRS:84',      // Sistema de referência coordenado
 				'TIME' => $time,  // Intervalo de tempo para dados de satélite
 				'GEOMETRY' => $key->wkt,
@@ -1292,7 +1293,7 @@ class NDVI extends CommonObject
 			// echo '</pre>';
 	
 			// Define o caminho do arquivo para salvar a resposta
-			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/ndvi/'. $file_name .'.json'; // Altere para o diretório desejado
+			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/ndmi/'. $file_name .'.json'; // Altere para o diretório desejado
 
 			
 			// Salva a resposta em um arquivo
@@ -1305,28 +1306,28 @@ class NDVI extends CommonObject
 				}
 			}
 			
-			$ndvi = new NDVI($this->db);
-			$ndvi->ref = $file_name;
-			$ndvi->label = $time;
-			$ndvi->talhao = $key->id;
-			$ndvi->date_creation = dol_now();
-			$ndvi->caminho_json = './json/ndvi/'. $file_name .'.json';
-			$ndvi->create($user);
+			$ndmi = new NDMI($this->db);
+			$ndmi->ref = $file_name;
+			$ndmi->label = $time;
+			$ndmi->talhao = $key->id;
+			$ndmi->date_creation = dol_now();
+			$ndmi->caminho_json = './json/ndmi/'. $file_name .'.json';
+			$ndmi->create($user);
 
 		}
 	}
 }
 
 
-require_once DOL_DOCUMENT_ROOT . '/core/class/commonobjectline.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 
 /**
- * Class NDVILine. You can also remove this and generate a CRUD class for lines objects.
+ * Class NDMILine. You can also remove this and generate a CRUD class for lines objects.
  */
-class NDVILine extends CommonObjectLine
+class NDMILine extends CommonObjectLine
 {
-	// To complete with content of an object NDVILine
-	// We should have a field rowid, fk_ndvi and position
+	// To complete with content of an object NDMILine
+	// We should have a field rowid, fk_ndmi and position
 
 	/**
 	 * @var int  Does object support extrafields ? 0=No, 1=Yes

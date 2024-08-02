@@ -37,6 +37,7 @@ SAFRA_LATITUDE = Latitude
 SAFRA_LONGITUDE = Longitude
 SAFRA_API_SENTINELHUB = Chave API Sentinel Hub
 SAFRA_API_EMBRAPA = Chave API Embrapa
+SAFRA_MUNICIPIO = Município
 
 
 #

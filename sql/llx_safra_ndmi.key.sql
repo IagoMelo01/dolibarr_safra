@@ -15,13 +15,12 @@
 
 
 -- BEGIN MODULEBUILDER INDEXES
-ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_rowid (rowid);
-ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_ref (ref);
-ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_fk_project (fk_project);
-ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_status (status);
+ALTER TABLE llx_safra_ndmi ADD INDEX idx_safra_ndmi_rowid (rowid);
+ALTER TABLE llx_safra_ndmi ADD INDEX idx_safra_ndmi_ref (ref);
+ALTER TABLE llx_safra_ndmi ADD INDEX idx_safra_ndmi_status (status);
 -- END MODULEBUILDER INDEXES
 
---ALTER TABLE llx_safra_recomendacaoadubo ADD UNIQUE INDEX uk_safra_recomendacaoadubo_fieldxy(fieldx, fieldy);
+--ALTER TABLE llx_safra_ndmi ADD UNIQUE INDEX uk_safra_ndmi_fieldxy(fieldx, fieldy);
 
---ALTER TABLE llx_safra_recomendacaoadubo ADD CONSTRAINT llx_safra_recomendacaoadubo_fk_field FOREIGN KEY (fk_field) REFERENCES llx_safra_myotherobject(rowid);
+--ALTER TABLE llx_safra_ndmi ADD CONSTRAINT llx_safra_ndmi_fk_field FOREIGN KEY (fk_field) REFERENCES llx_safra_myotherobject(rowid);
 

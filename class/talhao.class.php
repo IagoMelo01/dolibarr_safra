@@ -133,6 +133,7 @@ class Talhao extends CommonObject
 		"wkt" => array("type"=>"text", "label"=>"wkt", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
 		"bbox" => array("type"=>"text", "label"=>"bbox", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
 		"geo_json" => array("type"=>"text", "label"=>"geo_json", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"3", "cssview"=>"hidden",),
+		"municipio" => array("type"=>"integer:municipio:safra/class/municipio.class.php", "label"=>"Município", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -154,6 +155,7 @@ class Talhao extends CommonObject
 	public $wkt;
 	public $bbox;
 	public $geo_json;
+	public $municipio;
 	// END MODULEBUILDER PROPERTIES
 
 

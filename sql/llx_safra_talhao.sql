@@ -35,6 +35,7 @@ CREATE TABLE llx_safra_talhao(
 	area double(28,4), 
 	wkt text, 
 	bbox text, 
-	geo_json text
+	geo_json text, 
+	municipio integer NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

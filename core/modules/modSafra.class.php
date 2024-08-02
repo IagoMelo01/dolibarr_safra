@@ -429,6 +429,26 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'ndvi';
 		$this->rights[$r][5] = 'read';
 		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (9 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update NDVI object of Safra';
+		$this->rights[$r][4] = 'ndvi';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (10 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read NDMI object of Safra';
+		$this->rights[$r][4] = 'ndmi';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (10 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update NDMI object of Safra';
+		$this->rights[$r][4] = 'ndmi';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (10 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete NDMI object of Safra';
+		$this->rights[$r][4] = 'ndmi';
+		$this->rights[$r][5] = 'delete';
+		$r++;
 		
 		/* END MODULEBUILDER PERMISSIONS */
 
@@ -1224,6 +1244,52 @@ class modSafra extends DolibarrModules
 		/* END LEFTMENU NEW MUNICIPIO */
 
 
+		/*LEFTMENU NDMI*/
+		$this->menu[$r++]=array(
+			'fk_menu'=>'fk_mainmenu=safra',
+			'type'=>'left',
+			'titre'=>'NDMI',
+			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
+			'mainmenu'=>'safra',
+			'leftmenu'=>'ndmi',
+			'url'=>'/safra/ndmi_list.php',
+			'langs'=>'safra@safra',
+			'position'=>1000+$r,
+			'enabled'=>'isModEnabled("safra")',
+			'perms'=>'$user->hasRight("safra", "ndmi", "read")',
+			'target'=>'',
+			'user'=>2,
+		);
+        $this->menu[$r++]=array(
+            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndmi',
+            'type'=>'left',
+            'titre'=>'List NDMI',
+            'mainmenu'=>'safra',
+            'leftmenu'=>'safra_ndmi_list',
+            'url'=>'/safra/ndmi_list.php',
+            'langs'=>'safra@safra',
+            'position'=>1000+$r,
+            'enabled'=>'isModEnabled("safra")',
+			'perms'=>'$user->hasRight("safra", "ndmi", "read")',
+            'target'=>'',
+            'user'=>2,
+        );
+        $this->menu[$r++]=array(
+            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndmi',
+            'type'=>'left',
+            'titre'=>'New NDMI',
+            'mainmenu'=>'safra',
+            'leftmenu'=>'safra_ndmi_new',
+            'url'=>'/safra/ndmi_card.php?action=create',
+            'langs'=>'safra@safra',
+            'position'=>1000+$r,
+            'enabled'=>'isModEnabled("safra")',
+			'perms'=>'$user->hasRight("safra", "ndmi", "write")',
+            'target'=>'',
+            'user'=>2
+        );
+
+		/*END LEFTMENU NDMI*/
 		/* END MODULEBUILDER LEFTMENU MYOBJECT */
 		// Exports profiles provided by this module
 		$r = 1;

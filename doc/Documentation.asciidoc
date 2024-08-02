@@ -45,6 +45,31 @@ This document was generated using Dolibarr ERP CRM process
 __README__
 
 == DATA SPECIFICATIONS
+=== Table of fields with properties for object *NDMI* : 
+[options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
+|===
+|code|type|label|enabled|position|notnull|visible|noteditable|index|default|foreignkey|arrayofkeyval|alwayseditable|validate|searchall|comment|isameasure|css|cssview|csslist|help|showoncombobox|picto
+|*"rowid"*||||1|1|||||||||||||||||
+|*"ref"*||||20|1|||||||||||||||||
+|*label*|varchar(255)|||30|0|||||||||||||||||
+|*"amount"*||||40|0|||||||||||||||||
+|*"qty"*||||45|0|||||||||||||||||
+|*"fk_soc"*||||50|-1|||||||||||||||||
+|*"fk_project"*||||52|-1|||||||||||||||||
+|*"description"*||||60|0|||||||||||||||||
+|*"note_public"*||||61|0|||||||||||||||||
+|*"note_private"*||||62|0|||||||||||||||||
+|*"date_creation"*||||500|1|||||||||||||||||
+|*"tms"*||||501|0|||||||||||||||||
+|*"fk_user_creat"*||||510|1|||||||||||||||||
+|*"fk_user_modif"*||||511|-1|||||||||||||||||
+|*"last_main_doc"*||||600|0|||||||||||||||||
+|*"import_key"*||||1000|-1|||||||||||||||||
+|*"model_pdf"*||||1010|-1|||||||||||||||||
+|*"status"*||||2000|1|||||||||||||||||
+|===
+__ end table for object NDMI
+
 === Table of fields with properties for object *Zoneamento* : 
 [options='header',grid=rows,frame=topbot,width=100%,caption=Organisation]
 |===

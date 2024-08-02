@@ -109,7 +109,7 @@ $formfile = new FormFile($db);
 
 llxHeader("", $langs->trans("Safra - NDVI"), '', '', 0, 0, '', '', '', 'mod-safra page-index');
 
-print load_fiche_titre($langs->trans("NDVI"), '', 'safra.png@safra');
+print load_fiche_titre($langs->trans("Índice de Vegetação com Diferença Normalizada (NDVI)"), '', 'safra.png@safra');
 
 print '<div class="fichecenter">';
 
@@ -321,7 +321,141 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 
 
 ?>
-<p id="mensagem"></p>
+<!-- <p id="mensagem"></p> -->
+<style>
+        body {
+            background-color: #555;
+        }
+
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+
+        .layer-details {
+            border-bottom: 1px solid #555;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .layer-legend {
+            padding: 5px 0;
+        }
+
+        .continuous {
+            display: flex;
+            padding: 0 15px 5px 3px;
+        }
+
+        .layer-item {
+            clear: both;
+        }
+
+        .gradients {
+            display: flex;
+            flex-direction: column;
+            height: 200px;
+            width: 30px;
+            border: 1px solid #999;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .gradient {
+            width: 30px;
+            position: absolute;
+        }
+
+        .ticks {
+            position: relative;
+            margin: 10px 0;
+            z-index: 0;
+            border-top: 1px solid transparent;
+            border-bottom: 1px solid transparent;
+        }
+
+        .tick {
+            position: absolute;
+            display: block;
+            font-size: 12px;
+            line-height: 26px;
+            width: 30px;
+            margin-bottom: -12px;
+            /* color: #fff; */
+        }
+
+        .layer-description {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding-left: 40px;
+            padding-right: 30px;
+            /* color: #d0d5dd; */
+            min-width: 50%;
+        }
+    </style>
+<div class="layer-details">
+        <div class="layer-legend">
+            <div class="legend-item continuous">
+                <div class="gradients">
+                    <div class="gradient" style="bottom: 0%; height: 7.69231%; background: linear-gradient(to top, rgb(13, 13, 13), rgb(13, 13, 13));"></div>
+                    <div class="gradient" style="bottom: 7.69231%; height: 0%; background: linear-gradient(to top, rgb(13, 13, 13), rgb(191, 191, 191));"></div>
+                    <div class="gradient" style="bottom: 7.69231%; height: 7.69231%; background: linear-gradient(to top, rgb(191, 191, 191), rgb(191, 191, 191));"></div>
+                    <div class="gradient" style="bottom: 15.3846%; height: 0%; background: linear-gradient(to top, rgb(191, 191, 191), rgb(219, 219, 219));"></div>
+                    <div class="gradient" style="bottom: 15.3846%; height: 7.69231%; background: linear-gradient(to top, rgb(219, 219, 219), rgb(219, 219, 219));"></div>
+                    <div class="gradient" style="bottom: 23.0769%; height: 0%; background: linear-gradient(to top, rgb(219, 219, 219), rgb(235, 235, 235));"></div>
+                    <div class="gradient" style="bottom: 23.0769%; height: 7.69231%; background: linear-gradient(to top, rgb(235, 235, 235), rgb(235, 235, 235));"></div>
+                    <div class="gradient" style="bottom: 30.7692%; height: 0%; background: linear-gradient(to top, rgb(235, 235, 235), rgb(255, 250, 204));"></div>
+                    <div class="gradient" style="bottom: 30.7692%; height: 3.84615%; background: linear-gradient(to top, rgb(255, 250, 204), rgb(255, 250, 204));"></div>
+                    <div class="gradient" style="bottom: 34.6154%; height: 0%; background: linear-gradient(to top, rgb(255, 250, 204), rgb(237, 232, 181));"></div>
+                    <div class="gradient" style="bottom: 34.6154%; height: 3.84615%; background: linear-gradient(to top, rgb(237, 232, 181), rgb(237, 232, 181));"></div>
+                    <div class="gradient" style="bottom: 38.4615%; height: 0%; background: linear-gradient(to top, rgb(237, 232, 181), rgb(222, 217, 156));"></div>
+                    <div class="gradient" style="bottom: 38.4615%; height: 3.84615%; background: linear-gradient(to top, rgb(222, 217, 156), rgb(222, 217, 156));"></div>
+                    <div class="gradient" style="bottom: 42.3077%; height: 0%; background: linear-gradient(to top, rgb(222, 217, 156), rgb(204, 199, 130));"></div>
+                    <div class="gradient" style="bottom: 42.3077%; height: 3.84615%; background: linear-gradient(to top, rgb(204, 199, 130), rgb(204, 199, 130));"></div>
+                    <div class="gradient" style="bottom: 46.1538%; height: 0%; background: linear-gradient(to top, rgb(204, 199, 130), rgb(189, 184, 107));"></div>
+                    <div class="gradient" style="bottom: 46.1538%; height: 3.84615%; background: linear-gradient(to top, rgb(189, 184, 107), rgb(189, 184, 107));"></div>
+                    <div class="gradient" style="bottom: 50%; height: 0%; background: linear-gradient(to top, rgb(189, 184, 107), rgb(176, 194, 97));"></div>
+                    <div class="gradient" style="bottom: 50%; height: 3.84615%; background: linear-gradient(to top, rgb(176, 194, 97), rgb(176, 194, 97));"></div>
+                    <div class="gradient" style="bottom: 53.8462%; height: 0%; background: linear-gradient(to top, rgb(176, 194, 97), rgb(163, 204, 89));"></div>
+                    <div class="gradient" style="bottom: 53.8462%; height: 3.84615%; background: linear-gradient(to top, rgb(163, 204, 89), rgb(163, 204, 89));"></div>
+                    <div class="gradient" style="bottom: 57.6923%; height: 0%; background: linear-gradient(to top, rgb(163, 204, 89), rgb(145, 191, 82));"></div>
+                    <div class="gradient" style="bottom: 57.6923%; height: 3.84615%; background: linear-gradient(to top, rgb(145, 191, 82), rgb(145, 191, 82));"></div>
+                    <div class="gradient" style="bottom: 61.5385%; height: 0%; background: linear-gradient(to top, rgb(145, 191, 82), rgb(128, 179, 71));"></div>
+                    <div class="gradient" style="bottom: 61.5385%; height: 3.84615%; background: linear-gradient(to top, rgb(128, 179, 71), rgb(128, 179, 71));"></div>
+                    <div class="gradient" style="bottom: 65.3846%; height: 0%; background: linear-gradient(to top, rgb(128, 179, 71), rgb(112, 163, 64));"></div>
+                    <div class="gradient" style="bottom: 65.3846%; height: 3.84615%; background: linear-gradient(to top, rgb(112, 163, 64), rgb(112, 163, 64));"></div>
+                    <div class="gradient" style="bottom: 69.2308%; height: 0%; background: linear-gradient(to top, rgb(112, 163, 64), rgb(97, 150, 54));"></div>
+                    <div class="gradient" style="bottom: 69.2308%; height: 3.84615%; background: linear-gradient(to top, rgb(97, 150, 54), rgb(97, 150, 54));"></div>
+                    <div class="gradient" style="bottom: 73.0769%; height: 0%; background: linear-gradient(to top, rgb(97, 150, 54), rgb(79, 138, 46));"></div>
+                    <div class="gradient" style="bottom: 73.0769%; height: 3.84615%; background: linear-gradient(to top, rgb(79, 138, 46), rgb(79, 138, 46));"></div>
+                    <div class="gradient" style="bottom: 76.9231%; height: 0%; background: linear-gradient(to top, rgb(79, 138, 46), rgb(64, 125, 36));"></div>
+                    <div class="gradient" style="bottom: 76.9231%; height: 3.84615%; background: linear-gradient(to top, rgb(64, 125, 36), rgb(64, 125, 36));"></div>
+                    <div class="gradient" style="bottom: 80.7692%; height: 0%; background: linear-gradient(to top, rgb(64, 125, 36), rgb(48, 110, 28));"></div>
+                    <div class="gradient" style="bottom: 80.7692%; height: 3.84615%; background: linear-gradient(to top, rgb(48, 110, 28), rgb(48, 110, 28));"></div>
+                    <div class="gradient" style="bottom: 84.6154%; height: 0%; background: linear-gradient(to top, rgb(48, 110, 28), rgb(33, 97, 18));"></div>
+                    <div class="gradient" style="bottom: 84.6154%; height: 3.84615%; background: linear-gradient(to top, rgb(33, 97, 18), rgb(33, 97, 18));"></div>
+                    <div class="gradient" style="bottom: 88.4615%; height: 0%; background: linear-gradient(to top, rgb(33, 97, 18), rgb(15, 84, 10));"></div>
+                    <div class="gradient" style="bottom: 88.4615%; height: 3.84615%; background: linear-gradient(to top, rgb(15, 84, 10), rgb(15, 84, 10));"></div>
+                    <div class="gradient" style="bottom: 92.3077%; height: 0%; background: linear-gradient(to top, rgb(15, 84, 10), rgb(0, 69, 0));"></div>
+                    <div class="gradient" style="bottom: 92.3077%; height: 7.69231%; background: linear-gradient(to top, rgb(0, 69, 0), rgb(0, 69, 0));"></div>
+                </div>
+                <div class="ticks"><label class="tick" style="bottom: 0%;">- 1</label><label class="tick" style="bottom: 7.7%;">- 0.5</label><label class="tick" style="bottom: 15.4%;">- 0.2</label><label class="tick" style="bottom: 23.1%;">- 0.1</label><label class="tick" style="bottom: 30.8%;"> 0</label><label class="tick" style="bottom: 61.5%;"> 0.2</label><label class="tick" style="bottom: 92.3%;"> 0.6</label><label class="tick" style="bottom: 100%;"> 1</label>
+                    <!-- <div class="hidden-width-placeholders"><label class="tick">- 1</label><label class="tick">- 0.5</label><label class="tick">- 0.2</label><label class="tick">- 0.1</label><label class="tick"> 0</label><label class="tick"> 0.2</label><label class="tick"> 0.6</label><label class="tick"> 1</label></div> -->
+                </div>
+            </div>
+        </div>
+        <div class="layer-description">
+            <h1>Índice de Vegetação com Diferença Normalizada (NDVI)</h1>
+            <p>O Índice de vegetação com diferença normalizada é um índice simples mas eficiente para quantificar a vegetação verde. É uma medida do estado da saúde da vegetação baseado em como as plantas refletem a luz com determinados comprimentos de onda. O intervalo de valores do NDVI é entre -1 e 1. valores negativos de NDVI (valores próximos de -1) correspondem a água. Valores próximos de 0 (de -0,1 a 0,1) correspondem geralmente a zonas áridas de rocha, areia ou neve. Valores baixos e positivos representam arbustos e prados (aproximadamente 0,2 a 0,4), enquanto que valores elevados indicam florestas húmidas temperadas ou tropicais (valores próximos de 1).</p>
+            <!-- <p>Mais informação <a href="https://custom-scripts.sentinel-hub.com/sentinel-2/ndvi/" target="_blank" rel="noopener noreferrer">aqui.</a> e <a href="https://eos.com/ndvi/" target="_blank" rel="noopener noreferrer">aqui.</a></p> -->
+        </div>
+    </div>
+<!-- <p>O Índice de vegetação com diferença normalizada é um índice simples mas eficiente para quantificar a vegetação verde. É uma medida do estado da saúde da vegetação baseado em como as plantas refletem a luz com determinados comprimentos de onda. O intervalo de valores do NDVI é entre -1 e 1. valores negativos de NDVI (valores próximos de -1) correspondem a água. Valores próximos de 0 (de -0,1 a 0,1) correspondem geralmente a zonas áridas de rocha, areia ou neve. Valores baixos e positivos representam arbustos e prados (aproximadamente 0,2 a 0,4), enquanto que valores elevados indicam florestas húmidas temperadas ou tropicais (valores próximos de 1).</p> -->
 <script>
     let talhao_array = [<?php foreach ($name_array as $key) {
                             echo "'" . $key . "'" . ',';

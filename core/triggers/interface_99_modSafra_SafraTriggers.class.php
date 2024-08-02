@@ -284,7 +284,19 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 			//case 'CATEGORY_SET_MULTILANGS':
 
 			// Projects
-			//case 'PROJECT_CREATE':
+			case 'PROJECT_CREATE':
+
+				dol_include_once('/projet/class/project.class.php', 'Project');
+				dol_include_once('/safra/class/janelaplantio.class.php', 'JanelaPlantio');
+				dol_include_once('/safra/class/zoneamento.class.php', 'Zoneamento');
+
+				$projeto = new Project($object->db);
+				$projeto->fetch($object->id);
+
+
+				break;
+
+
 			//case 'PROJECT_MODIFY':
 			//case 'PROJECT_DELETE':
 
@@ -315,17 +327,19 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 						
 			case 'RECOMENDACAOADUBO_CREATE':
 
+				dol_include_once('/projet/class/project.class.php', 'Project');
+
 				$rec = new RecomendacaoAdubo($object->db);
 				$rec->fetch($object->id);
 				
 				$analise = new AnaliseSolo($object->db);
 				$analise->fetch($rec->analise_solo);
 				
-				$plano = new PlanoCultivo($object->db);
-				$plano->fetch($rec->plano_cultivo);
+				$plano = new Project($object->db);
+				$plano->fetch($rec->fk_project);
 				
 				$obj_cultura = new Cultura($object->db);
-				$obj_cultura->fetch($plano->cultura);
+				$obj_cultura->fetch($plano->array_options['cultura']);
 				
 				// Função para calcular a recomendação de NPK com base na cultura
 				function recomendarNPK($cultura, $nitrogenio, $fosforo, $potassio) {
@@ -443,7 +457,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 				$recomendacao = recomendarNPK($cultura, $nitrogenio, $fosforo, $potassio);
 				$formulacao = sugerirFormulacao($recomendacao[0], $recomendacao[1], $recomendacao[2]);
 				$metodo = metodoAplicacao($cultura);
-
+				$res = '';
 				$res .= "Recomendação de fertilização NPK para $cultura (kg/ha): <br>";
 				$res .= "Nitrogênio (N): " . $recomendacao[0] . " kg/ha <br>";
 				$res .= "Fósforo (P2O5): " . $recomendacao[1] . " kg/ha <br>";
