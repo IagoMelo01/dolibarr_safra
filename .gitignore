@@ -22,3 +22,6 @@
 /.gitattributes
 /json/ndvi/*.json
 /json/ndmi/*.json
+/json/ndwi/*.json
+/json/swir/*.json
+/json/evi/*.json

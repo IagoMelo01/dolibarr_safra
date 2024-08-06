@@ -326,9 +326,17 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
         background-color: #555;
     }
 
+    .container{
+        flex-wrap: nowrap;
+    }
+
+    .item{
+        max-width: 100%;
+    }
+
     #map {
         height: 600px;
-        width: 100%;
+        width: 100% !important;
     }
 
     .layer-details {

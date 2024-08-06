@@ -33,6 +33,9 @@ CREATE TABLE llx_safra_evi(
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
 	model_pdf varchar(255), 
-	status integer NOT NULL
+	status integer NOT NULL, 
+	data date, 
+	talhao integer, 
+	caminho_json text NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

@@ -4,7 +4,6 @@
 <script src="./js/leaflet.js"></script>
 <script src="./js/leaflet.draw.js"></script>
 <script src="./js/wellknown.js"></script>
-<script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
 
 <script>
     // elementos de seleção de talhão, data e arquivo
@@ -223,7 +222,7 @@
                 // console.log("talhao:"+talhao_ids[i])
                 // console.log("selecionado:"+talhaoElement.value)
                 if (talhao_ids[i] == consultado[2]) {
-                    url = window.location.href.replace("ndwi_view.php", "json/ndwi/" + caminho.replace("/", "_") + ".json");
+                    url = window.location.href.replace("swir_view.php", "json/swir/" + caminho.replace("/", "_") + ".json");
                     console.log('url consultada: ');
                     console.log(url);
                     let json_layer = renderGeoJSON(data);
@@ -261,9 +260,7 @@
         // var geojsonInput = document.getElementsByClassName("fieldname_geo_json")[1].children[0].innerHTML;
         // console.log(geojsonInput);
         if (data) {
-            var geojsonObject = turf.simplify(data, { tolerance: 0.01, highQuality: true });
-            // var geojsonObject = JSON.parse(data);
-            // var geojsonObject = JSON.parse(data);
+            var geojsonObject = JSON.parse(data);
             var geojsonLayer = L.geoJSON(geojsonObject);
             drawnItems.addLayer(geojsonLayer);
             // createAreaTooltip(geojsonLayer);

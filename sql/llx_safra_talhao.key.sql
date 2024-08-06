@@ -17,7 +17,6 @@
 -- BEGIN MODULEBUILDER INDEXES
 ALTER TABLE llx_safra_talhao ADD INDEX idx_safra_talhao_rowid (rowid);
 ALTER TABLE llx_safra_talhao ADD INDEX idx_safra_talhao_ref (ref);
-ALTER TABLE llx_safra_talhao ADD INDEX idx_safra_talhao_fk_project (fk_project);
 ALTER TABLE llx_safra_talhao ADD INDEX idx_safra_talhao_status (status);
 -- END MODULEBUILDER INDEXES
 

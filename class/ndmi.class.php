@@ -1263,8 +1263,8 @@ class NDMI extends CommonObject
 				'LAYERS' => 'MOISTURE-INDEX',  // Substitua por sua camada de dados configurada
 				'TRANSPARENT' => 'true',
 				'FORMAT' => 'application/json',  // Formato da resposta
-				'RESX' => '20m',         // Altura da imagem
-				'RESY' => '20m',          // Largura da imagem
+				'RESX' => '10m',         // Altura da imagem
+				'RESY' => '10m',          // Largura da imagem
 				'CRS' => 'CRS:84',      // Sistema de referência coordenado
 				'TIME' => $time,  // Intervalo de tempo para dados de satélite
 				'GEOMETRY' => $key->wkt,

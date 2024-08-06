@@ -19,7 +19,6 @@ CREATE TABLE llx_safra_talhao(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	fk_project integer, 
 	description text, 
 	note_public text, 
 	note_private text, 

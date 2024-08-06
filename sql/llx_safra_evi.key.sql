@@ -19,7 +19,6 @@ ALTER TABLE llx_safra_evi ADD INDEX idx_safra_evi_rowid (rowid);
 ALTER TABLE llx_safra_evi ADD INDEX idx_safra_evi_ref (ref);
 ALTER TABLE llx_safra_evi ADD INDEX idx_safra_evi_fk_soc (fk_soc);
 ALTER TABLE llx_safra_evi ADD INDEX idx_safra_evi_fk_project (fk_project);
-ALTER TABLE llx_safra_evi ADD CONSTRAINT llx_safra_evi_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES llx_user(rowid);
 ALTER TABLE llx_safra_evi ADD INDEX idx_safra_evi_status (status);
 -- END MODULEBUILDER INDEXES
 

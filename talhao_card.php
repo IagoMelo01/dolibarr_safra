@@ -684,3 +684,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 // End of page
 llxFooter();
 $db->close();
+
+?>
+
+<style>
+	
+
+    .container{
+        flex-wrap: nowrap;
+    }
+
+    .item{
+        max-width: 45%;
+    }
+
+</style>

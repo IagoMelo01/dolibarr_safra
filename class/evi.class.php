@@ -125,15 +125,15 @@ class EVI extends CommonObject
 		"note_private" => array("type"=>"html", "label"=>"NotePrivate", "enabled"=>"1", 'position'=>62, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
 		"date_creation" => array("type"=>"datetime", "label"=>"DateCreation", "enabled"=>"1", 'position'=>500, 'notnull'=>1, "visible"=>"-2",),
 		"tms" => array("type"=>"timestamp", "label"=>"DateModification", "enabled"=>"1", 'position'=>501, 'notnull'=>0, "visible"=>"-2",),
-		"fk_user_creat" => array("type"=>"integer:User:user/class/user.class.php", "label"=>"UserAuthor", "picto"=>"user", "enabled"=>"1", 'position'=>510, 'notnull'=>1, "visible"=>"-2", "foreignkey"=>"0", "csslist"=>"tdoverflowmax150",),
+		"fk_user_creat" => array("type"=>"integer:User:user/class/user.class.php", "label"=>"UserAuthor", "picto"=>"user", "enabled"=>"1", 'position'=>510, 'notnull'=>1, "visible"=>"-2", "csslist"=>"tdoverflowmax150",),
 		"fk_user_modif" => array("type"=>"integer:User:user/class/user.class.php", "label"=>"UserModif", "picto"=>"user", "enabled"=>"1", 'position'=>511, 'notnull'=>-1, "visible"=>"-2", "csslist"=>"tdoverflowmax150",),
 		"last_main_doc" => array("type"=>"varchar(255)", "label"=>"LastMainDoc", "enabled"=>"1", 'position'=>600, 'notnull'=>0, "visible"=>"0",),
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
-		"data" => array("type"=>"date", "label"=>"Data", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
+		"data" => array("type"=>"date", "label"=>"Data", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"talhao" => array("type"=>"integer:talhao:safra/class/talhao.class.php", "label"=>"Talhão", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"imagem" => array("type"=>"text", "label"=>"Imagem", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
+		"caminho_json" => array("type"=>"text", "label"=>"caminho json", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -153,6 +153,9 @@ class EVI extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+	public $data;
+	public $talhao;
+	public $caminho_json;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -1205,6 +1208,120 @@ class EVI extends CommonObject
 		dol_syslog(__METHOD__." end", LOG_INFO);
 
 		return $error;
+	}
+
+	/**
+	 * Regist the EVI data from a specific talhao or the latest EVI data from all talhaos
+	 *
+	 * @param User $user user for creating the register (optional)
+	 * @param string $time The time range for the NDVI data (optional)
+	 * @param Talhao $talhao The specific talhao to fetch data for (optional)
+	 * @return void
+	 */
+	public function requestEVIData(User $user = null, $time = null, Talhao $talhao = null)
+	{
+		dol_include_once('/safra/class/talhao.class.php', 'Talhao');
+		dol_include_once('/user/class/user.class.php', 'User');
+		// include_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
+		
+		if(!$user){
+			$user = new User($this->db);
+			$user->fetch(1);
+		}
+
+		if(!$talhao){
+			$talhao = new Talhao($this->db);
+			$talhao = $talhao->fetchAll();
+		} else {
+			$t_id = $talhao;
+			$talhao = new Talhao($this->db);
+			$talhao = $talhao->fetch($t_id);
+		}
+		global $conf;
+		// print_r($conf);
+		// URL para o serviço WMS do Sentinel Hub
+		$url = 'https://services.sentinel-hub.com/ogc/wms/' . $conf->global->SAFRA_API_SENTINELHUB; // Substitua {INSTANCE_ID} pelo ID da sua instância
+
+		if(!$time){
+			$t1 = date('Y-m-d', strtotime('-5 day'));
+			$t2 = date('Y-m-d', strtotime('+5 day'));
+			$time = $t1 . '/' . $t2;
+		}
+
+		$cont = 0;
+
+		foreach($talhao as $key){
+			// Configuração inicial do cURL
+			$ch = curl_init($url);
+	
+			// Define as opções do cURL
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+			// curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+			// 	'Content-Type: application/json',
+			// 	'Authorization: Bearer YOUR_ACCESS_TOKEN'  // Substitua YOUR_ACCESS_TOKEN pelo seu token de acesso
+			// ));
+	
+			// Parâmetros da requisição WMS
+			$params = array(
+				'SERVICE' => 'WMS',
+				'REQUEST' => 'GetMap',
+				'LAYERS' => 'EVI',  // Substitua por sua camada de dados configurada
+				'TRANSPARENT' => 'true',
+				'FORMAT' => 'application/json',  // Formato da resposta
+				'RESX' => '10m',         // Altura da imagem
+				'RESY' => '10m',          // Largura da imagem
+				'CRS' => 'CRS:84',      // Sistema de referência coordenado
+				'TIME' => $time,  // Intervalo de tempo para dados de satélite
+				'GEOMETRY' => $key->wkt,
+				'SHOWLOGO' => 'false',
+				'MAXCC' => '100'
+			);
+	
+			// Configura a URL com os parâmetros
+			// echo $url . '?' . http_build_query($params);
+			curl_setopt($ch, CURLOPT_URL, $url . '?' . http_build_query($params));
+	
+			// Executa a sessão cURL
+			$response = curl_exec($ch);
+	
+			// Verifica erros
+			if (curl_errno($ch)) {
+				echo 'Erro no cURL: ' . curl_error($ch);
+			}
+	
+			// Fecha a sessão cURL
+			curl_close($ch);
+
+			$file_name = str_replace('/', '_', $time).'_'.$key->id;
+			// echo '<pre>';
+			// print_r($key);
+			// echo '</pre>';
+	
+			// Define o caminho do arquivo para salvar a resposta
+			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/evi/'. $file_name .'.json'; // Altere para o diretório desejado
+
+			
+			// Salva a resposta em um arquivo
+			if (!file_put_contents($file_path, $response)) {
+				// echo "Erro ao salvar o arquivo.";
+			} else {
+				if(filesize($file_path)<1000 && $cont == 0){
+					echo "sem dados para esse periodo!";
+					$cont++;
+				}
+			}
+			
+			$evi = new EVI($this->db);
+			$evi->ref = $file_name;
+			$evi->label = $time;
+			$evi->talhao = $key->id;
+			$evi->date_creation = dol_now();
+			$evi->caminho_json = './json/evi/'. $file_name .'.json';
+			$evi->create($user);
+
+		}
 	}
 }
 
