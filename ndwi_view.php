@@ -410,11 +410,11 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
     <div class="layer-legend">
         <div class="legend-item continuous">
             <div class="gradients">
-                <div class="gradient" style="background: linear-gradient(to top, rgb(255, 255, 255), rgb(0, 0, 255)); height: 20%; bottom: 0%;"></div> <!-- Dark Red to Red -->
+                <div class="gradient" style="background: linear-gradient(to top, rgb(0, 102, 0), rgb(255, 255, 255)); height: 50%; bottom: 0%;"></div> <!-- Dark Red to Red -->
                 <!-- <div class="gradient" style="background: linear-gradient(to top, rgb(255, 0, 0), rgb(255, 255, 0)); height: 20%; bottom: 20%;"></div> Red to Red-Orange -->
-                <div class="gradient" style="background: linear-gradient(to top, rgb(255, 255, 0), rgb(0, 255, 255)); height: 20%; bottom: 40%;"></div> <!-- Yellow to Cyan -->
+                <!-- <div class="gradient" style="background: linear-gradient(to top, rgb(255, 255, 0), rgb(0, 255, 255)); height: 34%; bottom: 33%;"></div> Yellow to Cyan -->
                 <!-- <div class="gradient" style="background: linear-gradient(to top, rgb(0, 255, 255), rgb(0, 0, 255)); height: 20%; bottom: 60%;"></div> Cyan to Blue -->
-                <div class="gradient" style="background: linear-gradient(to top, rgb(0, 0, 255), rgb(0, 0, 128)); height: 20%; bottom: 80%;"></div> <!-- Blue to Dark Blue -->
+                <div class="gradient" style="background: linear-gradient(to top, rgb(255, 255, 255), rgb(0, 0, 255)); height: 50%; bottom: 50%;"></div> <!-- Blue to Dark Blue -->
             </div>
             <div class="ticks">
                 <label class="tick" style="bottom: 0%;">-1.0</label>

@@ -1377,11 +1377,14 @@ class modSafra extends DolibarrModules
 			return -1; // Do not activate module if error 'not allowed' returned when loading module SQL queries (the _load_table run sql with run_sql with the error allowed parameter set to 'default')
 		}
 
-		// include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 
-		// $extrafields = new ExtraFields($this->db);
+		$extrafields = new ExtraFields($this->db);
 
-		// $r1 = $extrafields->addExtraField('talhao', 'Talhão', 'link', 100, null, 'projet', 0, 1, null, array('options' => ""))
+		// $r1 = $extrafields->addExtraField('fk_talhao', 'Talhão', 'link', 10, 11, null);
+		$result1=$extrafields->addExtraField('fk_talhao', "Talhão", 'link', 10,  null, 'project', 0, 0, null, array('options' => array("Talhao:custom/safra/class/talhao.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
+		$result2=$extrafields->addExtraField('fk_cultura', "Cultura", 'link', 11,  null, 'project', 0, 0, null, array('options' => array("Cultura:custom/safra/class/cultura.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
+		$result3=$extrafields->addExtraField('fk_cultivar', "Cultivar", 'link', 12,  null, 'project', 0, 0, null, array('options' => array("Cultivar:custom/safra/class/cultivar.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 
 
 		// Create extrafields during init

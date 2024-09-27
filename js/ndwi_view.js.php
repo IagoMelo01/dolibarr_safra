@@ -261,8 +261,8 @@
         // var geojsonInput = document.getElementsByClassName("fieldname_geo_json")[1].children[0].innerHTML;
         // console.log(geojsonInput);
         if (data) {
-            var geojsonObject = turf.simplify(data, { tolerance: 0.01, highQuality: true });
-            // var geojsonObject = JSON.parse(data);
+            // var geojsonObject = turf.simplify(data, { tolerance: 0.01, highQuality: true });
+            var geojsonObject = JSON.parse(data);
             // var geojsonObject = JSON.parse(data);
             var geojsonLayer = L.geoJSON(geojsonObject);
             drawnItems.addLayer(geojsonLayer);
