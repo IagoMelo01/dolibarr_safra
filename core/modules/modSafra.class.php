@@ -1380,12 +1380,67 @@ class modSafra extends DolibarrModules
 		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 
 		$extrafields = new ExtraFields($this->db);
+		
+
 
 		// $r1 = $extrafields->addExtraField('fk_talhao', 'Talhão', 'link', 10, 11, null);
-		$result1=$extrafields->addExtraField('fk_talhao', "Talhão", 'link', 10,  null, 'project', 0, 0, null, array('options' => array("Talhao:custom/safra/class/talhao.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
-		$result2=$extrafields->addExtraField('fk_cultura', "Cultura", 'link', 11,  null, 'project', 0, 0, null, array('options' => array("Cultura:custom/safra/class/cultura.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
-		$result3=$extrafields->addExtraField('fk_cultivar', "Cultivar", 'link', 12,  null, 'project', 0, 0, null, array('options' => array("Cultivar:custom/safra/class/cultivar.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
+		// $result1=$extrafields->addExtraField('fk_talhao', "Talhão", 'link', 10,  null, 'project', 0, 0, null, array('options' => array("Talhao:custom/safra/class/talhao.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
+		// $result2=$extrafields->addExtraField('fk_cultura', "Cultura", 'link', 11,  null, 'project', 0, 0, null, array('options' => array("Cultura:custom/safra/class/cultura.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
+		// $result3=$extrafields->addExtraField('fk_cultivar', "Cultivar", 'link', 12,  null, 'project', 0, 0, null, array('options' => array("Cultivar:custom/safra/class/cultivar.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 
+		 // Verificar se o campo extra já existe antes de adicionar
+		 if (!$extrafields->fetch_name_optionals_label('fk_cultura', 'project')) {
+			// Adicionar extrafield para referenciar Cultura
+			$extrafields->addExtraField(
+				'fk_cultura',                            // Nome do campo
+				'Cultura',                               // Rótulo do campo
+				'Cultura:safra/class/cultura.class.php',                               // Tipo do campo (sellist para criar uma lista)
+				1,                                       // Posição
+				10,                                      // Tamanho
+				'project',                               // Módulo/elemento (project)
+				0,                                       // Campo não único
+				0,                                       // Não obrigatório
+				'',                                      // Valor padrão
+				array('options' => 'llx_safra_cultura:label:rowid'), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
+				1                                        // Sempre editável
+			);
+		}
+	
+		// Verificar se o campo extra já existe antes de adicionar
+		if (!$extrafields->fetch_name_optionals_label('fk_cultivar', 'project')) {
+			// Adicionar extrafield para referenciar Cultivar
+			$extrafields->addExtraField(
+				'fk_cultivar',                           // Nome do campo
+				'Cultivar',                              // Rótulo do campo
+				'sellist',                               // Tipo do campo (sellist)
+				2,                                       // Posição
+				10,                                      // Tamanho
+				'project',                               // Módulo/elemento (project)
+				0,                                       // Campo não único
+				0,                                       // Não obrigatório
+				'',                                      // Valor padrão
+				array('options' => 'llx_safra_cultivar:label:rowid'), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
+				1                                        // Sempre editável
+			);
+		}
+	
+		// Verificar se o campo extra já existe antes de adicionar
+		if (!$extrafields->fetch_name_optionals_label('fk_talhao', 'project')) {
+			// Adicionar extrafield para referenciar Talhão
+			$extrafields->addExtraField(
+				'fk_talhao',                             // Nome do campo
+				'Talhão',                                // Rótulo do campo
+				'sellist',                               // Tipo do campo (sellist)
+				3,                                       // Posição
+				10,                                      // Tamanho
+				'project',                               // Módulo/elemento (project)
+				0,                                       // Campo não único
+				0,                                       // Não obrigatório
+				'',                                      // Valor padrão
+				array('options' => 'llx_safra_talhao:label:rowid'), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
+				1                                        // Sempre editável
+			);
+		}
 
 		// Create extrafields during init
 		//include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
