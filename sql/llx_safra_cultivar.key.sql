@@ -17,7 +17,6 @@
 -- BEGIN MODULEBUILDER INDEXES
 ALTER TABLE llx_safra_cultivar ADD INDEX idx_safra_cultivar_rowid (rowid);
 ALTER TABLE llx_safra_cultivar ADD INDEX idx_safra_cultivar_ref (ref);
-ALTER TABLE llx_safra_cultivar ADD INDEX idx_safra_cultivar_fk_project (fk_project);
 ALTER TABLE llx_safra_cultivar ADD INDEX idx_safra_cultivar_status (status);
 -- END MODULEBUILDER INDEXES
 
