@@ -45,6 +45,7 @@ CREATE TABLE llx_safra_zoneamento(
 	safra_ini integer, 
 	safra_fim integer, 
 	risco integer, 
-	portaria text
+	portaria text, 
+	janela_plantio integer NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

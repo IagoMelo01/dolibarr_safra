@@ -94,24 +94,54 @@ $formSetup = new FormSetup($db);
 
 // Enter here all parameters in your setup page
 
-// Setup conf for selection of an URL
 $item = $formSetup->newItem('SAFRA_FAZENDA')->setAsString();
 
-// Setup conf for selection of a simple string input
+$item = $formSetup->newItem('SAFRA_HA_MAXIMO')->setAsString();
+
 $item = $formSetup->newItem('SAFRA_LATITUDE')->setAsString();
 
-// Setup conf for selection of a simple textarea input but we replace the text of field title
 $item = $formSetup->newItem('SAFRA_LONGITUDE')->setAsString();
 
-// Setup conf for a selection of a thirdparty
 $item = $formSetup->newItem('SAFRA_API_SENTINELHUB')->setAsString();
 
-// Setup conf for a selection of a boolean
 $formSetup->newItem('SAFRA_API_EMBRAPA_PUBLIC')->setAsString();
 $formSetup->newItem('SAFRA_API_EMBRAPA_PRIVATE')->setAsString();
 
-// Setup conf for a selection of an email template of type thirdparty
-$formSetup->newItem('SAFRA_MUNICIPIO')->setAsMultiSelect('llx_safra_municipio');
+require_once DOL_DOCUMENT_ROOT.'/custom/safra/class/municipio.class.php';
+
+$obj_municipio = new Municipio($db);
+$list_municipios = $obj_municipio->fetchAll();
+
+// $array_municipios = array(
+//     1 => 'Cidade 1',
+//     2 => 'Cidade 2',
+//     3 => 'Cidade 3'
+// );
+
+
+$array_municipios = array();
+foreach ($list_municipios as $municipio) {
+    // Adicionar município ao array, usando rowid como chave e ref como valor
+    $array_municipios[$municipio->cod_ibge] = $municipio->ref;
+}
+
+// Verificar o conteúdo do array para depuração
+// print_r($array_municipios); // Deve exibir todos os municípios corretamente
+
+$item = $formSetup->newItem('SAFRA_MUNICIPIO');
+$item->setAsSelect($array_municipios);
+// $item->setLabel('Municípios');
+// $item->setHelpText('Selecione um ou mais municípios relacionados');
+// satveg
+$formSetup->newItem("SATVEG")->setAsTitle();
+$item = $formSetup->newItem('SAFRA_SATVEG_SATELITE')->setAsString();
+$item->defaultFieldValue = 'comb';
+$item = $formSetup->newItem('SAFRA_SATVEG_PRE_FILTRO')->setAsString();
+$item->defaultFieldValue = '3';
+$item = $formSetup->newItem('SAFRA_SATVEG_FILTRO')->setAsString();
+$item->defaultFieldValue = 'wav';
+$item = $formSetup->newItem('SAFRA_SATVEG_PARAMETRO_FILTRO')->setAsString();
+$item->defaultFieldValue = '';
 
 // Setup conf for a selection of a secured key
 //$formSetup->newItem('SAFRA_MYPARAM7')->setAsSecureKey();

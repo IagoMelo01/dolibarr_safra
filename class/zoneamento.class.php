@@ -143,6 +143,7 @@ class Zoneamento extends CommonObject
 		"safra_fim" => array("type"=>"integer", "label"=>"Safra Fim", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"risco" => array("type"=>"integer", "label"=>"Risco", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"portaria" => array("type"=>"text", "label"=>"Portaria", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"janela_plantio" => array("type"=>"integer:janelaplantio:safra/class/janelaplantio.class.php", "label"=>"Janela de Plantio", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -174,6 +175,7 @@ class Zoneamento extends CommonObject
 	public $safra_fim;
 	public $risco;
 	public $portaria;
+	public $janela_plantio;
 	// END MODULEBUILDER PROPERTIES
 
 

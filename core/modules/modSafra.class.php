@@ -88,7 +88,7 @@ class modSafra extends DolibarrModules
 		// Define some features supported by module (triggers, login, substitutions, menus, css, etc...)
 		$this->module_parts = array(
 			// Set this to 1 if module has its own trigger directory (core/triggers)
-			'triggers' => 0,
+			'triggers' => 1,
 			// Set this to 1 if module has its own login method file (core/login)
 			'login' => 0,
 			// Set this to 1 if module has its own substitution function file (core/substitutions)
@@ -448,6 +448,21 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][1] = 'Delete NDMI object of Safra';
 		$this->rights[$r][4] = 'ndmi';
 		$this->rights[$r][5] = 'delete';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (11 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read JanelaPlantio object of Safra';
+		$this->rights[$r][4] = 'janelaplantio';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (11 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update JanelaPlantio object of Safra';
+		$this->rights[$r][4] = 'janelaplantio';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (12 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read Zoneamento object of Safra';
+		$this->rights[$r][4] = 'zoneamento';
+		$this->rights[$r][5] = 'read';
 		$r++;
 		
 		/* END MODULEBUILDER PERMISSIONS */
