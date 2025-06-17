@@ -131,6 +131,7 @@ div.mainmenu.safra {
 		align-content: start;
 	}
 
+
        .item {
                margin: 10px;
                width: 46rem;
@@ -148,6 +149,7 @@ div.mainmenu.safra {
                width: 100%;
                height: 350px;
        }
+
 	#mapList {
 		z-index: 0;
 		width: 95%;
@@ -251,6 +253,7 @@ div.mainmenu.safra {
     border-radius: 4px;
     padding: 2px 4px;
     font-size: 0.8rem;
+
 }
 @keyframes spin {
     from {
