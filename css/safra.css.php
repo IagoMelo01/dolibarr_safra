@@ -136,10 +136,11 @@ div.mainmenu.safra {
 		width: 46rem;
 	}
 
-	#mapIndex {
-		width: 70%;
-		height: 350px;
-	}
+        #mapIndex {
+                position: relative;
+                width: 70%;
+                height: 350px;
+        }
 	#mapList {
 		z-index: 0;
 		width: 95%;
@@ -206,10 +207,11 @@ div.mainmenu.safra {
 		width: 95%;
 		height: 650px;
 	}
-	#mapIndex {
-		width: 100%;
-		height: 30rem;
-	}
+        #mapIndex {
+                position: relative;
+                width: 100%;
+                height: 30rem;
+        }
 }
 
 
@@ -217,6 +219,11 @@ div.mainmenu.safra {
 	/* creating css loader */
 
 #boxLoading {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 6rem;
     height: 6rem;
     border: 5px solid #ffffff;
@@ -224,9 +231,10 @@ div.mainmenu.safra {
     border-radius: 100%;
     margin: auto;
     animation: spin 1s infinite linear;
+    background-color: rgba(255, 255, 255, 0.8);
 }
 #boxLoading.display {
-    visibility: visible;
+    display: block;
 }
 @keyframes spin {
     from {
