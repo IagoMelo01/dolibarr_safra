@@ -7,6 +7,7 @@
 
 <script>
     var map = L.map('mapIndex').setView([-17.047558, -46.824176], 13);
+    var loader = document.getElementById('boxLoading');
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; OpenStreetMap contributors'
@@ -21,6 +22,10 @@
     });
     googleHybrid.addTo(map);
 
+    map.whenReady(function () {
+        if (loader) loader.classList.remove('display');
+    });
+
 
     var drawnPolygon
     // drawnPolygon = renderGeoJSON();
@@ -31,7 +36,7 @@
         json.forEach((data) => {
             let json_layer = renderGeoJSON(data);
             console.log(json_layer);
-            // createAreaTooltip(json_layer, i);
+            createAreaTooltip(json_layer, i);
             i++;
         });
     }

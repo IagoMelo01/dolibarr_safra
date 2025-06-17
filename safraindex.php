@@ -113,7 +113,9 @@ print '<div class="fichecenter">';
 ?>
 
 <div class="container">
-	<div id="mapIndex" class="item"></div>
+        <div id="mapIndex" class="item">
+                <div id="boxLoading" class="display"></div>
+        </div>
 </div>
 
 <?php
