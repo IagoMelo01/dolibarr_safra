@@ -8,7 +8,9 @@
 
 
 <script>
-    
+<?php $sentinelHubId = getDolGlobalString('SAFRA_API_SENTINELHUB'); ?>
+const SENTINELHUB_ID = '<?php echo addslashes($sentinelHubId); ?>';
+
 var map = L.map('mapCRUD').setView([-17.047558, -46.824176], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -110,7 +112,7 @@ function updateInputs(layer) {
 function fetchNDVIData(layer) {
     var wkt = wellknown.stringify(layer.toGeoJSON());
     var encodedWKT = encodeURIComponent(wkt);
-    var url = `https://services.sentinel-hub.com/ogc/wms/3f380032-35a2-468e-83b2-0363da66b000?service=WMS&request=GetMap&layers=NDVI&styles=&format=application/json&transparent=true&RESX=10m&RESY=10m&srs=CRS:84&geometry=${encodedWKT}/`;
+    var url = `https://services.sentinel-hub.com/ogc/wms/${SENTINELHUB_ID}?service=WMS&request=GetMap&layers=NDVI&styles=&format=application/json&transparent=true&RESX=10m&RESY=10m&srs=CRS:84&geometry=${encodedWKT}/`;
     console.log(url);
 
     // Fetch NDVI data in GeoJSON
