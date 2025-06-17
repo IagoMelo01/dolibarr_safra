@@ -177,6 +177,7 @@ if ($consulta != '') {
     <select id="weekPicker" onchange="getWeekDates(this.value)">
         <!-- JavaScript para gerar as opções de semana -->
     </select>
+    <button type="button" id="btnConsulta">Consultar</button>
     <input name="dateRange" id="dateRange" type="hidden" disabled value="Selecione uma semana para ver as datas.">
     <!-- <br> -->
     <input type="hidden" name="arquivo" value="<?php echo $consulta; ?>" id="inputArquivo">
@@ -323,15 +324,54 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
 <!-- <p id="mensagem"></p> -->
 <style>
     body {
-        background-color: #555;
+        background-color: #f0f2f5;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #ndvi_form {
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    #ndvi_form label {
+        margin-right: 5px;
+    }
+
+    #ndvi_form select {
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+    }
+
+    #btnConsulta {
+        padding: 6px 15px;
+        background-color: #0069d9;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    #btnConsulta:hover {
+        background-color: #0053ba;
     }
 
     .container{
         flex-wrap: nowrap;
+        justify-content: center;
     }
 
     .item{
         max-width: 100%;
+        margin-bottom: 1rem;
     }
 
     #map {
@@ -339,11 +379,22 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
         width: 100% !important;
     }
 
+    #mapIndex {
+        height: 500px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
     .layer-details {
-        border-bottom: 1px solid #555;
+        border-bottom: 1px solid #ddd;
         width: 100%;
         display: flex;
         flex-direction: row;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .layer-legend {
@@ -401,8 +452,8 @@ if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
         flex: 1;
         padding-left: 40px;
         padding-right: 30px;
-        /* color: #d0d5dd; */
         min-width: 50%;
+        color: #333;
     }
 </style>
 <div class="layer-details">

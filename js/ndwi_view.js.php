@@ -15,6 +15,7 @@
     const arquivoElement = document.getElementById('inputArquivo');
     const weekPickerElement = document.getElementById('weekPicker');
     const yearPickerElement = document.getElementById('yearPicker');
+    const btnConsulta = document.getElementById('btnConsulta');
 
     let consultado = arquivoElement.value.split("_");
     console.log(consultado);
@@ -182,6 +183,9 @@
     // Adiciona o ouvinte de eventos para o evento de mudança
     talhaoElement.addEventListener('change', aoMudar);
     consultaElement.addEventListener('change', consulta)
+    if (btnConsulta) {
+        btnConsulta.addEventListener('click', consulta);
+    }
 </script>
 
 
