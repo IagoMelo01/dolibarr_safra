@@ -130,17 +130,26 @@ div.mainmenu.safra {
 		align-items: auto;
 		align-content: start;
 	}
-	.item {
-		margin: 10px;
-		/* border: 5px solid red; */
-		width: 46rem;
-	}
 
-        #mapIndex {
-                position: relative;
-                width: 70%;
-                height: 350px;
-        }
+
+       .item {
+               margin: 10px;
+               width: 46rem;
+       }
+
+       .map-card {
+               background: #fff;
+               border-radius: 8px;
+               box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+               overflow: hidden;
+       }
+
+       #mapIndex {
+               position: relative;
+               width: 100%;
+               height: 350px;
+       }
+
 	#mapList {
 		z-index: 0;
 		width: 95%;
@@ -235,6 +244,16 @@ div.mainmenu.safra {
 }
 #boxLoading.display {
     display: block;
+}
+
+.area-tooltip {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+
 }
 @keyframes spin {
     from {
