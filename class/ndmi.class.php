@@ -1216,7 +1216,7 @@ class NDMI extends CommonObject
 		dol_include_once('/safra/class/talhao.class.php', 'Talhao');
 		dol_include_once('/user/class/user.class.php', 'User');
 		// include_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
-		
+
 		if(!$user){
 			$user = new User($this->db);
 			$user->fetch(1);
@@ -1246,7 +1246,7 @@ class NDMI extends CommonObject
 		foreach($talhao as $key){
 			// Configuração inicial do cURL
 			$ch = curl_init($url);
-	
+
 			// Define as opções do cURL
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -1255,7 +1255,7 @@ class NDMI extends CommonObject
 			// 	'Content-Type: application/json',
 			// 	'Authorization: Bearer YOUR_ACCESS_TOKEN'  // Substitua YOUR_ACCESS_TOKEN pelo seu token de acesso
 			// ));
-	
+
 			// Parâmetros da requisição WMS
 			$params = array(
 				'SERVICE' => 'WMS',
@@ -1271,19 +1271,19 @@ class NDMI extends CommonObject
 				'SHOWLOGO' => 'false',
 				'MAXCC' => '100'
 			);
-	
+
 			// Configura a URL com os parâmetros
 			// echo $url . '?' . http_build_query($params);
 			curl_setopt($ch, CURLOPT_URL, $url . '?' . http_build_query($params));
-	
+
 			// Executa a sessão cURL
 			$response = curl_exec($ch);
-	
+
 			// Verifica erros
 			if (curl_errno($ch)) {
 				echo 'Erro no cURL: ' . curl_error($ch);
 			}
-	
+
 			// Fecha a sessão cURL
 			curl_close($ch);
 
@@ -1291,11 +1291,11 @@ class NDMI extends CommonObject
 			// echo '<pre>';
 			// print_r($key);
 			// echo '</pre>';
-	
+
 			// Define o caminho do arquivo para salvar a resposta
 			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/ndmi/'. $file_name .'.json'; // Altere para o diretório desejado
 
-			
+
 			// Salva a resposta em um arquivo
 			if (!file_put_contents($file_path, $response)) {
 				// echo "Erro ao salvar o arquivo.";
@@ -1305,7 +1305,7 @@ class NDMI extends CommonObject
 					$cont++;
 				}
 			}
-			
+
 			$ndmi = new NDMI($this->db);
 			$ndmi->ref = $file_name;
 			$ndmi->label = $time;
