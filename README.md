@@ -2,11 +2,24 @@
 
 ## Features
 
-Description of the module...
+Safra adds crop and satellite monitoring tools inside Dolibarr. Main features include:
+
+* **Crop management** – register farms, fields and cultivars and track planting or harvest events.
+* **Vegetation indexes** – retrieve NDVI, NDWI and other bands from the Sentinel Hub service to monitor crop vigour.
+* **Interactive maps** – draw parcels directly on maps using Leaflet based tools, measure areas and visualize satellite layers.
+
+Below is a simple view of the module interface:
 
 <!--
 ![Screenshot safra](img/screenshot_safra.png?raw=true "Safra"){imgmd}
 -->
+
+### Basic usage
+1. Enable the module from **Setup -> Modules**.
+2. Create farms and fields using the Safra menu.
+3. Draw field boundaries on the map and save them.
+4. Open a field card and use the NDVI/NDWI buttons to fetch satellite data.
+
 
 Other external modules are available on [Dolistore.com](https://www.dolistore.com).
 
@@ -75,13 +88,20 @@ git clone git@github.com:gitlogin/safra.git safra
 
 -->
 
-### Final steps
 
 From your browser:
 
   - Log into Dolibarr as a super-administrator
   - Go to "Setup" -> "Modules"
   - You should now be able to find and enable the module
+After the module is enabled, open **Setup -> Safra** to configure API keys.
+
+### API configuration
+1. Create an account at [Sentinel Hub](https://www.sentinel-hub.com/) and obtain an API key.
+2. Set this key into the `SAFRA_API_SENTINELHUB` field of the Safra setup page.
+3. (Optional) Generate public and private keys for the Embrapa services and fill
+   `SAFRA_API_EMBRAPA_PUBLIC` and `SAFRA_API_EMBRAPA_PRIVATE`.
+
 
 
 
