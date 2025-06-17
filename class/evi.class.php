@@ -1279,17 +1279,20 @@ class EVI extends CommonObject
 				'MAXCC' => '100'
 			);
 	
-			// Configura a URL com os parâmetros
-			// echo $url . '?' . http_build_query($params);
-			curl_setopt($ch, CURLOPT_URL, $url . '?' . http_build_query($params));
+                        // Configura a URL com os parâmetros
+                        $requestUrl = $url . '?' . http_build_query($params);
+                        // echo $requestUrl;
+                        curl_setopt($ch, CURLOPT_URL, $requestUrl);
 	
 			// Executa a sessão cURL
 			$response = curl_exec($ch);
 	
-			// Verifica erros
-			if (curl_errno($ch)) {
-				echo 'Erro no cURL: ' . curl_error($ch);
-			}
+                        // Verifica erros
+                        if (curl_errno($ch)) {
+                                $err = curl_error($ch);
+                                dol_syslog(__METHOD__.' cURL error on '.$requestUrl.' - '.$err, LOG_ERR);
+                                setEventMessages('Erro ao consultar dados remotos', null, 'errors');
+                        }
 	
 			// Fecha a sessão cURL
 			curl_close($ch);
@@ -1304,13 +1307,14 @@ class EVI extends CommonObject
 
 			
 			// Salva a resposta em um arquivo
-			if (!file_put_contents($file_path, $response)) {
-				// echo "Erro ao salvar o arquivo.";
-			} else {
-				if(filesize($file_path)<1000 && $cont == 0){
-					echo "sem dados para esse periodo!";
-					$cont++;
-				}
+                        if (!file_put_contents($file_path, $response)) {
+                                dol_syslog(__METHOD__.' failed to write '.$file_path, LOG_ERR);
+                        } else {
+                                if (filesize($file_path) < 1000 && $cont == 0) {
+                                        dol_syslog(__METHOD__.' no data returned for '.$requestUrl, LOG_WARNING);
+                                        setEventMessages('Sem dados para esse periodo!', null, 'warnings');
+                                        $cont++;
+                                }
 			}
 			
 			$evi = new EVI($this->db);
