@@ -33,6 +33,21 @@ SAFRA_MYPARAM1Tooltip = My param 1 tooltip
 SAFRA_MYPARAM2=My param 2
 SAFRA_MYPARAM2Tooltip=My param 2 tooltip
 
+SAFRA_FAZENDA = Fazenda
+SAFRA_LATITUDE = Latitude
+SAFRA_LONGITUDE = Longitude
+SAFRA_API_SENTINELHUB = Sentinel Hub API key
+SAFRA_API_EMBRAPA = Embrapa API key
+SAFRA_MUNICIPIO = Município
+SAFRA_HA_MAXIMO = Maximum area
+SAFRA_API_EMBRAPA_PUBLIC = Embrapa public key
+SAFRA_API_EMBRAPA_PRIVATE = Embrapa private key
+SATVEG = SatVeg
+SAFRA_SATVEG_SATELITE = Satellite
+SAFRA_SATVEG_PRE_FILTRO = Pre-filter
+SAFRA_SATVEG_FILTRO = Filter
+SAFRA_SATVEG_PARAMETRO_FILTRO = Filter parameter
+SafraTab = Safra
 
 #
 # About page

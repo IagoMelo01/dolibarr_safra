@@ -17,46 +17,55 @@
 # Generic
 #
 
-# Module label 'ModuleMyModuleName'
-ModuleMyModuleName = MyModule
-# Module description 'ModuleMyModuleDesc'
-ModuleMyModuleDesc = MyModule description
+# Module label 'ModuleSafraName'
+ModuleSafraName = Safra
+# Module description 'ModuleSafraDesc'
+ModuleSafraDesc = Descrição do módulo Safra
 
 #
 # Admin page
 #
-MyModuleSetup = MyModule setup
-Settings = Settings
-MyModuleSetupPage = MyModule setup page
-MYMODULE_MYPARAM1 = My param 1
-MYMODULE_MYPARAM1Tooltip = My param 1 tooltip
-MYMODULE_MYPARAM2=My param 2
-MYMODULE_MYPARAM2Tooltip=My param 2 tooltip
+SafraSetup = Configuração do Safra
+Settings = Configurações
+SafraSetupPage = Página de configuração do Safra
+SAFRA_MYPARAM1 = Meu parâmetro 1
+SAFRA_MYPARAM1Tooltip = Ajuda do parâmetro 1
+SAFRA_MYPARAM2 = Meu parâmetro 2
+SAFRA_MYPARAM2Tooltip = Ajuda do parâmetro 2
 SAFRA_FAZENDA = Fazenda
 SAFRA_LATITUDE = Latitude
 SAFRA_LONGITUDE = Longitude
 SAFRA_API_SENTINELHUB = Chave API Sentinel Hub
 SAFRA_API_EMBRAPA = Chave API Embrapa
 SAFRA_MUNICIPIO = Município
+SAFRA_HA_MAXIMO = Área máxima 
+SAFRA_API_EMBRAPA_PUBLIC = Chave pública da API Embrapa
+SAFRA_API_EMBRAPA_PRIVATE = Chave privada da API Embrapa
+SATVEG = SatVeg
+SAFRA_SATVEG_SATELITE = Satélite
+SAFRA_SATVEG_PRE_FILTRO = Pré-filtro
+SAFRA_SATVEG_FILTRO = Filtro
+SAFRA_SATVEG_PARAMETRO_FILTRO = Parâmetro do filtro
+SafraTab = Safra
 
 
 #
 # About page
 #
-About = About
-MyModuleAbout = About MyModule
-MyModuleAboutPage = MyModule about page
+About = Sobre
+SafraAbout = Sobre o Safra
+SafraAboutPage = Página sobre o Safra
 
 #
 # Sample page
 #
-MyModuleArea = Home MyModule
-MyPageName = My page name
+SafraArea = Módulo Safra
+MyPageName = Nome da Minha Página
 ListCultura = Lista de Culturas
 NewCultura = Nova Cultura
 
 #
 # Sample widget
 #
-MyWidget = My widget
-MyWidgetDescription = My widget description
+MyWidget = Meu widget
+MyWidgetDescription = Descrição do widget
