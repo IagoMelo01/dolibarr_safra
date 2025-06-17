@@ -113,9 +113,11 @@ print '<div class="fichecenter">';
 ?>
 
 <div class="container">
-        <div id="mapIndex" class="item">
-                <div id="boxLoading" class="display"></div>
-        </div>
+       <div class="map-card item">
+               <div id="mapIndex">
+                       <div id="boxLoading" class="display"></div>
+               </div>
+       </div>
 </div>
 
 <?php
