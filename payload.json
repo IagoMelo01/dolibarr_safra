@@ -1,0 +1,43 @@
+{
+    "input": {
+        "bounds": {
+            "bbox": [
+                -47.89,
+                -15.82,
+                -47.88,
+                -15.81
+            ],
+            "properties": {
+                "crs": "http:\/\/www.opengis.net\/def\/crs\/EPSG\/0\/4326"
+            }
+        },
+        "data": [
+            {
+                "type": "sentinel-2-l2a",
+                "dataFilter": {
+                    "timeRange": {
+                        "from": "2025-04-23T00:00:00Z",
+                        "to": "2025-06-18T23:59:59Z"
+                    }
+                }
+            }
+        ]
+    },
+    "aggregation": {
+        "timeRange": {
+            "from": "2025-04-23T00:00:00Z",
+            "to": "2025-06-18T23:59:59Z"
+        },
+        "aggregationInterval": {
+            "of": "P7D"
+        },
+        "reducers": [
+            "avg"
+        ]
+    },
+    "calculations": {
+        "default": {
+            "evalscript": "\/\/VERSION=3\nfunction setup() { return { input:[\"B04\",\"B08\",\"dataMask\"], output:[{id:\"ndvi\",bands:1,sampleType:\"FLOAT32\"},{id:\"dataMask\",bands:1}] }; }\nfunction evaluatePixel(samples){ let v=(samples.B08-samples.B04)\/(samples.B08+samples.B04); return { ndvi:[v], dataMask:[samples.dataMask] }; }"
+        }
+    }
+}
