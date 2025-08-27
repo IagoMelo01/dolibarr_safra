@@ -33,7 +33,7 @@ CREATE TABLE llx_safra_cultivar(
 	cultura integer NOT NULL, 
 	obtentor_mantenedor varchar(255), 
 	rnc varchar(128), 
-	embrapa_id integer, 
+	embrapa_id integer UNIQUE, 
 	safra varchar(128), 
 	potencial_produtivo double(28,4), 
 	uf varchar(4), 

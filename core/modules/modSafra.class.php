@@ -434,6 +434,11 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'ndvi';
 		$this->rights[$r][5] = 'write';
 		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (9 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete NDVI object of Safra';
+		$this->rights[$r][4] = 'ndvi';
+		$this->rights[$r][5] = 'delete';
+		$r++;
 		$this->rights[$r][0] = $this->numero . sprintf('%02d', (10 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read NDMI object of Safra';
 		$this->rights[$r][4] = 'ndmi';
@@ -464,7 +469,37 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'zoneamento';
 		$this->rights[$r][5] = 'read';
 		$r++;
-		
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (13 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read EVI object of Safra';
+		$this->rights[$r][4] = 'evi';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (13 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update EVI object of Safra';
+		$this->rights[$r][4] = 'evi';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (13 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete EVI object of Safra';
+		$this->rights[$r][4] = 'evi';
+		$this->rights[$r][5] = 'delete';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (14 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read SWIR object of Safra';
+		$this->rights[$r][4] = 'swir';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (14 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update SWIR object of Safra';
+		$this->rights[$r][4] = 'swir';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (14 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete SWIR object of Safra';
+		$this->rights[$r][4] = 'swir';
+		$this->rights[$r][5] = 'delete';
+		$r++;
+
 		/* END MODULEBUILDER PERMISSIONS */
 
 		// Main menu entries to add
@@ -633,13 +668,29 @@ class modSafra extends DolibarrModules
 			 'user' => 2,
 		);
 		/* END LEFTMENU NEW TALHAO */
-		/* LEFTMENU NDVI */
+		
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra',
 			 'type' => 'left',
-			 'titre' => 'NDVI',
+			 'titre' => 'Análises de Satélite',
+			 'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'ndvi',
+			 'url' => '#',
+			 'langs' => 'safra@safra',
+			 'position' => 1000 + $r,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
+			 'type' => 'left',
+			 'titre' => 'NDVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_ndvi',
 			 'url' => '/safra/ndvi_view.php',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
@@ -648,15 +699,14 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		/* END LEFTMENU NDVI */
-		/* LEFTMENU LIST NDVI */
+		
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
-			 'titre' => 'Lista NDVI',
+			 'titre' => 'NDMI',
 			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndvi_list',
-			 'url' => '/safra/ndvi_list.php',
+			 'leftmenu' => 'safra_ndmi',
+			 'url' => '/safra/ndmi_view.php',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
 			 'enabled' => 'isModEnabled(\'safra\')',
@@ -664,15 +714,29 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		/* END LEFTMENU LIST NDVI */
-		/* LEFTMENU NEW NDVI */
+		
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
-			 'titre' => 'Novo NDVI',
+			 'titre' => 'SWIR',
 			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndvi_new',
-			 'url' => '/safra/ndvi_card.php?action=create',
+			 'leftmenu' => 'safra_swir',
+			 'url' => '/safra/swir_view.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000 + $r,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
+			 'type' => 'left',
+			 'titre' => 'NDWI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_ndwi',
+			 'url' => '/safra/ndwi_view.php',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
 			 'enabled' => 'isModEnabled(\'safra\')',
@@ -680,102 +744,117 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		/* END LEFTMENU NEW NDVI */
+		
+		$this->menu[$r++]=array(
+			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
+			 'type' => 'left',
+			 'titre' => 'EVI',
+			 'mainmenu' => 'safra',
+			 'leftmenu' => 'safra_evi',
+			 'url' => '/safra/evi_view.php',
+			 'langs' => 'safra@safra',
+			 'position' => 1000 + $r,
+			 'enabled' => 'isModEnabled(\'safra\')',
+			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'write\')',
+			 'target' => '',
+			 'user' => 2,
+		);
+		
 		/* LEFTMENU SWIR */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra',
-			 'type' => 'left',
-			 'titre' => 'SWIR',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'swir',
-			 'url' => '/safra/swir_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'swir\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU SWIR */
-		/* LEFTMENU LIST SWIR */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
-			 'type' => 'left',
-			 'titre' => 'Lista SWIR',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_swir_list',
-			 'url' => '/safra/swir_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'swir\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU LIST SWIR */
-		/* LEFTMENU NEW SWIR */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
-			 'type' => 'left',
-			 'titre' => 'Novo SWIR',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_swir_new',
-			 'url' => '/safra/swir_card.php?action=create',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'swir\', \'write\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'SWIR',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'swir',
+		// 	 'url' => '/safra/swir_list.php',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'swir\', \'read\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
+		// /* END LEFTMENU SWIR */
+		// /* LEFTMENU LIST SWIR */
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'Lista SWIR',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'safra_swir_list',
+		// 	 'url' => '/safra/swir_list.php',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'swir\', \'read\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
+		// /* END LEFTMENU LIST SWIR */
+		// /* LEFTMENU NEW SWIR */
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=swir',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'Novo SWIR',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'safra_swir_new',
+		// 	 'url' => '/safra/swir_card.php?action=create',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'swir\', \'write\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
 		/* END LEFTMENU NEW SWIR */
 		/* LEFTMENU NDWI */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra',
-			 'type' => 'left',
-			 'titre' => 'NDWI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'ndwi',
-			 'url' => '/safra/ndwi_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU NDWI */
-		/* LEFTMENU LIST NDWI */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
-			 'type' => 'left',
-			 'titre' => 'Lista NDWI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndwi_list',
-			 'url' => '/safra/ndwi_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU LIST NDWI */
-		/* LEFTMENU NEW NDWI */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
-			 'type' => 'left',
-			 'titre' => 'Novo NDWI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndwi_new',
-			 'url' => '/safra/ndwi_card.php?action=create',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'write\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'NDWI',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'ndwi',
+		// 	 'url' => '/safra/ndwi_list.php',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
+		// /* END LEFTMENU NDWI */
+		// /* LEFTMENU LIST NDWI */
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'Lista NDWI',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'safra_ndwi_list',
+		// 	 'url' => '/safra/ndwi_list.php',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
+		// /* END LEFTMENU LIST NDWI */
+		// /* LEFTMENU NEW NDWI */
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndwi',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'Novo NDWI',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'safra_ndwi_new',
+		// 	 'url' => '/safra/ndwi_card.php?action=create',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'write\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
 		/* END LEFTMENU NEW NDWI */
 		/* LEFTMENU ANALISESOLO */
 		$this->menu[$r++]=array(
@@ -1114,52 +1193,52 @@ class modSafra extends DolibarrModules
 		);
 		/* END LEFTMENU NEW RECOMENDACAOADUBO */
 		/* LEFTMENU EVI */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra',
-			 'type' => 'left',
-			 'titre' => 'EVI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'evi',
-			 'url' => '/safra/evi_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU EVI */
-		/* LEFTMENU LIST EVI */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
-			 'type' => 'left',
-			 'titre' => 'Lista EVI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_evi_list',
-			 'url' => '/safra/evi_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU LIST EVI */
-		/* LEFTMENU NEW EVI */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
-			 'type' => 'left',
-			 'titre' => 'Novo EVI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_evi_new',
-			 'url' => '/safra/evi_card.php?action=create',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'evi\', \'write\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'EVI',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'evi',
+		// 	 'url' => '/safra/evi_list.php',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
+		// /* END LEFTMENU EVI */
+		// /* LEFTMENU LIST EVI */
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'Lista EVI',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'safra_evi_list',
+		// 	 'url' => '/safra/evi_list.php',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
+		// /* END LEFTMENU LIST EVI */
+		// /* LEFTMENU NEW EVI */
+		// $this->menu[$r++]=array(
+		// 	 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=evi',
+		// 	 'type' => 'left',
+		// 	 'titre' => 'Novo EVI',
+		// 	 'mainmenu' => 'safra',
+		// 	 'leftmenu' => 'safra_evi_new',
+		// 	 'url' => '/safra/evi_card.php?action=create',
+		// 	 'langs' => 'safra@safra',
+		// 	 'position' => 1000 + $r,
+		// 	 'enabled' => 'isModEnabled(\'safra\')',
+		// 	 'perms' => '$user->hasRight(\'safra\', \'evi\', \'write\')',
+		// 	 'target' => '',
+		// 	 'user' => 2,
+		// );
 		/* END LEFTMENU NEW EVI */
 		/* LEFTMENU APLICACAO */
 		$this->menu[$r++]=array(
@@ -1260,49 +1339,49 @@ class modSafra extends DolibarrModules
 
 
 		/*LEFTMENU NDMI*/
-		$this->menu[$r++]=array(
-			'fk_menu'=>'fk_mainmenu=safra',
-			'type'=>'left',
-			'titre'=>'NDMI',
-			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
-			'mainmenu'=>'safra',
-			'leftmenu'=>'ndmi',
-			'url'=>'/safra/ndmi_list.php',
-			'langs'=>'safra@safra',
-			'position'=>1000+$r,
-			'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndmi", "read")',
-			'target'=>'',
-			'user'=>2,
-		);
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndmi',
-            'type'=>'left',
-            'titre'=>'List NDMI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_ndmi_list',
-            'url'=>'/safra/ndmi_list.php',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndmi", "read")',
-            'target'=>'',
-            'user'=>2,
-        );
-        $this->menu[$r++]=array(
-            'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndmi',
-            'type'=>'left',
-            'titre'=>'New NDMI',
-            'mainmenu'=>'safra',
-            'leftmenu'=>'safra_ndmi_new',
-            'url'=>'/safra/ndmi_card.php?action=create',
-            'langs'=>'safra@safra',
-            'position'=>1000+$r,
-            'enabled'=>'isModEnabled("safra")',
-			'perms'=>'$user->hasRight("safra", "ndmi", "write")',
-            'target'=>'',
-            'user'=>2
-        );
+		// $this->menu[$r++]=array(
+		// 	'fk_menu'=>'fk_mainmenu=safra',
+		// 	'type'=>'left',
+		// 	'titre'=>'NDMI',
+		// 	'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
+		// 	'mainmenu'=>'safra',
+		// 	'leftmenu'=>'ndmi',
+		// 	'url'=>'/safra/ndmi_list.php',
+		// 	'langs'=>'safra@safra',
+		// 	'position'=>1000+$r,
+		// 	'enabled'=>'isModEnabled("safra")',
+		// 	'perms'=>'$user->hasRight("safra", "ndmi", "read")',
+		// 	'target'=>'',
+		// 	'user'=>2,
+		// );
+        // $this->menu[$r++]=array(
+        //     'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndmi',
+        //     'type'=>'left',
+        //     'titre'=>'List NDMI',
+        //     'mainmenu'=>'safra',
+        //     'leftmenu'=>'safra_ndmi_list',
+        //     'url'=>'/safra/ndmi_list.php',
+        //     'langs'=>'safra@safra',
+        //     'position'=>1000+$r,
+        //     'enabled'=>'isModEnabled("safra")',
+		// 	'perms'=>'$user->hasRight("safra", "ndmi", "read")',
+        //     'target'=>'',
+        //     'user'=>2,
+        // );
+        // $this->menu[$r++]=array(
+        //     'fk_menu'=>'fk_mainmenu=safra,fk_leftmenu=ndmi',
+        //     'type'=>'left',
+        //     'titre'=>'New NDMI',
+        //     'mainmenu'=>'safra',
+        //     'leftmenu'=>'safra_ndmi_new',
+        //     'url'=>'/safra/ndmi_card.php?action=create',
+        //     'langs'=>'safra@safra',
+        //     'position'=>1000+$r,
+        //     'enabled'=>'isModEnabled("safra")',
+		// 	'perms'=>'$user->hasRight("safra", "ndmi", "write")',
+        //     'target'=>'',
+        //     'user'=>2
+        // );
 
 		/*END LEFTMENU NDMI*/
 		/* END MODULEBUILDER LEFTMENU MYOBJECT */

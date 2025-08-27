@@ -30,7 +30,7 @@ CREATE TABLE llx_safra_cultura(
 	import_key varchar(14), 
 	model_pdf varchar(255), 
 	status integer DEFAULT 1 NOT NULL, 
-	embrapa_id integer, 
+	embrapa_id integer UNIQUE, 
 	necessidade_n double(28,4), 
 	necessidade_p double(28,4), 
 	necessidade_k double(28,4), 
