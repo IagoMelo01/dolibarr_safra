@@ -113,179 +113,179 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 
 		// Or you can execute some code here
 		switch ($action) {
-				// Users
-				//case 'USER_CREATE':
-				//case 'USER_MODIFY':
-				//case 'USER_NEW_PASSWORD':
-				//case 'USER_ENABLEDISABLE':
-				//case 'USER_DELETE':
+			// Users
+			//case 'USER_CREATE':
+			//case 'USER_MODIFY':
+			//case 'USER_NEW_PASSWORD':
+			//case 'USER_ENABLEDISABLE':
+			//case 'USER_DELETE':
 
-				// Actions
-				//case 'ACTION_MODIFY':
-				//case 'ACTION_CREATE':
-				//case 'ACTION_DELETE':
+			// Actions
+			//case 'ACTION_MODIFY':
+			//case 'ACTION_CREATE':
+			//case 'ACTION_DELETE':
 
-				// Groups
-				//case 'USERGROUP_CREATE':
-				//case 'USERGROUP_MODIFY':
-				//case 'USERGROUP_DELETE':
+			// Groups
+			//case 'USERGROUP_CREATE':
+			//case 'USERGROUP_MODIFY':
+			//case 'USERGROUP_DELETE':
 
-				// Companies
-				//case 'COMPANY_CREATE':
-				//case 'COMPANY_MODIFY':
-				//case 'COMPANY_DELETE':
+			// Companies
+			//case 'COMPANY_CREATE':
+			//case 'COMPANY_MODIFY':
+			//case 'COMPANY_DELETE':
 
-				// Contacts
-				//case 'CONTACT_CREATE':
-				//case 'CONTACT_MODIFY':
-				//case 'CONTACT_DELETE':
-				//case 'CONTACT_ENABLEDISABLE':
+			// Contacts
+			//case 'CONTACT_CREATE':
+			//case 'CONTACT_MODIFY':
+			//case 'CONTACT_DELETE':
+			//case 'CONTACT_ENABLEDISABLE':
 
-				// Products
-				//case 'PRODUCT_CREATE':
-				//case 'PRODUCT_MODIFY':
-				//case 'PRODUCT_DELETE':
-				//case 'PRODUCT_PRICE_MODIFY':
-				//case 'PRODUCT_SET_MULTILANGS':
-				//case 'PRODUCT_DEL_MULTILANGS':
+			// Products
+			//case 'PRODUCT_CREATE':
+			//case 'PRODUCT_MODIFY':
+			//case 'PRODUCT_DELETE':
+			//case 'PRODUCT_PRICE_MODIFY':
+			//case 'PRODUCT_SET_MULTILANGS':
+			//case 'PRODUCT_DEL_MULTILANGS':
 
-				//Stock mouvement
-				//case 'STOCK_MOVEMENT':
+			//Stock mouvement
+			//case 'STOCK_MOVEMENT':
 
-				//MYECMDIR
-				//case 'MYECMDIR_CREATE':
-				//case 'MYECMDIR_MODIFY':
-				//case 'MYECMDIR_DELETE':
+			//MYECMDIR
+			//case 'MYECMDIR_CREATE':
+			//case 'MYECMDIR_MODIFY':
+			//case 'MYECMDIR_DELETE':
 
-				// Sales orders
-				//case 'ORDER_CREATE':
-				//case 'ORDER_MODIFY':
-				//case 'ORDER_VALIDATE':
-				//case 'ORDER_DELETE':
-				//case 'ORDER_CANCEL':
-				//case 'ORDER_SENTBYMAIL':
-				//case 'ORDER_CLASSIFY_BILLED':
-				//case 'ORDER_SETDRAFT':
-				//case 'LINEORDER_INSERT':
-				//case 'LINEORDER_UPDATE':
-				//case 'LINEORDER_DELETE':
+			// Sales orders
+			//case 'ORDER_CREATE':
+			//case 'ORDER_MODIFY':
+			//case 'ORDER_VALIDATE':
+			//case 'ORDER_DELETE':
+			//case 'ORDER_CANCEL':
+			//case 'ORDER_SENTBYMAIL':
+			//case 'ORDER_CLASSIFY_BILLED':
+			//case 'ORDER_SETDRAFT':
+			//case 'LINEORDER_INSERT':
+			//case 'LINEORDER_UPDATE':
+			//case 'LINEORDER_DELETE':
 
-				// Supplier orders
-				//case 'ORDER_SUPPLIER_CREATE':
-				//case 'ORDER_SUPPLIER_MODIFY':
-				//case 'ORDER_SUPPLIER_VALIDATE':
-				//case 'ORDER_SUPPLIER_DELETE':
-				//case 'ORDER_SUPPLIER_APPROVE':
-				//case 'ORDER_SUPPLIER_REFUSE':
-				//case 'ORDER_SUPPLIER_CANCEL':
-				//case 'ORDER_SUPPLIER_SENTBYMAIL':
-				//case 'ORDER_SUPPLIER_RECEIVE':
-				//case 'LINEORDER_SUPPLIER_DISPATCH':
-				//case 'LINEORDER_SUPPLIER_CREATE':
-				//case 'LINEORDER_SUPPLIER_UPDATE':
-				//case 'LINEORDER_SUPPLIER_DELETE':
+			// Supplier orders
+			//case 'ORDER_SUPPLIER_CREATE':
+			//case 'ORDER_SUPPLIER_MODIFY':
+			//case 'ORDER_SUPPLIER_VALIDATE':
+			//case 'ORDER_SUPPLIER_DELETE':
+			//case 'ORDER_SUPPLIER_APPROVE':
+			//case 'ORDER_SUPPLIER_REFUSE':
+			//case 'ORDER_SUPPLIER_CANCEL':
+			//case 'ORDER_SUPPLIER_SENTBYMAIL':
+			//case 'ORDER_SUPPLIER_RECEIVE':
+			//case 'LINEORDER_SUPPLIER_DISPATCH':
+			//case 'LINEORDER_SUPPLIER_CREATE':
+			//case 'LINEORDER_SUPPLIER_UPDATE':
+			//case 'LINEORDER_SUPPLIER_DELETE':
 
-				// Proposals
-				//case 'PROPAL_CREATE':
-				//case 'PROPAL_MODIFY':
-				//case 'PROPAL_VALIDATE':
-				//case 'PROPAL_SENTBYMAIL':
-				//case 'PROPAL_CLOSE_SIGNED':
-				//case 'PROPAL_CLOSE_REFUSED':
-				//case 'PROPAL_DELETE':
-				//case 'LINEPROPAL_INSERT':
-				//case 'LINEPROPAL_UPDATE':
-				//case 'LINEPROPAL_DELETE':
+			// Proposals
+			//case 'PROPAL_CREATE':
+			//case 'PROPAL_MODIFY':
+			//case 'PROPAL_VALIDATE':
+			//case 'PROPAL_SENTBYMAIL':
+			//case 'PROPAL_CLOSE_SIGNED':
+			//case 'PROPAL_CLOSE_REFUSED':
+			//case 'PROPAL_DELETE':
+			//case 'LINEPROPAL_INSERT':
+			//case 'LINEPROPAL_UPDATE':
+			//case 'LINEPROPAL_DELETE':
 
-				// SupplierProposal
-				//case 'SUPPLIER_PROPOSAL_CREATE':
-				//case 'SUPPLIER_PROPOSAL_MODIFY':
-				//case 'SUPPLIER_PROPOSAL_VALIDATE':
-				//case 'SUPPLIER_PROPOSAL_SENTBYMAIL':
-				//case 'SUPPLIER_PROPOSAL_CLOSE_SIGNED':
-				//case 'SUPPLIER_PROPOSAL_CLOSE_REFUSED':
-				//case 'SUPPLIER_PROPOSAL_DELETE':
-				//case 'LINESUPPLIER_PROPOSAL_INSERT':
-				//case 'LINESUPPLIER_PROPOSAL_UPDATE':
-				//case 'LINESUPPLIER_PROPOSAL_DELETE':
+			// SupplierProposal
+			//case 'SUPPLIER_PROPOSAL_CREATE':
+			//case 'SUPPLIER_PROPOSAL_MODIFY':
+			//case 'SUPPLIER_PROPOSAL_VALIDATE':
+			//case 'SUPPLIER_PROPOSAL_SENTBYMAIL':
+			//case 'SUPPLIER_PROPOSAL_CLOSE_SIGNED':
+			//case 'SUPPLIER_PROPOSAL_CLOSE_REFUSED':
+			//case 'SUPPLIER_PROPOSAL_DELETE':
+			//case 'LINESUPPLIER_PROPOSAL_INSERT':
+			//case 'LINESUPPLIER_PROPOSAL_UPDATE':
+			//case 'LINESUPPLIER_PROPOSAL_DELETE':
 
-				// Contracts
-				//case 'CONTRACT_CREATE':
-				//case 'CONTRACT_MODIFY':
-				//case 'CONTRACT_ACTIVATE':
-				//case 'CONTRACT_CANCEL':
-				//case 'CONTRACT_CLOSE':
-				//case 'CONTRACT_DELETE':
-				//case 'LINECONTRACT_INSERT':
-				//case 'LINECONTRACT_UPDATE':
-				//case 'LINECONTRACT_DELETE':
+			// Contracts
+			//case 'CONTRACT_CREATE':
+			//case 'CONTRACT_MODIFY':
+			//case 'CONTRACT_ACTIVATE':
+			//case 'CONTRACT_CANCEL':
+			//case 'CONTRACT_CLOSE':
+			//case 'CONTRACT_DELETE':
+			//case 'LINECONTRACT_INSERT':
+			//case 'LINECONTRACT_UPDATE':
+			//case 'LINECONTRACT_DELETE':
 
-				// Bills
-				//case 'BILL_CREATE':
-				//case 'BILL_MODIFY':
-				//case 'BILL_VALIDATE':
-				//case 'BILL_UNVALIDATE':
-				//case 'BILL_SENTBYMAIL':
-				//case 'BILL_CANCEL':
-				//case 'BILL_DELETE':
-				//case 'BILL_PAYED':
-				//case 'LINEBILL_INSERT':
-				//case 'LINEBILL_UPDATE':
-				//case 'LINEBILL_DELETE':
+			// Bills
+			//case 'BILL_CREATE':
+			//case 'BILL_MODIFY':
+			//case 'BILL_VALIDATE':
+			//case 'BILL_UNVALIDATE':
+			//case 'BILL_SENTBYMAIL':
+			//case 'BILL_CANCEL':
+			//case 'BILL_DELETE':
+			//case 'BILL_PAYED':
+			//case 'LINEBILL_INSERT':
+			//case 'LINEBILL_UPDATE':
+			//case 'LINEBILL_DELETE':
 
-				//Supplier Bill
-				//case 'BILL_SUPPLIER_CREATE':
-				//case 'BILL_SUPPLIER_UPDATE':
-				//case 'BILL_SUPPLIER_DELETE':
-				//case 'BILL_SUPPLIER_PAYED':
-				//case 'BILL_SUPPLIER_UNPAYED':
-				//case 'BILL_SUPPLIER_VALIDATE':
-				//case 'BILL_SUPPLIER_UNVALIDATE':
-				//case 'LINEBILL_SUPPLIER_CREATE':
-				//case 'LINEBILL_SUPPLIER_UPDATE':
-				//case 'LINEBILL_SUPPLIER_DELETE':
+			//Supplier Bill
+			//case 'BILL_SUPPLIER_CREATE':
+			//case 'BILL_SUPPLIER_UPDATE':
+			//case 'BILL_SUPPLIER_DELETE':
+			//case 'BILL_SUPPLIER_PAYED':
+			//case 'BILL_SUPPLIER_UNPAYED':
+			//case 'BILL_SUPPLIER_VALIDATE':
+			//case 'BILL_SUPPLIER_UNVALIDATE':
+			//case 'LINEBILL_SUPPLIER_CREATE':
+			//case 'LINEBILL_SUPPLIER_UPDATE':
+			//case 'LINEBILL_SUPPLIER_DELETE':
 
-				// Payments
-				//case 'PAYMENT_CUSTOMER_CREATE':
-				//case 'PAYMENT_SUPPLIER_CREATE':
-				//case 'PAYMENT_ADD_TO_BANK':
-				//case 'PAYMENT_DELETE':
+			// Payments
+			//case 'PAYMENT_CUSTOMER_CREATE':
+			//case 'PAYMENT_SUPPLIER_CREATE':
+			//case 'PAYMENT_ADD_TO_BANK':
+			//case 'PAYMENT_DELETE':
 
-				// Online
-				//case 'PAYMENT_PAYBOX_OK':
-				//case 'PAYMENT_PAYPAL_OK':
-				//case 'PAYMENT_STRIPE_OK':
+			// Online
+			//case 'PAYMENT_PAYBOX_OK':
+			//case 'PAYMENT_PAYPAL_OK':
+			//case 'PAYMENT_STRIPE_OK':
 
-				// Donation
-				//case 'DON_CREATE':
-				//case 'DON_UPDATE':
-				//case 'DON_DELETE':
+			// Donation
+			//case 'DON_CREATE':
+			//case 'DON_UPDATE':
+			//case 'DON_DELETE':
 
-				// Interventions
-				//case 'FICHINTER_CREATE':
-				//case 'FICHINTER_MODIFY':
-				//case 'FICHINTER_VALIDATE':
-				//case 'FICHINTER_DELETE':
-				//case 'LINEFICHINTER_CREATE':
-				//case 'LINEFICHINTER_UPDATE':
-				//case 'LINEFICHINTER_DELETE':
+			// Interventions
+			//case 'FICHINTER_CREATE':
+			//case 'FICHINTER_MODIFY':
+			//case 'FICHINTER_VALIDATE':
+			//case 'FICHINTER_DELETE':
+			//case 'LINEFICHINTER_CREATE':
+			//case 'LINEFICHINTER_UPDATE':
+			//case 'LINEFICHINTER_DELETE':
 
-				// Members
-				//case 'MEMBER_CREATE':
-				//case 'MEMBER_VALIDATE':
-				//case 'MEMBER_SUBSCRIPTION':
-				//case 'MEMBER_MODIFY':
-				//case 'MEMBER_NEW_PASSWORD':
-				//case 'MEMBER_RESILIATE':
-				//case 'MEMBER_DELETE':
+			// Members
+			//case 'MEMBER_CREATE':
+			//case 'MEMBER_VALIDATE':
+			//case 'MEMBER_SUBSCRIPTION':
+			//case 'MEMBER_MODIFY':
+			//case 'MEMBER_NEW_PASSWORD':
+			//case 'MEMBER_RESILIATE':
+			//case 'MEMBER_DELETE':
 
-				// Categories
-				//case 'CATEGORY_CREATE':
-				//case 'CATEGORY_MODIFY':
-				//case 'CATEGORY_DELETE':
-				//case 'CATEGORY_SET_MULTILANGS':
+			// Categories
+			//case 'CATEGORY_CREATE':
+			//case 'CATEGORY_MODIFY':
+			//case 'CATEGORY_DELETE':
+			//case 'CATEGORY_SET_MULTILANGS':
 
-				// Projects
+			// Projects
 			case 'PROJECT_CREATE':
 
 				dol_include_once('/projet/class/project.class.php', 'Project');
@@ -413,7 +413,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 						echo "Dados retornados:\n";
 						print_r($response_data);
 						$count = 0;
-						foreach($response_data as $key){
+						foreach ($response_data as $key) {
 							$zoneamento_obj = new Zoneamento($object->db);
 							$zoneamento_obj->municipio = $key['municipio'];
 							$zoneamento_obj->uf = $key['uf'];
@@ -465,6 +465,22 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 				//case 'SHIPPING_DELETE':
 
 				// and more...
+
+			case 'TALHAO_CREATE':
+
+
+				// constrói URL absoluta do Dolibarr
+				$url = dol_buildpath('/custom/safra/talhao_card.php', 2) . '?id=' . $object->id;
+
+				// limpa qualquer saída acidental e redireciona com 303 (POST-redirect-GET)
+				if (function_exists('ob_get_length') && ob_get_length()) {
+					@ob_end_clean();
+				}
+				header('Location: ' . $url, true, 303);
+				exit;
+
+
+				break;
 
 			case 'RECOMENDACAOADUBO_CREATE':
 
