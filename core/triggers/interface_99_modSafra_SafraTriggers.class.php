@@ -466,21 +466,21 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 
 				// and more...
 
-			case 'TALHAO_CREATE':
+			// case 'TALHAO_CREATE':
 
 
-				// constrói URL absoluta do Dolibarr
-				$url = dol_buildpath('/custom/safra/talhao_card.php', 2) . '?id=' . $object->id;
+			// 	// constrói URL absoluta do Dolibarr
+			// 	$url = dol_buildpath('/custom/safra/talhao_card.php', 2) . '?id=' . $object->id;
 
-				// limpa qualquer saída acidental e redireciona com 303 (POST-redirect-GET)
-				if (function_exists('ob_get_length') && ob_get_length()) {
-					@ob_end_clean();
-				}
-				header('Location: ' . $url, true, 303);
-				exit;
+			// 	// limpa qualquer saída acidental e redireciona com 303 (POST-redirect-GET)
+			// 	if (function_exists('ob_get_length') && ob_get_length()) {
+			// 		@ob_end_clean();
+			// 	}
+			// 	header('Location: ' . $url, true, 303);
+			// 	exit;
 
 
-				break;
+			// 	break;
 
 			case 'RECOMENDACAOADUBO_CREATE':
 

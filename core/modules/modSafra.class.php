@@ -43,7 +43,7 @@ class modSafra extends DolibarrModules
 		global $langs, $conf;
 		$this->db = $db;
 
-		// Id for module (must be unique). 
+		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
 		$this->numero = 500010; // TODO Go on page https://wiki.dolibarr.org/index.php/List_of_modules_id to reserve an id number for your module
 
@@ -100,7 +100,7 @@ class modSafra extends DolibarrModules
 			// Set this to 1 if module has its own barcode directory (core/modules/barcode)
 			'barcode' => 0,
 			// Set this to 1 if module has its own models directory (core/modules/xxx)
-			'models' => 0,
+			'models' => 1,
 			// Set this to 1 if module has its own printing directory (core/modules/printing)
 			'printing' => 0,
 			// Set this to 1 if module has its own theme directory (theme)
@@ -119,6 +119,7 @@ class modSafra extends DolibarrModules
 				//       'hookcontext1',
 				//       'hookcontext2',
 				//   ),
+				'projectcard',
 				//   'entity' => '0',
 			),
 			// Set this to 1 if features of module are opened to external users
@@ -499,6 +500,21 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'swir';
 		$this->rights[$r][5] = 'delete';
 		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (15 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read ProdutosTecnicos object of Safra';
+		$this->rights[$r][4] = 'produtostecnicos';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (15 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update ProdutosTecnicos object of Safra';
+		$this->rights[$r][4] = 'produtostecnicos';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (15 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete ProdutosTecnicos object of Safra';
+		$this->rights[$r][4] = 'produtostecnicos';
+		$this->rights[$r][5] = 'delete';
+		$r++;
 
 		/* END MODULEBUILDER PERMISSIONS */
 
@@ -523,6 +539,54 @@ class modSafra extends DolibarrModules
 			'user'=>2, // 0=Menu for internal users, 1=external users, 2=both
 		);
 		/* END MODULEBUILDER TOPMENU */
+		/* BEGIN MODULEBUILDER LEFTMENU PRODUTOSTECNICOS */
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra',
+			'type' => 'left',
+			'titre' => 'ProdutosTecnicos',
+			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
+			'mainmenu' => 'safra',
+			'leftmenu' => 'produtostecnicos',
+			'url' => '/safra/produtostecnicos_list.php',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "produtostecnicos", "read")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'ProdutosTecnicos'
+		);
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=produtostecnicos',
+			'type' => 'left',
+			'titre' => 'List ProdutosTecnicos',
+			'mainmenu' => 'safra',
+			'leftmenu' => 'safra_produtostecnicos_list',
+			'url' => '/safra/produtostecnicos_list.php',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "produtostecnicos", "read")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'ProdutosTecnicos'
+		);
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=produtostecnicos',
+			'type' => 'left',
+			'titre' => 'New ProdutosTecnicos',
+			'mainmenu' => 'safra',
+			'leftmenu' => 'safra_produtostecnicos_new',
+			'url' => '/safra/produtostecnicos_card.php?action=create',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "produtostecnicos", "write")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'ProdutosTecnicos'
+		);
+		/* END MODULEBUILDER LEFTMENU PRODUTOSTECNICOS */
 		/* BEGIN MODULEBUILDER LEFTMENU MYOBJECT */
 		/* LEFTMENU CULTURA */
 		$this->menu[$r++]=array(
@@ -668,7 +732,7 @@ class modSafra extends DolibarrModules
 			 'user' => 2,
 		);
 		/* END LEFTMENU NEW TALHAO */
-		
+
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra',
 			 'type' => 'left',
@@ -684,7 +748,7 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		
+
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
@@ -699,7 +763,7 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		
+
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
@@ -714,7 +778,7 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		
+
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
@@ -729,7 +793,7 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		
+
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
@@ -744,7 +808,7 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		
+
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
 			 'type' => 'left',
@@ -759,7 +823,7 @@ class modSafra extends DolibarrModules
 			 'target' => '',
 			 'user' => 2,
 		);
-		
+
 		/* LEFTMENU SWIR */
 		// $this->menu[$r++]=array(
 		// 	 'fk_menu' => 'fk_mainmenu=safra',
@@ -1474,7 +1538,7 @@ class modSafra extends DolibarrModules
 		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 
 		$extrafields = new ExtraFields($this->db);
-		
+
 
 
 		// $r1 = $extrafields->addExtraField('fk_talhao', 'Talhão', 'link', 10, 11, null);
@@ -1482,7 +1546,7 @@ class modSafra extends DolibarrModules
 		// $result2=$extrafields->addExtraField('fk_cultura', "Cultura", 'link', 11,  null, 'project', 0, 0, null, array('options' => array("Cultura:custom/safra/class/cultura.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 		// $result3=$extrafields->addExtraField('fk_cultivar', "Cultivar", 'link', 12,  null, 'project', 0, 0, null, array('options' => array("Cultivar:custom/safra/class/cultivar.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 
-		
+
 			// Adicionar extrafield para referenciar Cultura
 			$extrafields->addExtraField(
 				'fk_cultura',                            // Nome do campo
@@ -1500,9 +1564,9 @@ class modSafra extends DolibarrModules
 				'isModEnabled("safra")'
 
 			);
-		
-	
-	
+
+
+
 			// Adicionar extrafield para referenciar Cultivar
 			$extrafields->addExtraField(
 				'fk_cultivar',                           // Nome do campo
@@ -1520,9 +1584,9 @@ class modSafra extends DolibarrModules
 				'',
 				'isModEnabled("safra")'                                        // Sempre editável
 			);
-		
-	
-		
+
+
+
 			// Adicionar extrafield para referenciar Talhão
 			$extrafields->addExtraField(
 				'fk_talhao',                             // Nome do campo
@@ -1539,7 +1603,7 @@ class modSafra extends DolibarrModules
 				'',
 				'isModEnabled("safra")'                                        // Sempre editável
 			);
-		
+
 
 		// Create extrafields during init
 		//include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';

@@ -23,7 +23,7 @@
  * Put detailed description here.
  */
 
-require_once DOL_DOCUMENT_ROOT.'/core/class/commonhookactions.class.php';
+require_once DOL_DOCUMENT_ROOT . '/core/class/commonhookactions.class.php';
 
 /**
  * Class ActionsSafra
@@ -173,7 +173,7 @@ class ActionsSafra extends CommonHookActions
 
 		/* print_r($parameters); print_r($object); echo "action: " . $action; */
 		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {		// do something only for the context 'somecontext1' or 'somecontext2'
-			$this->resprints = '<option value="0"'.($disabled ? ' disabled="disabled"' : '').'>'.$langs->trans("SafraMassAction").'</option>';
+			$this->resprints = '<option value="0"' . ($disabled ? ' disabled="disabled"' : '') . '>' . $langs->trans("SafraMassAction") . '</option>';
 		}
 
 		if (!$error) {
@@ -205,7 +205,7 @@ class ActionsSafra extends CommonHookActions
 
 		$ret = 0;
 		$deltemp = array();
-		dol_syslog(get_class($this).'::executeHooks action='.$action);
+		dol_syslog(get_class($this) . '::executeHooks action=' . $action);
 
 		/* print_r($parameters); print_r($object); echo "action: " . $action; */
 		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {		// do something only for the context 'somecontext1' or 'somecontext2'
@@ -233,7 +233,7 @@ class ActionsSafra extends CommonHookActions
 
 		$ret = 0;
 		$deltemp = array();
-		dol_syslog(get_class($this).'::executeHooks action='.$action);
+		dol_syslog(get_class($this) . '::executeHooks action=' . $action);
 
 		/* print_r($parameters); print_r($object); echo "action: " . $action; */
 		if (in_array($parameters['currentcontext'], array('somecontext1', 'somecontext2'))) {
@@ -274,7 +274,7 @@ class ActionsSafra extends CommonHookActions
 			$this->results['picto'] = 'safra@safra';
 		}
 
-		$head[$h][0] = 'customreports.php?objecttype='.$parameters['objecttype'].(empty($parameters['tabfamily']) ? '' : '&tabfamily='.$parameters['tabfamily']);
+		$head[$h][0] = 'customreports.php?objecttype=' . $parameters['objecttype'] . (empty($parameters['tabfamily']) ? '' : '&tabfamily=' . $parameters['tabfamily']);
 		$head[$h][1] = $langs->trans("CustomReports");
 		$head[$h][2] = 'customreports';
 
@@ -344,7 +344,7 @@ class ActionsSafra extends CommonHookActions
 			if (in_array($element, ['context1', 'context2'])) {
 				$datacount = 0;
 
-				$parameters['head'][$counter][0] = dol_buildpath('/safra/safra_tab.php', 1) . '?id=' . $id . '&amp;module='.$element;
+				$parameters['head'][$counter][0] = dol_buildpath('/safra/safra_tab.php', 1) . '?id=' . $id . '&amp;module=' . $element;
 				$parameters['head'][$counter][1] = $langs->trans('SafraTab');
 				if ($datacount > 0) {
 					$parameters['head'][$counter][1] .= '<span class="badge marginleftonlyshort">' . $datacount . '</span>';
@@ -367,4 +367,97 @@ class ActionsSafra extends CommonHookActions
 	}
 
 	/* Add here any other hooked methods... */
+
+
+	/**
+	 * Exibe conteúdo extra no formulário dos objetos (inclui a tela de criação de Projeto)
+	 *
+	 * @param array         $parameters    Metadados do hook (contexto, etc.)
+	 * @param CommonObject  $object        Objeto atual (no create de projeto, ainda sem id)
+	 * @param string        $action        Ação corrente (esperamos 'create')
+	 * @param HookManager   $hookmanager   Hook manager
+	 * @return int          <0 erro, 0 segue fluxo padrão, 1 substitui código padrão
+	 */
+	// public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
+	// {
+	// 	global $langs, $conf, $user;
+
+	// 	// Queremos agir apenas na criação de Projetos
+	// 	if (
+	// 		!empty($parameters['currentcontext'])
+	// 		&& $parameters['currentcontext'] === 'projectcard'
+	// 		&& $action === 'create'
+	// 	) {
+	// 		// Carrega suas traduções (opcional)
+	// 		$langs->load('safra@safra');
+
+	// 		// HTML do botão (classe Dolibarr 'butAction' dá o estilo de botão de ação)
+	// 		// type="button" pra não submeter o form; onclick só pra demonstrar
+	// 		$html  = '<div class="clearfix" style="margin: 8px 0;">';
+	// 		$html .= '  <button type="button" class="butAction" id="safra-test-btn" onclick="javascript:alert(\'Botão de teste do Safra!\');">';
+	// 		$html .=        $langs->trans('TesteSafra'); // se quiser, adicione a string no seu arquivo de idioma
+	// 		$html .= '  </button>';
+	// 		$html .= '</div>';
+
+	// 		// Imprime no formulário
+	// 		$this->resprints .= $html;
+
+	// 		// Retorna 0 para continuar com o fluxo padrão da página
+	// 		return 0;
+	// 	}
+
+	// 	return 0;
+	// }
+
+
+	public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
+	{
+		global $langs;
+
+		if (
+			!empty($parameters['currentcontext'])
+			&& $parameters['currentcontext'] === 'projectcard'
+			&& $action === 'create'
+		) {
+			// só segue se existir o select na página
+			$hasSelect = !empty($_SERVER['REQUEST_URI']); // checagem leve
+			// (Se quiser, faça um echo de um pequeno script que procura o select e exibe o container só se achar.)
+
+			// URL do endpoint AJAX
+			$ajaxurl = dol_buildpath('/safra/ajax/talhao_geojson.php', 1);
+
+			// 1) Template HTML do mapa
+			// (Evita duplicar se já tiver sido impresso)
+			$this->resprints .= $this->getMapContainerOnce();
+
+			// 2) Variáveis globais mínimas para o JS
+			$mapHint = $langs->transnoentities('SafraMapHint');
+			$this->resprints .= '<script>window.SAFRA = Object.assign(window.SAFRA||{}, {' .
+				'ajaxTalhaoUrl: ' . json_encode($ajaxurl) . ',' .
+				'mapHint: ' . json_encode($mapHint) .
+				'});</script>';
+
+			// 3) Carregar JS externo (com cache-busting)
+			$this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
+		}
+
+		return 0;
+	}
+
+	private function getMapContainerOnce()
+	{
+		static $done = false;
+		if ($done) return '';
+		$done = true;
+
+		ob_start();
+		global $langs; // usado no template
+		$tpl = dol_buildpath('/safra/tpl/hooks/talhao_map.tpl.php', 0); // ✅ caminho no FS
+		if (is_readable($tpl)) {
+			include $tpl;
+		} else {
+			dol_syslog(__METHOD__ . ': Template não encontrado ou não legível: ' . $tpl, LOG_WARNING);
+		}
+		return ob_get_clean();
+	}
 }
