@@ -154,6 +154,9 @@ $formfile = new FormFile($db);
 
 llxHeader("", $langs->trans("SafraArea"), '', '', 0, 0, '', '', '', 'mod-safra page-index');
 
+print '<link rel="stylesheet" href="./css/leaflet.css">';
+print '<link rel="stylesheet" href="./css/leaflet.draw.css">';
+
 print load_fiche_titre($langs->trans("SafraArea"), '', 'safra.png@safra');
 
 // Prepare dashboard data
@@ -210,7 +213,7 @@ foreach ($talhaoList as $talhao) {
                 'label' => $talhaoLabel,
                 'area' => $area,
                 'municipio' => $municipioLabel,
-                'geo_json' => $talhao->geo_json,
+                'geo_json' => trim((string) $talhao->geo_json),
         );
 }
 

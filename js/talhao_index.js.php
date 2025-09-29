@@ -39,11 +39,18 @@
         let bounds = null;
 
         talhoes.forEach(function (talhao) {
-            if (!talhao || !talhao.geo_json) return;
+            if (!talhao) return;
+
+            const geometry = parseGeometry(talhao.geo_json);
+            if (!geometry) {
+                if (talhao.geo_json) {
+                    console.warn('Geometria inválida para o talhão', talhao);
+                }
+                return;
+            }
 
             try {
-                const geojsonObject = JSON.parse(talhao.geo_json);
-                const layerGroup = L.geoJSON(geojsonObject, {
+                const layerGroup = L.geoJSON(geometry, {
                     onEachFeature: function (feature, layer) {
                         layer._safraData = {
                             area: parseFloat(talhao.area) || 0,
@@ -55,11 +62,11 @@
 
                 drawnItems.addLayer(layerGroup);
                 const layerBounds = layerGroup.getBounds();
-                if (layerBounds.isValid()) {
+                if (layerBounds && layerBounds.isValid()) {
                     bounds = bounds ? bounds.extend(layerBounds) : layerBounds;
                 }
             } catch (error) {
-                console.error('Erro ao interpretar o GeoJSON do talhão.', error);
+                console.error('Erro ao interpretar a geometria do talhão.', error);
             }
         });
 
@@ -101,11 +108,52 @@
             const decimals = area >= 10 ? 1 : 2;
             const unit = labels.areaUnit || 'ha';
             const label = data.label ? data.label + '<br>' : '';
-            const center = layer.getBounds().getCenter();
+            let center = null;
 
-            layer.areaTooltip
-                .setContent(label + area.toFixed(decimals) + ' ' + unit)
-                .setLatLng(center);
+            if (typeof layer.getBounds === 'function') {
+                const layerBounds = layer.getBounds();
+                if (layerBounds && layerBounds.isValid && layerBounds.isValid()) {
+                    center = layerBounds.getCenter();
+                }
+            }
+
+            if (!center && typeof layer.getLatLng === 'function') {
+                center = layer.getLatLng();
+            }
+
+            if (center) {
+                layer.areaTooltip
+                    .setContent(label + area.toFixed(decimals) + ' ' + unit)
+                    .setLatLng(center);
+            }
+        }
+
+        function parseGeometry(raw) {
+            if (!raw) return null;
+
+            if (typeof raw === 'object') {
+                return raw;
+            }
+
+            const text = String(raw).trim();
+            if (!text) return null;
+
+            try {
+                return JSON.parse(text);
+            } catch (error) {
+                if (window.wellknown && typeof window.wellknown.parse === 'function') {
+                    try {
+                        const geometry = window.wellknown.parse(text);
+                        return geometry || null;
+                    } catch (wktError) {
+                        console.error('Erro ao interpretar WKT do talhão.', wktError);
+                    }
+                }
+
+                console.error('Geometria inválida do talhão.', error);
+            }
+
+            return null;
         }
 
         renderCharts(talhoes, areaByMunicipio);

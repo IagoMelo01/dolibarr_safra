@@ -424,6 +424,15 @@ class ActionsSafra extends CommonHookActions
                         $config = array(
                                 'ajaxTalhaoUrl' => dol_buildpath('/safra/ajax/talhao_geojson.php', 1),
                                 'mapHint' => $langs->transnoentities('SafraMapHint'),
+                                'mapMessages' => array(
+                                        'loading' => $langs->transnoentities('SafraMapLoading'),
+                                        'empty' => $langs->transnoentities('SafraMapEmpty'),
+                                        'error' => $langs->transnoentities('SafraMapError'),
+                                        'fetchError' => $langs->transnoentities('SafraMapFetchError'),
+                                ),
+                                'leafletCssLocal' => dol_buildpath('/safra/css/leaflet.css', 1),
+                                'leafletJsLocal' => dol_buildpath('/safra/js/leaflet.js', 1),
+                                'wellknownJs' => dol_buildpath('/safra/js/wellknown.js', 1),
                         );
 
                         $this->resprints .= $this->getMapContainerOnce();
