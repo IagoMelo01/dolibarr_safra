@@ -7,10 +7,12 @@
   var cfg = (window.SAFRA || {});
   var ajaxUrl   = cfg.ajaxTalhaoUrl;      // setado pelo PHP
   var mapHint   = cfg.mapHint || 'Selecione um talhão para visualizar o polígono.';
+  var mapHintNoSelection = cfg.mapHintNoSelection || mapHint;
 //   var selector  = cfg.selectSelector || 'select[id="options_fk_talhao"]';
   var selector  = 'select[id="options_fk_talhao"]';
   var container = cfg.mapContainerSelector || '#safra-map';
   var wrapper   = cfg.mapWrapperSelector || '#safra-map-wrapper';
+  var initialTalhaoId = cfg.initialTalhaoId != null ? String(cfg.initialTalhaoId) : '';
 
   // ---- Carregar Leaflet 1x (ou usar local se CDN bloqueado) ----
   function loadLeaflet(cb) {
@@ -84,7 +86,11 @@
   function setHint(text, isError) {
     var el = document.getElementById('safra-map-hint');
     if (!el) return;
-    el.textContent = text || mapHint;
+    if (typeof text === 'undefined' || text === null) {
+      el.textContent = mapHint;
+    } else {
+      el.textContent = text;
+    }
     el.classList.toggle('opacitymedium', !isError);
     el.style.color = isError ? '#a00' : '';
   }
@@ -132,25 +138,37 @@
     var select = document.querySelector(selector);
     var wrap   = document.querySelector(wrapper);
 
-    if (!select) { log('select não encontrado:', selector); return; }
     if (!wrap)   { log('wrapper não encontrado:', wrapper); return; }
+
+    if (!select && !initialTalhaoId) {
+      log('nenhum select ou talhão inicial disponível, nada para exibir.');
+    }
 
     loadLeaflet(function(){
       ensureMap();
       if (!map) return;
 
-      // listener
-      select.addEventListener('change', function(e){
-        var val = e.target.value || '';
-        log('change -> id', val);
-        fetchGeo(val);
-      });
+      if (select) {
+        // listener
+        select.addEventListener('change', function(e){
+          var val = e.target.value || '';
+          log('change -> id', val);
+          fetchGeo(val);
+        });
 
-      // se já tiver valor (modo edição)
-      if (select.value) {
-        fetchGeo(select.value);
+        if (select.value) {
+          fetchGeo(select.value);
+        } else if (initialTalhaoId) {
+          fetchGeo(initialTalhaoId);
+        } else {
+          clearLayer();
+          setHint(mapHint, false);
+        }
+      } else if (initialTalhaoId) {
+        fetchGeo(initialTalhaoId);
       } else {
-        setHint(mapHint, false);
+        clearLayer();
+        setHint(mapHintNoSelection, false);
       }
 
       // se o mapa estiver em tab Dolibarr, tente invalidar em eventos comuns

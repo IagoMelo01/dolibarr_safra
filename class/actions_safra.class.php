@@ -414,38 +414,51 @@ class ActionsSafra extends CommonHookActions
 	{
 		global $langs;
 
-		if (
-			!empty($parameters['currentcontext'])
-			&& $parameters['currentcontext'] === 'projectcard'
-			&& $action === 'create'
-		) {
-			// só segue se existir o select na página
-			$hasSelect = !empty($_SERVER['REQUEST_URI']); // checagem leve
-			// (Se quiser, faça um echo de um pequeno script que procura o select e exibe o container só se achar.)
+                if (!empty($parameters['currentcontext']) && $parameters['currentcontext'] === 'projectcard') {
+                        // Evita exibir o mapa na criação do projeto
+                        if ($action === 'create' || empty($object->id)) {
+                                return 0;
+                        }
 
-			// URL do endpoint AJAX
-			$ajaxurl = dol_buildpath('/safra/ajax/talhao_geojson.php', 1);
+                        $langs->load('safra@safra');
 
-			// 1) Template HTML do mapa
-			// (Evita duplicar se já tiver sido impresso)
-			$this->resprints .= $this->getMapContainerOnce();
+                        // Garante que os extrafields estejam carregados para obter o talhão vinculado
+                        if (empty($object->array_options) && method_exists($object, 'fetch_optionals')) {
+                                $object->fetch_optionals($object->id);
+                        }
 
-			// 2) Variáveis globais mínimas para o JS
-			$mapHint = $langs->transnoentities('SafraMapHint');
-			$this->resprints .= '<script>window.SAFRA = Object.assign(window.SAFRA||{}, {' .
-				'ajaxTalhaoUrl: ' . json_encode($ajaxurl) . ',' .
-				'mapHint: ' . json_encode($mapHint) .
-				'});</script>';
+                        $talhaoId = 0;
+                        if (!empty($object->array_options['options_fk_talhao'])) {
+                                $talhaoId = (int) $object->array_options['options_fk_talhao'];
+                        } elseif (!empty($object->array_options['fk_talhao'])) {
+                                $talhaoId = (int) $object->array_options['fk_talhao'];
+                        }
 
-			// 3) Carregar JS externo (com cache-busting)
-			$this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
-		}
+                        // URL do endpoint AJAX
+                        $ajaxurl = dol_buildpath('/safra/ajax/talhao_geojson.php', 1);
 
-		return 0;
-	}
+                        // 1) Template HTML do mapa (evita duplicar se já tiver sido impresso)
+                        $this->resprints .= $this->getMapContainerOnce();
 
-	private function getMapContainerOnce()
-	{
+                        // 2) Variáveis globais mínimas para o JS
+                        $mapHint = $langs->transnoentities('SafraMapHint');
+                        $mapHintNoSelection = $langs->transnoentities('SafraMapNoSelection');
+                        $this->resprints .= '<script>window.SAFRA = Object.assign(window.SAFRA||{}, {' .
+                                'ajaxTalhaoUrl: ' . json_encode($ajaxurl) . ',' .
+                                'mapHint: ' . json_encode($mapHint) . ',' .
+                                'mapHintNoSelection: ' . json_encode($mapHintNoSelection) . ',' .
+                                'initialTalhaoId: ' . json_encode($talhaoId ?: null) .
+                                '});</script>';
+
+                        // 3) Carregar JS externo (com cache-busting)
+                        $this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
+                }
+
+                return 0;
+        }
+
+        private function getMapContainerOnce()
+        {
 		static $done = false;
 		if ($done) return '';
 		$done = true;
