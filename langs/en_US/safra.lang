@@ -61,6 +61,32 @@ SafraAboutPage = Safra about page
 #
 SafraArea = Módulo Safra
 MyPageName = Nome da Minha Página
+SafraDashboardOverview = Crop overview
+SafraDashboardTalhoes = Fields
+SafraDashboardAreaTotal = Total area
+SafraDashboardAreaMedia = Average area
+SafraDashboardLargestTalhao = Largest field
+SafraDashboardWeather = Weather conditions
+SafraDashboardWeatherLocation = Forecast for %s
+SafraDashboardWeatherWind = Wind: %s
+SafraDashboardWeatherMax = High
+SafraDashboardWeatherMin = Low
+SafraDashboardWeatherRainChance = Rain chance
+SafraDashboardWeatherNoForecast = No forecast available.
+SafraDashboardNoWeather = Unable to load weather data.
+SafraDashboardNoMunicipio = Municipality not informed
+SafraDashboardMap = Field map
+SafraDashboardNoTalhao = No fields registered yet.
+SafraDashboardRecentUpdates = Recent updates
+SafraDashboardNoRecent = No recent updates found.
+SafraDashboardTalhaoDistribution = Area distribution by field
+SafraDashboardMunicipioDistribution = Area by municipality
+SafraDashboardWeatherTrend = Weather trend
+SafraDashboardNoChartData = Not enough data to display the chart.
+SafraDashboardWeatherDefaultLocation = Farm area
+SafraDashboardChartMax = High (°C)
+SafraDashboardChartMin = Low (°C)
+SafraDashboardChartRain = Rain (%)
 
 #
 # Sample widget

@@ -27,17 +27,16 @@
     });
 
 
-    var drawnPolygon
-    // drawnPolygon = renderGeoJSON();
+    var drawnPolygon;
     let i = 0;
 
-    if (json) {
-        // console.log(json);
+    if (Array.isArray(json)) {
         json.forEach((data) => {
             let json_layer = renderGeoJSON(data);
-            console.log(json_layer);
-            createAreaTooltip(json_layer, i);
-            i++;
+            if (json_layer) {
+                createAreaTooltip(json_layer, i);
+                i++;
+            }
         });
     }
 
@@ -57,7 +56,7 @@
     }
 
 
-    function createAreaTooltip(layer, i) {
+    function createAreaTooltip(layer, index) {
         if (layer.areaTooltip) {
             updateAreaTooltip(layer);
             return;
@@ -69,6 +68,8 @@
             className: 'area-tooltip'
         });
 
+        layer._areaIndex = index;
+
         layer.on('remove', function(event) {
             layer.areaTooltip.remove();
         });
@@ -79,15 +80,16 @@
         });
 
         if (map.hasLayer(layer)) {
-            updateAreaTooltip(layer, i);
+            updateAreaTooltip(layer);
             layer.areaTooltip.addTo(map);
         }
     }
 
     function updateAreaTooltip(layer) {
-        var area = area_array[i]
-        var readableArea = L.GeometryUtil.readableArea(area, true);
-        var latlng = layer.getCenter();
+        var index = typeof layer._areaIndex === 'number' ? layer._areaIndex : 0;
+        var area = Array.isArray(area_array) && area_array[index] ? area_array[index] : 0;
+        var readableArea = L.GeometryUtil && area ? L.GeometryUtil.readableArea(area, true) : '';
+        var latlng = layer.getBounds ? layer.getBounds().getCenter() : layer.getCenter();
 
         layer.areaTooltip
             .setContent(readableArea)

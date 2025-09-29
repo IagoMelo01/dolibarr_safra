@@ -63,6 +63,32 @@ SafraArea = Módulo Safra
 MyPageName = Nome da Minha Página
 ListCultura = Lista de Culturas
 NewCultura = Nova Cultura
+SafraDashboardOverview = Visão geral da safra
+SafraDashboardTalhoes = Talhões cadastrados
+SafraDashboardAreaTotal = Área total
+SafraDashboardAreaMedia = Área média
+SafraDashboardLargestTalhao = Maior talhão
+SafraDashboardWeather = Condições do tempo
+SafraDashboardWeatherLocation = Previsão para %s
+SafraDashboardWeatherWind = Vento: %s
+SafraDashboardWeatherMax = Máx
+SafraDashboardWeatherMin = Mín
+SafraDashboardWeatherRainChance = Chance de chuva
+SafraDashboardWeatherNoForecast = Nenhuma previsão disponível.
+SafraDashboardNoWeather = Não foi possível carregar os dados meteorológicos.
+SafraDashboardNoMunicipio = Município não informado
+SafraDashboardMap = Mapa dos talhões
+SafraDashboardNoTalhao = Nenhum talhão cadastrado até o momento.
+SafraDashboardRecentUpdates = Últimas atualizações
+SafraDashboardNoRecent = Nenhuma atualização recente encontrada.
+SafraDashboardTalhaoDistribution = Distribuição de área por talhão
+SafraDashboardMunicipioDistribution = Área por município
+SafraDashboardWeatherTrend = Tendência climática
+SafraDashboardNoChartData = Sem dados suficientes para exibir o gráfico.
+SafraDashboardWeatherDefaultLocation = Propriedade
+SafraDashboardChartMax = Máx (°C)
+SafraDashboardChartMin = Mín (°C)
+SafraDashboardChartRain = Chuva (%)
 
 #
 # Sample widget
