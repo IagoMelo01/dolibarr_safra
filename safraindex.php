@@ -79,6 +79,35 @@ if (!function_exists('safra_format_number')) {
         }
 }
 
+if (!function_exists('safra_count_table')) {
+        /**
+         * Count entries inside a safra table.
+         *
+         * @param DoliDB $db    Database handler
+         * @param string $table Table name without prefix (ex: safra_cultura)
+         * @return int
+         */
+        function safra_count_table(DoliDB $db, $table)
+        {
+                $table = preg_replace('/[^a-z0-9_]+/i', '', (string) $table);
+                if (empty($table)) {
+                        return 0;
+                }
+
+                $sql = 'SELECT COUNT(*) as cnt FROM '.MAIN_DB_PREFIX.$table;
+                $resql = $db->query($sql);
+                if (!$resql) {
+                        dol_syslog(__FUNCTION__.': Error when counting table '.$table.' - '.$db->lasterror(), LOG_ERR);
+                        return 0;
+                }
+
+                $obj = $db->fetch_object($resql);
+                $db->free($resql);
+
+                return $obj ? (int) $obj->cnt : 0;
+        }
+}
+
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
 
@@ -124,6 +153,9 @@ $form = new Form($db);
 $formfile = new FormFile($db);
 
 llxHeader("", $langs->trans("SafraArea"), '', '', 0, 0, '', '', '', 'mod-safra page-index');
+
+print '<link rel="stylesheet" href="./css/leaflet.css">';
+print '<link rel="stylesheet" href="./css/leaflet.draw.css">';
 
 print load_fiche_titre($langs->trans("SafraArea"), '', 'safra.png@safra');
 
@@ -181,7 +213,7 @@ foreach ($talhaoList as $talhao) {
                 'label' => $talhaoLabel,
                 'area' => $area,
                 'municipio' => $municipioLabel,
-                'geo_json' => $talhao->geo_json,
+                'geo_json' => trim((string) $talhao->geo_json),
         );
 }
 
@@ -325,7 +357,7 @@ print '</section>';
 print '<section class="safra-card safra-card--chart">';
 print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByTalhao').'</h2></div>';
 if ($countTalhoes > 0) {
-        print '<canvas id="talhaoAreaChart" class="safra-chart"></canvas>';
+        print '<div class="safra-chart-container"><canvas id="talhaoAreaChart" class="safra-chart"></canvas></div>';
 } else {
         print '<p class="safra-empty">'.$langs->trans('SafraNoTalhaoData').'</p>';
 }
@@ -334,7 +366,7 @@ print '</section>';
 print '<section class="safra-card safra-card--chart">';
 print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByMunicipio').'</h2></div>';
 if (!empty($areaByMunicipioData)) {
-        print '<canvas id="municipioAreaChart" class="safra-chart"></canvas>';
+        print '<div class="safra-chart-container"><canvas id="municipioAreaChart" class="safra-chart"></canvas></div>';
 } else {
         print '<p class="safra-empty">'.$langs->trans('SafraNoMunicipioData').'</p>';
 }

@@ -410,44 +410,50 @@ class ActionsSafra extends CommonHookActions
 	// }
 
 
-	public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
-	{
-		global $langs;
+        public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
+        {
+                global $langs;
 
-		if (
-			!empty($parameters['currentcontext'])
-			&& $parameters['currentcontext'] === 'projectcard'
-			&& $action === 'create'
-		) {
-			// só segue se existir o select na página
-			$hasSelect = !empty($_SERVER['REQUEST_URI']); // checagem leve
-			// (Se quiser, faça um echo de um pequeno script que procura o select e exibe o container só se achar.)
+                if (
+                        !empty($parameters['currentcontext'])
+                        && $parameters['currentcontext'] === 'projectcard'
+                        && $action === 'create'
+                ) {
+                        $langs->loadLangs(array('safra@safra'));
 
-			// URL do endpoint AJAX
-			$ajaxurl = dol_buildpath('/safra/ajax/talhao_geojson.php', 1);
+                        $config = array(
+                                'ajaxTalhaoUrl' => dol_buildpath('/safra/ajax/talhao_geojson.php', 1),
+                                'mapHint' => $langs->transnoentities('SafraMapHint'),
+                                'mapMessages' => array(
+                                        'loading' => $langs->transnoentities('SafraMapLoading'),
+                                        'empty' => $langs->transnoentities('SafraMapEmpty'),
+                                        'error' => $langs->transnoentities('SafraMapError'),
+                                        'fetchError' => $langs->transnoentities('SafraMapFetchError'),
+                                ),
+                                'leafletCssLocal' => dol_buildpath('/safra/css/leaflet.css', 1),
+                                'leafletJsLocal' => dol_buildpath('/safra/js/leaflet.js', 1),
+                                'wellknownJs' => dol_buildpath('/safra/js/wellknown.js', 1),
+                        );
 
-			// 1) Template HTML do mapa
-			// (Evita duplicar se já tiver sido impresso)
-			$this->resprints .= $this->getMapContainerOnce();
+                        $this->resprints .= $this->getMapContainerOnce();
 
-			// 2) Variáveis globais mínimas para o JS
-			$mapHint = $langs->transnoentities('SafraMapHint');
-			$this->resprints .= '<script>window.SAFRA = Object.assign(window.SAFRA||{}, {' .
-				'ajaxTalhaoUrl: ' . json_encode($ajaxurl) . ',' .
-				'mapHint: ' . json_encode($mapHint) .
-				'});</script>';
+                        $this->resprints .= '<script>window.SAFRA = Object.assign({}, window.SAFRA || {}, '.json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE).');</script>';
 
-			// 3) Carregar JS externo (com cache-busting)
-			$this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
-		}
+                        $this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
+                }
 
-		return 0;
-	}
+                return 0;
+        }
 
-	private function getMapContainerOnce()
-	{
-		static $done = false;
-		if ($done) return '';
+        /**
+         * Render hook map container only once per request.
+         *
+         * @return string
+         */
+        private function getMapContainerOnce()
+        {
+                static $done = false;
+                if ($done) return '';
 		$done = true;
 
 		ob_start();

@@ -360,18 +360,29 @@ div.mainmenu.safra {
 }
 
 .safra-map {
+        position: relative;
+        width: 100%;
         min-height: 320px;
+        height: clamp(320px, 35vh, 480px);
         border-radius: 10px;
         overflow: hidden;
 }
 
 .safra-card--chart {
-        min-height: 340px;
+        min-height: 0;
+}
+
+.safra-chart-container {
+        position: relative;
+        width: 100%;
+        height: 260px;
 }
 
 .safra-chart {
-        width: 100%;
-        height: 260px;
+        position: absolute;
+        inset: 0;
+        width: 100% !important;
+        height: 100% !important;
 }
 
 .safra-empty {

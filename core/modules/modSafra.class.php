@@ -114,14 +114,12 @@ class modSafra extends DolibarrModules
 				'/safra/js/safra.js.php',
 			),
 			// Set here all hooks context managed by module. To find available hook context, make a "grep -r '>initHooks(' *" on source code. You can also set hook context to 'all'
-			'hooks' => array(
-				//   'data' => array(
-				//       'hookcontext1',
-				//       'hookcontext2',
-				//   ),
-				'projectcard',
-				//   'entity' => '0',
-			),
+                        'hooks' => array(
+                                'data' => array(
+                                        'projectcard',
+                                ),
+                                //   'entity' => '0',
+                        ),
 			// Set this to 1 if features of module are opened to external users
 			'moduleforexternal' => 0,
 		);
@@ -1695,7 +1693,7 @@ class modSafra extends DolibarrModules
                        'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
                        'mainmenu' => 'safra',
                        'leftmenu' => 'safra_monitoramento',
-                       'url' => '/safra/ndvi_list.php',
+                       'url' => '/safra/ndvi_view.php',
                        'langs' => 'safra@safra',
                        'position' => 1000 + $r,
                        'enabled' => 'isModEnabled("safra")',
@@ -1705,11 +1703,11 @@ class modSafra extends DolibarrModules
                );
 
                $monitoramento = array(
-                       array('NDVI', 'ndvi', '/safra/ndvi_list.php', '/safra/ndvi_card.php?action=create'),
-                       array('NDMI', 'ndmi', '/safra/ndmi_list.php', '/safra/ndmi_card.php?action=create'),
-                       array('NDWI', 'ndwi', '/safra/ndwi_list.php', '/safra/ndwi_card.php?action=create'),
-                       array('SWIR', 'swir', '/safra/swir_list.php', '/safra/swir_card.php?action=create'),
-                       array('EVI', 'evi', '/safra/evi_list.php', '/safra/evi_card.php?action=create'),
+                       array('NDVI', 'ndvi', '/safra/ndvi_view.php', '/safra/ndvi_card.php?action=create'),
+                       array('NDMI', 'ndmi', '/safra/ndmi_view.php', '/safra/ndmi_card.php?action=create'),
+                       array('NDWI', 'ndwi', '/safra/ndwi_view.php', '/safra/ndwi_card.php?action=create'),
+                       array('SWIR', 'swir', '/safra/swir_view.php', '/safra/swir_card.php?action=create'),
+                       array('EVI', 'evi', '/safra/evi_view.php', '/safra/evi_card.php?action=create'),
                        array('AnalisesSolo', 'analisesolo', '/safra/analisesolo_list.php', '/safra/analisesolo_card.php?action=create'),
                );
 

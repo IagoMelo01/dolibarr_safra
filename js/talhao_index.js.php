@@ -9,9 +9,16 @@
         const weatherConfig = window.safraWeatherConfig || {};
         const labels = window.safraLabels || {};
 
+        window.safraCharts = window.safraCharts || {};
+
         const mapElement = document.getElementById('mapIndex');
         if (!mapElement) {
             return;
+        }
+
+        const computedHeight = window.getComputedStyle(mapElement).height;
+        if ((!computedHeight || computedHeight === '0px') && !mapElement.style.height) {
+            mapElement.style.height = '360px';
         }
 
         const map = L.map('mapIndex').setView([-17.047558, -46.824176], 5);
@@ -32,11 +39,18 @@
         let bounds = null;
 
         talhoes.forEach(function (talhao) {
-            if (!talhao || !talhao.geo_json) return;
+            if (!talhao) return;
+
+            const geometry = parseGeometry(talhao.geo_json);
+            if (!geometry) {
+                if (talhao.geo_json) {
+                    console.warn('Geometria inválida para o talhão', talhao);
+                }
+                return;
+            }
 
             try {
-                const geojsonObject = JSON.parse(talhao.geo_json);
-                const layerGroup = L.geoJSON(geojsonObject, {
+                const layerGroup = L.geoJSON(geometry, {
                     onEachFeature: function (feature, layer) {
                         layer._safraData = {
                             area: parseFloat(talhao.area) || 0,
@@ -48,11 +62,11 @@
 
                 drawnItems.addLayer(layerGroup);
                 const layerBounds = layerGroup.getBounds();
-                if (layerBounds.isValid()) {
+                if (layerBounds && layerBounds.isValid()) {
                     bounds = bounds ? bounds.extend(layerBounds) : layerBounds;
                 }
             } catch (error) {
-                console.error('Erro ao interpretar o GeoJSON do talhão.', error);
+                console.error('Erro ao interpretar a geometria do talhão.', error);
             }
         });
 
@@ -94,11 +108,52 @@
             const decimals = area >= 10 ? 1 : 2;
             const unit = labels.areaUnit || 'ha';
             const label = data.label ? data.label + '<br>' : '';
-            const center = layer.getBounds().getCenter();
+            let center = null;
 
-            layer.areaTooltip
-                .setContent(label + area.toFixed(decimals) + ' ' + unit)
-                .setLatLng(center);
+            if (typeof layer.getBounds === 'function') {
+                const layerBounds = layer.getBounds();
+                if (layerBounds && layerBounds.isValid && layerBounds.isValid()) {
+                    center = layerBounds.getCenter();
+                }
+            }
+
+            if (!center && typeof layer.getLatLng === 'function') {
+                center = layer.getLatLng();
+            }
+
+            if (center) {
+                layer.areaTooltip
+                    .setContent(label + area.toFixed(decimals) + ' ' + unit)
+                    .setLatLng(center);
+            }
+        }
+
+        function parseGeometry(raw) {
+            if (!raw) return null;
+
+            if (typeof raw === 'object') {
+                return raw;
+            }
+
+            const text = String(raw).trim();
+            if (!text) return null;
+
+            try {
+                return JSON.parse(text);
+            } catch (error) {
+                if (window.wellknown && typeof window.wellknown.parse === 'function') {
+                    try {
+                        const geometry = window.wellknown.parse(text);
+                        return geometry || null;
+                    } catch (wktError) {
+                        console.error('Erro ao interpretar WKT do talhão.', wktError);
+                    }
+                }
+
+                console.error('Geometria inválida do talhão.', error);
+            }
+
+            return null;
         }
 
         renderCharts(talhoes, areaByMunicipio);
@@ -111,55 +166,80 @@
             return;
         }
 
+        const registry = window.safraCharts || (window.safraCharts = {});
+
+        function prepareCanvas(canvas) {
+            if (!canvas) return null;
+            const parent = canvas.parentNode;
+            if (parent && parent.clientHeight) {
+                canvas.height = parent.clientHeight;
+            }
+            return canvas.getContext('2d');
+        }
+
         const talhaoCanvas = document.getElementById('talhaoAreaChart');
         if (talhaoCanvas && talhoes.length) {
-            const ctxTalhao = talhaoCanvas.getContext('2d');
-            new Chart(ctxTalhao, {
-                type: 'bar',
-                data: {
-                    labels: talhoes.map(function (item) { return item.label || item.ref || ''; }),
-                    datasets: [{
-                        label: window.safraLabels && window.safraLabels.areaUnit ? window.safraLabels.areaUnit : 'ha',
-                        data: talhoes.map(function (item) { return parseFloat(item.area) || 0; }),
-                        backgroundColor: 'rgba(52, 152, 219, 0.35)',
-                        borderColor: 'rgba(52, 152, 219, 0.9)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
+            const ctxTalhao = prepareCanvas(talhaoCanvas);
+            if (!ctxTalhao) {
+                console.warn('Canvas do gráfico de talhão indisponível.');
+            } else {
+                if (registry.talhao) {
+                    registry.talhao.destroy();
+                }
+                registry.talhao = new Chart(ctxTalhao, {
+                    type: 'bar',
+                    data: {
+                        labels: talhoes.map(function (item) { return item.label || item.ref || ''; }),
+                        datasets: [{
+                            label: window.safraLabels && window.safraLabels.areaUnit ? window.safraLabels.areaUnit : 'ha',
+                            data: talhoes.map(function (item) { return parseFloat(item.area) || 0; }),
+                            backgroundColor: 'rgba(52, 152, 219, 0.35)',
+                            borderColor: 'rgba(52, 152, 219, 0.9)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         const municipioCanvas = document.getElementById('municipioAreaChart');
         if (municipioCanvas && areaByMunicipio.length) {
-            const ctxMunicipio = municipioCanvas.getContext('2d');
-            new Chart(ctxMunicipio, {
-                type: 'doughnut',
-                data: {
-                    labels: areaByMunicipio.map(function (item) { return item.label; }),
-                    datasets: [{
-                        data: areaByMunicipio.map(function (item) { return parseFloat(item.area) || 0; }),
-                        backgroundColor: ['#1abc9c', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#34495e', '#2ecc71']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            const ctxMunicipio = prepareCanvas(municipioCanvas);
+            if (!ctxMunicipio) {
+                console.warn('Canvas do gráfico de município indisponível.');
+            } else {
+                if (registry.municipio) {
+                    registry.municipio.destroy();
+                }
+                registry.municipio = new Chart(ctxMunicipio, {
+                    type: 'doughnut',
+                    data: {
+                        labels: areaByMunicipio.map(function (item) { return item.label; }),
+                        datasets: [{
+                            data: areaByMunicipio.map(function (item) { return parseFloat(item.area) || 0; }),
+                            backgroundColor: ['#1abc9c', '#3498db', '#9b59b6', '#f1c40f', '#e67e22', '#34495e', '#2ecc71']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
     }
 

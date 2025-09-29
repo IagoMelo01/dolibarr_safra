@@ -34,20 +34,23 @@ if ($res <= 0) {
 }
 
 // Supondo que o atributo seja $talhao->geo_json contendo string JSON válida
-$geojsonRaw = $talhao->geo_json;
-// echo "<script>console.log(". $geojsonRaw . ");</script>";
+$geojsonRaw = trim((string) $talhao->geo_json);
+$response = array(
+    'geometry' => $geojsonRaw,
+);
 
-// Se estiver armazenado como TEXT/JSON string, decodamos
-$geojson = null;
-if (!empty($geojsonRaw)) {
-    $geojson = json_decode($geojsonRaw, true);
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        header('Content-Type: application/json; charset=UTF-8');
-        echo json_encode(array('error' => 'GeoJSON inválido no talhão.'), JSON_UNESCAPED_UNICODE);
-        exit;
+if ($geojsonRaw !== '') {
+    $decoded = json_decode($geojsonRaw, true);
+    if (json_last_error() === JSON_ERROR_NONE && $decoded !== null) {
+        $response['geojson'] = $decoded;
+        $response['format'] = 'geojson';
+    } else {
+        $response['format'] = 'wkt';
     }
+} else {
+    $response['format'] = 'empty';
 }
 
 header('Content-Type: application/json; charset=UTF-8');
-echo json_encode(array('geojson' => $geojson), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 exit;
