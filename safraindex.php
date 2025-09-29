@@ -79,6 +79,37 @@ if (!function_exists('safra_format_number')) {
         }
 }
 
+if (!function_exists('safra_count_table')) {
+        /**
+         * Count rows from a given Safra table.
+         *
+         * @param DoliDB $db    Database handler
+         * @param string $table Table name without llx_ prefix
+         * @return int
+         */
+        function safra_count_table($db, $table)
+        {
+                if (empty($table)) {
+                        return 0;
+                }
+
+                // Avoid double prefix if already provided.
+                $tableName = (strpos($table, MAIN_DB_PREFIX) === 0 ? $table : MAIN_DB_PREFIX.$table);
+
+                $sql = 'SELECT COUNT(*) as cnt FROM '.$tableName;
+                $resql = $db->query($sql);
+                if (!$resql) {
+                        dol_syslog(__METHOD__.': SQL error: '.$db->lasterror(), LOG_ERR);
+                        return 0;
+                }
+
+                $obj = $db->fetch_object($resql);
+                $db->free($resql);
+
+                return (int) (!empty($obj->cnt) ? $obj->cnt : 0);
+        }
+}
+
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
 
