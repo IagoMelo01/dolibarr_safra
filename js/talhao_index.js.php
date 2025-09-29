@@ -16,6 +16,11 @@
             return;
         }
 
+        const computedHeight = window.getComputedStyle(mapElement).height;
+        if ((!computedHeight || computedHeight === '0px') && !mapElement.style.height) {
+            mapElement.style.height = '360px';
+        }
+
         const map = L.map('mapIndex').setView([-17.047558, -46.824176], 5);
         const loader = document.getElementById('boxLoading');
         const drawnItems = new L.FeatureGroup();

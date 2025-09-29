@@ -360,7 +360,10 @@ div.mainmenu.safra {
 }
 
 .safra-map {
+        position: relative;
+        width: 100%;
         min-height: 320px;
+        height: clamp(320px, 35vh, 480px);
         border-radius: 10px;
         overflow: hidden;
 }

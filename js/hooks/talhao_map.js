@@ -63,7 +63,12 @@
     if (map) return map;
 
     // altura de fallback se CSS faltar
-    if (!el.style.height) el.style.height = '380px';
+    if (!el.style.height) {
+      var computedHeight = window.getComputedStyle(el).height;
+      if (!computedHeight || computedHeight === '0px') {
+        el.style.height = '380px';
+      }
+    }
 
     map = L.map(el, { attributionControl: true });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22 }).addTo(map);
@@ -182,25 +187,37 @@
     fetchGeo(val);
   }
 
-  function init() {
+  function bindCurrentSelect() {
     var select = document.querySelector(selector);
+    if (!select) {
+      if (currentSelect) {
+        currentSelect.removeEventListener('change', onSelectChange);
+        delete currentSelect.dataset.safraMapBound;
+        currentSelect = null;
+      }
+      clearLayer();
+      setHint(mapHint, false);
+      return;
+    }
+
+    bindSelect(select);
+  }
+
+  function init() {
     var wrap   = document.querySelector(wrapper);
 
-    if (!select) { log('select não encontrado:', selector); return; }
     if (!wrap)   { log('wrapper não encontrado:', wrapper); return; }
 
     loadLeaflet(function(){
       ensureMap();
       if (!map) return;
 
-      bindSelect(select);
+      setHint(mapHint, false);
+      bindCurrentSelect();
 
       if (!selectObserver) {
         selectObserver = new MutationObserver(function(){
-          var maybe = document.querySelector(selector);
-          if (maybe && maybe !== currentSelect) {
-            bindSelect(maybe);
-          }
+          bindCurrentSelect();
         });
         selectObserver.observe(document.body, { childList: true, subtree: true });
       }
