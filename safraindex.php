@@ -59,6 +59,25 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
 include_once './class/ndvi.class.php';
+include_once './class/municipio.class.php';
+
+if (!function_exists('safra_format_number')) {
+        /**
+         * Format numbers using current locale separators.
+         *
+         * @param float $value
+         * @param int   $decimals
+         * @return string
+         */
+        function safra_format_number($value, $decimals = 0)
+        {
+                $locale = localeconv();
+                $decimal = (!empty($locale['decimal_point']) ? $locale['decimal_point'] : '.');
+                $thousand = (!empty($locale['thousands_sep']) ? $locale['thousands_sep'] : ',');
+
+                return number_format((float) $value, $decimals, $decimal, $thousand);
+        }
+}
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
@@ -108,181 +127,293 @@ llxHeader("", $langs->trans("SafraArea"), '', '', 0, 0, '', '', '', 'mod-safra p
 
 print load_fiche_titre($langs->trans("SafraArea"), '', 'safra.png@safra');
 
-print '<div class="fichecenter">';
-
-?>
-
-<div class="container">
-
-       <div class="map-card item">
-               <div id="mapIndex">
-                       <div id="boxLoading" class="display"></div>
-               </div>
-       </div>
-
-</div>
-
-<?php
-
-print '<div class="fichethirdleft">';
-
-$obj_talhao = new Talhao($db);
-$list_talho = $obj_talhao->fetchAll();
-$json_data = [];
-$area_array = [];
-foreach ($list_talho as $key => $talhao) {
-	$json_data[] = $talhao->geo_json;
-	$area_array[] = $talhao->area;
-	print $talhao->getKanbanView();
+// Prepare dashboard data
+$talhaoObject = new Talhao($db);
+$talhaoList = $talhaoObject->fetchAll('ASC', 't.ref');
+if (!is_array($talhaoList)) {
+        $talhaoList = array();
 }
 
-
-/* BEGIN MODULEBUILDER DRAFT MYOBJECT
-// Draft MyObject
-if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
-	$langs->load("orders");
-
-	$sql = "SELECT c.rowid, c.ref, c.ref_client, c.total_ht, c.tva as total_tva, c.total_ttc, s.rowid as socid, s.nom as name, s.client, s.canvas";
-	$sql.= ", s.code_client";
-	$sql.= " FROM ".MAIN_DB_PREFIX."commande as c";
-	$sql.= ", ".MAIN_DB_PREFIX."societe as s";
-	$sql.= " WHERE c.fk_soc = s.rowid";
-	$sql.= " AND c.fk_statut = 0";
-	$sql.= " AND c.entity IN (".getEntity('commande').")";
-	if ($socid)	$sql.= " AND c.fk_soc = ".((int) $socid);
-
-	$resql = $db->query($sql);
-	if ($resql)
-	{
-		$total = 0;
-		$num = $db->num_rows($resql);
-
-		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre">';
-		print '<th colspan="3">'.$langs->trans("DraftMyObjects").($num?'<span class="badge marginleftonlyshort">'.$num.'</span>':'').'</th></tr>';
-
-		$var = true;
-		if ($num > 0)
-		{
-			$i = 0;
-			while ($i < $num)
-			{
-
-				$obj = $db->fetch_object($resql);
-				print '<tr class="oddeven"><td class="nowrap">';
-
-				$myobjectstatic->id=$obj->rowid;
-				$myobjectstatic->ref=$obj->ref;
-				$myobjectstatic->ref_client=$obj->ref_client;
-				$myobjectstatic->total_ht = $obj->total_ht;
-				$myobjectstatic->total_tva = $obj->total_tva;
-				$myobjectstatic->total_ttc = $obj->total_ttc;
-
-				print $myobjectstatic->getNomUrl(1);
-				print '</td>';
-				print '<td class="nowrap">';
-				print '</td>';
-				print '<td class="right" class="nowrap">'.price($obj->total_ttc).'</td></tr>';
-				$i++;
-				$total += $obj->total_ttc;
-			}
-			if ($total>0)
-			{
-
-				print '<tr class="liste_total"><td>'.$langs->trans("Total").'</td><td colspan="2" class="right">'.price($total)."</td></tr>";
-			}
-		}
-		else
-		{
-
-			print '<tr class="oddeven"><td colspan="3" class="opacitymedium">'.$langs->trans("NoOrder").'</td></tr>';
-		}
-		print "</table><br>";
-
-		$db->free($resql);
-	}
-	else
-	{
-		dol_print_error($db);
-	}
+$municipioObject = new Municipio($db);
+$municipioRecords = $municipioObject->fetchAll('ASC', 't.label');
+$municipioCache = array();
+if (!is_array($municipioRecords)) {
+        $municipioRecords = array();
 }
-END MODULEBUILDER DRAFT MYOBJECT */
 
+$talhaoData = array();
+$talhaoCache = array();
+$areaByMunicipio = array();
+$totalArea = 0;
+$largestTalhao = null;
 
-print '</div><div class="fichetwothirdright">';
-
-
-$NBMAX = getDolGlobalInt('MAIN_SIZE_SHORTLIST_LIMIT');
-$max = getDolGlobalInt('MAIN_SIZE_SHORTLIST_LIMIT');
-
-/* BEGIN MODULEBUILDER LASTMODIFIED MYOBJECT */
-// Last modified myobject
-if (isModEnabled('safra') && $user->hasRight('safra', 'read')) {
-	$sql = "SELECT s.rowid, s.ref, s.label, s.date_creation, s.tms";
-	$sql.= " FROM ".MAIN_DB_PREFIX."safra_myobject as s";
-	$sql.= " WHERE s.entity IN (".getEntity($myobjectstatic->element).")";
-	//if ($socid)	$sql.= " AND s.rowid = $socid";
-	$sql .= " ORDER BY s.tms DESC";
-	$sql .= $db->plimit($max, 0);
-
-	$resql = $db->query($sql);
-	if ($resql)
-	{
-		$num = $db->num_rows($resql);
-		$i = 0;
-
-		print '<table class="noborder centpercent">';
-		print '<tr class="liste_titre">';
-		print '<th colspan="2">';
-		print $langs->trans("BoxTitleLatestModifiedMyObjects", $max);
-		print '</th>';
-		print '<th class="right">'.$langs->trans("DateModificationShort").'</th>';
-		print '</tr>';
-		if ($num)
-		{
-			while ($i < $num)
-			{
-				$objp = $db->fetch_object($resql);
-
-				$myobjectstatic->id=$objp->rowid;
-				$myobjectstatic->ref=$objp->ref;
-				$myobjectstatic->label=$objp->label;
-				$myobjectstatic->status = $objp->status;
-
-				print '<tr class="oddeven">';
-				print '<td class="nowrap">'.$myobjectstatic->getNomUrl(1).'</td>';
-				print '<td class="right nowrap">';
-				print "</td>";
-				print '<td class="right nowrap">'.dol_print_date($db->jdate($objp->tms), 'day')."</td>";
-				print '</tr>';
-				$i++;
-			}
-
-			$db->free($resql);
-		} else {
-			print '<tr class="oddeven"><td colspan="3" class="opacitymedium">'.$langs->trans("None").'</td></tr>';
-		}
-		print "</table><br>";
-	}
+foreach ($municipioRecords as $municipio) {
+        $municipioCache[$municipio->id] = $municipio->label ?: $municipio->ref;
 }
-/**/
 
+foreach ($talhaoList as $talhao) {
+        $talhaoId = !empty($talhao->id) ? $talhao->id : $talhao->rowid;
+        $talhaoLabel = $talhao->label ? $talhao->label : $talhao->ref;
+        $municipioId = !empty($talhao->municipio) ? (int) $talhao->municipio : 0;
+        $municipioLabel = $municipioId && isset($municipioCache[$municipioId]) ? $municipioCache[$municipioId] : '';
 
+        $talhaoCache[$talhaoId] = array(
+                'label' => $talhaoLabel,
+                'ref' => $talhao->ref,
+        );
 
+        $area = (float) $talhao->area;
+        $totalArea += $area;
 
-?>
+        $municipioKey = $municipioLabel ?: $langs->trans('SafraUnknownMunicipio');
+        if (!isset($areaByMunicipio[$municipioKey])) {
+                $areaByMunicipio[$municipioKey] = 0;
+        }
+        $areaByMunicipio[$municipioKey] += $area;
 
-<script>
-	let json = <?php echo json_encode($json_data); ?>;
-	let area_array = <?php echo json_encode($area_array); ?>
-</script>
+        if ($largestTalhao === null || $area > $largestTalhao['area']) {
+                $largestTalhao = array('label' => $talhaoLabel, 'area' => $area);
+        }
 
-<?php
-// $ndvi = new NDVI($db);
-// $ndvi->requestNDVIData();
+        $talhaoData[] = array(
+                'id' => $talhaoId,
+                'ref' => $talhao->ref,
+                'label' => $talhaoLabel,
+                'area' => $area,
+                'municipio' => $municipioLabel,
+                'geo_json' => $talhao->geo_json,
+        );
+}
 
-print '</div></div>';
+$countTalhoes = count($talhaoData);
+$averageArea = $countTalhoes > 0 ? ($totalArea / $countTalhoes) : 0;
+$countCulturas = safra_count_table($db, 'safra_cultura');
+$countAplicacoes = safra_count_table($db, 'safra_aplicacao');
+$countEventos = safra_count_table($db, 'safra_evento');
+$countColheitas = safra_count_table($db, 'safra_colheita');
+$countMunicipios = count($areaByMunicipio);
 
+$summaryCards = array(
+        array(
+                'title' => $langs->trans('SafraSummaryTalhoes'),
+                'value' => safra_format_number($countTalhoes),
+                'description' => $langs->trans('SafraSummaryTalhoesDesc'),
+        ),
+        array(
+                'title' => $langs->trans('SafraSummaryArea'),
+                'value' => ($totalArea > 0 ? safra_format_number($totalArea, 2).' '.$langs->trans('SafraUnitHectareShort') : '0 '.$langs->trans('SafraUnitHectareShort')),
+                'description' => $langs->trans('SafraSummaryAreaDesc'),
+        ),
+        array(
+                'title' => $langs->trans('SafraSummaryAverage'),
+                'value' => ($countTalhoes > 0 ? safra_format_number($averageArea, 2).' '.$langs->trans('SafraUnitHectareShort') : $langs->trans('SafraSummaryAverageEmpty')),
+                'description' => $langs->trans('SafraSummaryAverageDesc'),
+        ),
+        array(
+                'title' => $langs->trans('SafraSummaryLargest'),
+                'value' => ($largestTalhao ? safra_format_number($largestTalhao['area'], 2).' '.$langs->trans('SafraUnitHectareShort') : $langs->trans('SafraSummaryLargestEmpty')),
+                'description' => ($largestTalhao ? $largestTalhao['label'] : $langs->trans('SafraSummaryLargestDesc')),
+        ),
+        array(
+                'title' => $langs->trans('SafraSummaryCulturas'),
+                'value' => safra_format_number($countCulturas),
+                'description' => $langs->trans('SafraSummaryCulturasDesc'),
+        ),
+        array(
+                'title' => $langs->trans('SafraSummaryAplicacoes'),
+                'value' => safra_format_number($countAplicacoes),
+                'description' => $langs->trans('SafraSummaryAplicacoesDesc'),
+        ),
+);
+
+$insights = array(
+        array(
+                'label' => $langs->trans('SafraSummaryMunicipios'),
+                'value' => safra_format_number($countMunicipios),
+                'description' => $langs->trans('SafraSummaryMunicipiosDesc'),
+        ),
+        array(
+                'label' => $langs->trans('SafraSummaryEventos'),
+                'value' => safra_format_number($countEventos),
+                'description' => $langs->trans('SafraSummaryEventosDesc'),
+        ),
+        array(
+                'label' => $langs->trans('SafraSummaryColheitas'),
+                'value' => safra_format_number($countColheitas),
+                'description' => $langs->trans('SafraSummaryColheitasDesc'),
+        ),
+);
+
+$weatherLatitude = getDolGlobalString('SAFRA_LATITUDE');
+$weatherLongitude = getDolGlobalString('SAFRA_LONGITUDE');
+$weatherLocation = getDolGlobalString('SAFRA_FAZENDA');
+
+$ndviStatic = new NDVI($db);
+$ndviEntries = $ndviStatic->fetchAll('DESC', 't.data', 5);
+if (!is_array($ndviEntries)) {
+        $ndviEntries = array();
+}
+
+$areaByMunicipioData = array();
+foreach ($areaByMunicipio as $label => $area) {
+        $areaByMunicipioData[] = array('label' => $label, 'area' => $area);
+}
+
+$weatherDescriptions = array(
+        '0' => $langs->transnoentities('SafraWeatherDesc0'),
+        '1' => $langs->transnoentities('SafraWeatherDesc1'),
+        '2' => $langs->transnoentities('SafraWeatherDesc2'),
+        '3' => $langs->transnoentities('SafraWeatherDesc3'),
+        '45' => $langs->transnoentities('SafraWeatherDesc45'),
+        '48' => $langs->transnoentities('SafraWeatherDesc48'),
+        '51' => $langs->transnoentities('SafraWeatherDesc51'),
+        '53' => $langs->transnoentities('SafraWeatherDesc53'),
+        '55' => $langs->transnoentities('SafraWeatherDesc55'),
+        '56' => $langs->transnoentities('SafraWeatherDesc56'),
+        '57' => $langs->transnoentities('SafraWeatherDesc57'),
+        '61' => $langs->transnoentities('SafraWeatherDesc61'),
+        '63' => $langs->transnoentities('SafraWeatherDesc63'),
+        '65' => $langs->transnoentities('SafraWeatherDesc65'),
+        '66' => $langs->transnoentities('SafraWeatherDesc66'),
+        '67' => $langs->transnoentities('SafraWeatherDesc67'),
+        '71' => $langs->transnoentities('SafraWeatherDesc71'),
+        '73' => $langs->transnoentities('SafraWeatherDesc73'),
+        '75' => $langs->transnoentities('SafraWeatherDesc75'),
+        '77' => $langs->transnoentities('SafraWeatherDesc77'),
+        '80' => $langs->transnoentities('SafraWeatherDesc80'),
+        '81' => $langs->transnoentities('SafraWeatherDesc81'),
+        '82' => $langs->transnoentities('SafraWeatherDesc82'),
+        '85' => $langs->transnoentities('SafraWeatherDesc85'),
+        '86' => $langs->transnoentities('SafraWeatherDesc86'),
+        '95' => $langs->transnoentities('SafraWeatherDesc95'),
+        '96' => $langs->transnoentities('SafraWeatherDesc96'),
+        '99' => $langs->transnoentities('SafraWeatherDesc99'),
+);
+
+print '<div class="safra-dashboard">';
+print '<div class="safra-dashboard__grid">';
+
+print '<section class="safra-card safra-card--summary">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraSummaryTitle').'</h2></div>';
+print '<div class="safra-summary-grid">';
+foreach ($summaryCards as $card) {
+        print '<div class="safra-summary-card">';
+        print '<div class="safra-summary-card__value">'.dol_escape_htmltag($card['value']).'</div>';
+        print '<div class="safra-summary-card__label">'.dol_escape_htmltag($card['title']).'</div>';
+        if (!empty($card['description'])) {
+                print '<div class="safra-summary-card__description">'.dol_escape_htmltag($card['description']).'</div>';
+        }
+        print '</div>';
+}
+print '</div>';
+print '</section>';
+
+print '<section class="safra-card safra-card--weather">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraWeatherTitle').'</h2>';
+if (!empty($weatherLocation)) {
+        print '<span class="safra-chip">'.dol_escape_htmltag($weatherLocation).'</span>';
+}
+print '</div>';
+print '<div id="weather-content" class="safra-weather">'.$langs->trans('SafraWeatherLoading').'</div>';
+print '</section>';
+
+print '<section class="safra-card safra-card--map">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraMapTitle').'</h2></div>';
+print '<div id="mapIndex" class="safra-map"><div id="boxLoading" class="display"></div></div>';
+print '</section>';
+
+print '<section class="safra-card safra-card--chart">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByTalhao').'</h2></div>';
+if ($countTalhoes > 0) {
+        print '<canvas id="talhaoAreaChart" class="safra-chart"></canvas>';
+} else {
+        print '<p class="safra-empty">'.$langs->trans('SafraNoTalhaoData').'</p>';
+}
+print '</section>';
+
+print '<section class="safra-card safra-card--chart">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByMunicipio').'</h2></div>';
+if (!empty($areaByMunicipioData)) {
+        print '<canvas id="municipioAreaChart" class="safra-chart"></canvas>';
+} else {
+        print '<p class="safra-empty">'.$langs->trans('SafraNoMunicipioData').'</p>';
+}
+print '</section>';
+
+print '<section class="safra-card safra-card--insights">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraHighlights').'</h2></div>';
+print '<ul class="safra-insights">';
+foreach ($insights as $insight) {
+        print '<li class="safra-insights__item">';
+        print '<div class="safra-insights__value">'.dol_escape_htmltag($insight['value']).'</div>';
+        print '<div class="safra-insights__label">'.dol_escape_htmltag($insight['label']).'</div>';
+        if (!empty($insight['description'])) {
+                print '<div class="safra-insights__description">'.dol_escape_htmltag($insight['description']).'</div>';
+        }
+        print '</li>';
+}
+print '</ul>';
+print '</section>';
+
+print '<section class="safra-card safra-card--list">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraLatestNdvi').'</h2></div>';
+if (!empty($ndviEntries)) {
+        print '<ul class="safra-list">';
+        foreach ($ndviEntries as $entry) {
+                $talhaoLabel = '';
+                if (!empty($entry->talhao)) {
+                        $entryTalhaoId = (int) $entry->talhao;
+                        if (isset($talhaoCache[$entryTalhaoId]['label'])) {
+                                $talhaoLabel = $talhaoCache[$entryTalhaoId]['label'];
+                        }
+                }
+                $dateLabel = !empty($entry->data) ? dol_print_date($db->jdate($entry->data), 'day') : '';
+                print '<li class="safra-list__item">';
+                print '<div class="safra-list__primary">'.$entry->getNomUrl(1).'</div>';
+                print '<div class="safra-list__meta">';
+                if ($talhaoLabel) {
+                        print '<span>'.dol_escape_htmltag($langs->trans('SafraTalhaoShort').': '.$talhaoLabel).'</span>';
+                }
+                if ($dateLabel) {
+                        print '<span>'.dol_escape_htmltag($langs->trans('Date').': '.$dateLabel).'</span>';
+                }
+                print '</div>';
+                print '</li>';
+        }
+        print '</ul>';
+} else {
+        print '<p class="safra-empty">'.$langs->trans('SafraNoNdvi').'</p>';
+}
+print '</section>';
+
+print '</div>';
+print '</div>';
+
+$jsOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+
+print '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+print '<script>';
+print 'window.safraTalhoes = '.json_encode(array_values($talhaoData), $jsOptions).';';
+print 'window.safraAreaByMunicipio = '.json_encode($areaByMunicipioData, $jsOptions).';';
+print 'window.safraWeatherConfig = '.json_encode(array('latitude' => $weatherLatitude, 'longitude' => $weatherLongitude, 'location' => $weatherLocation), $jsOptions).';';
+print 'window.safraLabels = '.json_encode(array(
+        'areaUnit' => $langs->transnoentities('SafraUnitHectareShort'),
+        'noTalhaoData' => $langs->transnoentities('SafraNoTalhaoData'),
+        'weatherLoading' => $langs->transnoentities('SafraWeatherLoading'),
+        'weatherConfigure' => $langs->transnoentities('SafraWeatherConfigure'),
+        'weatherError' => $langs->transnoentities('SafraWeatherError'),
+        'weatherToday' => $langs->transnoentities('SafraWeatherToday'),
+        'weatherForecast' => $langs->transnoentities('SafraWeatherForecast'),
+        'weatherTemperature' => $langs->transnoentities('SafraWeatherTemperature'),
+        'weatherHumidity' => $langs->transnoentities('SafraWeatherHumidity'),
+        'weatherWind' => $langs->transnoentities('SafraWeatherWind'),
+        'weatherPrecipitation' => $langs->transnoentities('SafraWeatherPrecipitation'),
+        'weatherFeelsLike' => $langs->transnoentities('SafraWeatherFeelsLike'),
+        'weatherUnknown' => $langs->transnoentities('SafraWeatherUnknown'),
+        'chartEmpty' => $langs->transnoentities('SafraChartEmpty'),
+        'weatherDescriptions' => $weatherDescriptions,
+), $jsOptions).';';
+print '</script>';
 // include do script
 include_once "./js/talhao_index.js.php";
 

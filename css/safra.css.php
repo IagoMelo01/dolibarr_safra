@@ -264,4 +264,283 @@ div.mainmenu.safra {
     }
 }
 
+
+.safra-dashboard {
+        margin: 0 auto;
+        max-width: 1280px;
+        padding: 0 16px 32px;
+}
+
+.safra-dashboard__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+}
+
+.safra-card {
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        padding: 18px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 0;
+}
+
+.safra-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 4px;
+}
+
+.safra-card__header h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+}
+
+.safra-chip {
+        display: inline-flex;
+        align-items: center;
+        background: #eef4ff;
+        color: #1d4ed8;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+}
+
+.safra-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 14px;
+}
+
+.safra-summary-card {
+        background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+        color: #ffffff;
+        padding: 16px;
+        border-radius: 10px;
+        min-height: 130px;
+        display: flex;
+        flex-direction: column;
+}
+
+.safra-summary-card:nth-child(2n) {
+        background: linear-gradient(135deg, #16a34a, #22d3ee);
+}
+
+.safra-summary-card:nth-child(3n) {
+        background: linear-gradient(135deg, #f97316, #facc15);
+}
+
+.safra-summary-card__value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1.2;
+}
+
+.safra-summary-card__label {
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        opacity: 0.85;
+        margin-top: 6px;
+}
+
+.safra-summary-card__description {
+        font-size: 0.8rem;
+        margin-top: auto;
+        opacity: 0.85;
+}
+
+.safra-map {
+        min-height: 320px;
+        border-radius: 10px;
+        overflow: hidden;
+}
+
+.safra-card--chart {
+        min-height: 340px;
+}
+
+.safra-chart {
+        width: 100%;
+        height: 260px;
+}
+
+.safra-empty {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-style: italic;
+}
+
+.safra-insights {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+}
+
+.safra-insights__item {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+}
+
+.safra-insights__value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #0f766e;
+}
+
+.safra-insights__label {
+        font-size: 0.82rem;
+        color: #1f2937;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+}
+
+.safra-insights__description {
+        font-size: 0.78rem;
+        color: #475569;
+}
+
+.safra-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+}
+
+.safra-list__item {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 10px;
+}
+
+.safra-list__item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+}
+
+.safra-list__primary {
+        font-weight: 600;
+        color: #1e293b;
+}
+
+.safra-list__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        font-size: 0.8rem;
+        color: #475569;
+}
+
+.safra-weather {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+}
+
+.safra-weather__current {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+}
+
+.safra-weather__temp {
+        font-size: 2.6rem;
+        font-weight: 700;
+        color: #f97316;
+        line-height: 1;
+}
+
+.safra-weather__description {
+        font-size: 0.95rem;
+        margin-top: 4px;
+        color: #334155;
+        font-weight: 600;
+}
+
+.safra-weather__location {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b;
+        letter-spacing: 0.08em;
+        margin-top: 6px;
+}
+
+.safra-weather__metrics {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: #475569;
+}
+
+.safra-weather__forecast-title {
+        font-weight: 600;
+        color: #1e293b;
+}
+
+.safra-weather__forecast {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+}
+
+.safra-weather__forecast-day {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: #475569;
+}
+
+.safra-weather__forecast-temp {
+        font-weight: 600;
+        color: #0f766e;
+}
+
+.safra-weather__forecast-precip {
+        font-size: 0.75rem;
+        color: #1e293b;
+}
+
+@media (max-width: 768px) {
+        .safra-card {
+                padding: 16px;
+        }
+
+        .safra-weather__current {
+                flex-direction: column;
+        }
+
+        .safra-weather__metrics {
+                flex-direction: row;
+                flex-wrap: wrap;
+        }
+}
+
 </style> 
