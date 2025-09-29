@@ -482,227 +482,528 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 
 			// 	break;
 
-			case 'RECOMENDACAOADUBO_CREATE':
-
-				dol_include_once('/projet/class/project.class.php', 'Project');
-				dol_include_once('/safra/class/recomendacaoadubo.class.php', 'RecomendacaoAdubo');
-				dol_include_once('/safra/class/cultura.class.php', 'Cultura');
-				dol_include_once('/safra/class/analisesolo.class.php', 'AnaliseSolo');
-
-				$rec = new RecomendacaoAdubo($object->db);
-				$rec->fetch($object->id);
-
-				$rec->recomendacao = "lemme see";
-				$rec->update($user, true);
-
-				$analise = new AnaliseSolo($object->db);
-				$analise->fetch($rec->analise_solo);
-
-				$plano = new Project($object->db);
-				$plano->fetch($rec->fk_project);
-
-				$obj_cultura = new Cultura($object->db);
-				$extrafields = new Project($object->db);
-				$extrafields->fetch_optionals($rec->fk_project);
-				$obj_cultura->fetch($extrafields->array_options['options_fk_cultura']);
-
-				// Função para calcular a recomendação de NPK com base na cultura
-				function recomendarNPK($cultura, $nitrogenio, $fosforo, $potassio, $organic_matter = 0)
-				{
-					$ideais = [
-						'arroz' => ['N' => 100, 'P' => 30, 'K' => 30],
-						'arroz_irrigado' => ['N' => 100, 'P' => 30, 'K' => 30],
-						'algodão_herbaceo' => ['N' => 110, 'P' => 60, 'K' => 60],
-						'amendoim' => ['N' => 30, 'P' => 60, 'K' => 50],
-						'cevada_irrigada' => ['N' => 80, 'P' => 55, 'K' => 55],
-						'cevada_sequeiro' => ['N' => 80, 'P' => 55, 'K' => 55],
-						'feijão' => ['N' => 40, 'P' => 60, 'K' => 40],
-						'feijão_caupi' => ['N' => 30, 'P' => 30, 'K' => 30],
-						'girassol' => ['N' => 100, 'P' => 60, 'K' => 60],
-						'mamona' => ['N' => 80, 'P' => 60, 'K' => 40],
-						'milho' => ['N' => 120, 'P' => 60, 'K' => 60],
-						'soja' => ['N' => 30, 'P' => 60, 'K' => 60],
-						'sorgo' => ['N' => 80, 'P' => 45, 'K' => 45],
-						'trigo' => ['N' => 90, 'P' => 60, 'K' => 60]
-					];
-
-					$idealN = $ideais[$cultura]['N'];
-					$idealP = $ideais[$cultura]['P'];
-					$idealK = $ideais[$cultura]['K'];
-
-					// Verificando deficiências ou excessos no solo
-					$difN = max(0, $idealN - $nitrogenio);
-					$difP = max(0, $idealP - $fosforo);
-					$difK = max(0, $idealK - $potassio);
-
-					// Considerando matéria orgânica
-					if ($organic_matter > 3) { // Ajuste para altos níveis de matéria orgânica
-						$difN *= 0.7; // Reduz a recomendação de nitrogênio
-					}
-
-					$recN = $difN * 4;
-					$recP = $difP * 2;
-					$recK = $difK * 4;
-
-					return array($recN, $recP, $recK);
-				}
-
-				// Função para sugerir uma formulação comercial e a dose necessária
-				function sugerirFormulacao($recN, $recP, $recK)
-				{
-					$formulacoes = [
-						['N' => 20, 'P' => 10, 'K' => 10, 'descricao' => '20-10-10'],
-						['N' => 10, 'P' => 20, 'K' => 20, 'descricao' => '10-20-20'],
-						['N' => 15, 'P' => 15, 'K' => 15, 'descricao' => '15-15-15'],
-						['N' => 30, 'P' => 10, 'K' => 10, 'descricao' => '30-10-10'],
-						['N' => 10, 'P' => 10, 'K' => 10, 'descricao' => '10-10-10'],
-						['N' => 25, 'P' => 5,  'K' => 5,  'descricao' => '25-5-5'],
-						['N' => 5,  'P' => 25, 'K' => 5,  'descricao' => '5-25-5'],
-						['N' => 5,  'P' => 5,  'K' => 25, 'descricao' => '5-5-25'],
-						['N' => 40, 'P' => 20, 'K' => 20, 'descricao' => '40-20-20'],
-						['N' => 20, 'P' => 20, 'K' => 20, 'descricao' => '20-20-20'],
-						['N' => 18, 'P' => 18, 'K' => 18, 'descricao' => '18-18-18'],
-						['N' => 12, 'P' => 24, 'K' => 12, 'descricao' => '12-24-12'],
-						['N' => 12, 'P' => 12, 'K' => 17, 'descricao' => '12-12-17'],
-						['N' => 30, 'P' => 6,  'K' => 6,  'descricao' => '30-6-6'],
-						['N' => 28, 'P' => 14, 'K' => 14, 'descricao' => '28-14-14'],
-						['N' => 13, 'P' => 13, 'K' => 21, 'descricao' => '13-13-21'],
-						['N' => 8,  'P' => 24, 'K' => 24, 'descricao' => '8-24-24'],
-						['N' => 16, 'P' => 8,  'K' => 8,  'descricao' => '16-8-8'],
-						['N' => 7,  'P' => 7,  'K' => 14, 'descricao' => '7-7-14'],
-						['N' => 20, 'P' => 5,  'K' => 10, 'descricao' => '20-5-10'],
-						['N' => 9,  'P' => 18, 'K' => 9,  'descricao' => '9-18-9'],
-						['N' => 14, 'P' => 14, 'K' => 14, 'descricao' => '14-14-14'],
-						['N' => 17, 'P' => 17, 'K' => 17, 'descricao' => '17-17-17'],
-						['N' => 19, 'P' => 19, 'K' => 19, 'descricao' => '19-19-19'],
-						['N' => 21, 'P' => 0,  'K' => 0,  'descricao' => '21-0-0'],
-						['N' => 0,  'P' => 46, 'K' => 0,  'descricao' => '0-46-0'],
-						['N' => 0,  'P' => 0,  'K' => 60, 'descricao' => '0-0-60'],
-						['N' => 15, 'P' => 9,  'K' => 20, 'descricao' => '15-9-20'],
-						['N' => 11, 'P' => 22, 'K' => 16, 'descricao' => '11-22-16'],
-						['N' => 22, 'P' => 11, 'K' => 2,  'descricao' => '22-11-2']
-					];
-
-
-					$melhorFormulacao = null;
-					$menorDiferenca = PHP_INT_MAX;
-
-					foreach ($formulacoes as $formulacao) {
-						// Calcular a diferença absoluta em NPK
-						$diferenca = abs($recN - $formulacao['N']) + abs($recP - $formulacao['P']) + abs($recK - $formulacao['K']);
-						if ($diferenca < $menorDiferenca) {
-							$menorDiferenca = $diferenca;
-							$melhorFormulacao = $formulacao;
-						}
-					}
-
-					// Calcular quantidade de formulação necessária (em toneladas por hectare)
-					$recN_div = $melhorFormulacao['N'] != 0 ? $recN / $melhorFormulacao['N'] : 0;
-					$recP_div = $melhorFormulacao['P'] != 0 ? $recP / $melhorFormulacao['P'] : 0;
-					$recK_div = $melhorFormulacao['K'] != 0 ? $recK / $melhorFormulacao['K'] : 0;
-					$quantidade = max($recN_div, $recP_div, $recK_div) / 10; // Ajuste conforme necessário
-
-					return ['formulacao' => $melhorFormulacao['descricao'], 'quantidade' => $quantidade];
-				}
-
-				// Função para sugerir o método de aplicação baseado na cultura
-				function metodoAplicacao($cultura)
-				{
-					$metodos = [
-						'arroz' => 'Incorporação antes do plantio e cobertura na fase vegetativa',
-						'algodao' => 'Incorporação antes do plantio e cobertura em fases de crescimento',
-						'amendoim' => 'Incorporação antes do plantio',
-						'cevada' => 'Incorporação antes do plantio e cobertura no início do perfilhamento',
-						'feijao' => 'Incorporação antes do plantio e cobertura na fase de crescimento',
-						'feijaocaupi' => 'Incorporação antes do plantio e cobertura durante o desenvolvimento vegetativo',
-						'girassol' => 'Incorporação antes do plantio e cobertura no estágio de botão floral',
-						'mamona' => 'Incorporação antes do plantio e cobertura no início da fase vegetativa',
-						'milho' => 'Incorporação antes do plantio e cobertura na fase de crescimento',
-						'soja' => 'Incorporação antes do plantio e cobertura no estágio de desenvolvimento vegetativo',
-						'sorgo' => 'Incorporação antes do plantio e cobertura antes do perfilhamento',
-						'trigo' => 'Incorporação antes do plantio e cobertura no início do perfilhamento'
-					];
-
-					return $metodos[$cultura] ?? 'Método não especificado; consulte um agrônomo';
-				}
-
-				// Receber dados de entrada via objetos
-				$cultura = strtolower($obj_cultura->ref);
-				$nitrogenio = $analise->n_total ?? 0; // mg/kg
-				$fosforo = $analise->fosforo ?? 0; // mg/kg
-				$potassio = $analise->potassio ?? 0; // mg/kg
-
-				// Chamar a função de recomendação
-				$recomendacao = recomendarNPK($cultura, $nitrogenio, $fosforo, $potassio);
-				$formulacao = sugerirFormulacao($recomendacao[0], $recomendacao[1], $recomendacao[2]);
-				$metodo = metodoAplicacao($cultura);
-				$res = '';
-				$res .= "Recomendação de fertilização NPK para $cultura (kg/ha): <br>";
-				$res .= "Nitrogênio (N): " . $recomendacao[0] . " kg/ha <br>";
-				$res .= "Fósforo (P2O5): " . $recomendacao[1] . " kg/ha <br>";
-				$res .= "Potássio (K2O): " . $recomendacao[2] . " kg/ha <br>";
-				$res .= "Formulação sugerida: " . $formulacao['formulacao'] . " <br>";
-				$res .= "Quantidade necessária: " . round($formulacao['quantidade'], 2) . " toneladas por hectare <br>";
-				$res .= "Método de aplicação recomendado para $cultura: $metodo <br>";
-
-
-				function calcularCalcario($cultura, $pH_atual, $ctc)
-				{
-					// pH ideal para cada cultura
-					$pH_ideais = [
-						'arroz' => 6.0,
-						'arroz irrigado' => 6.0,
-						'algodao' => 6.0,
-						'amendoim' => 6.0,
-						'cevada' => 6.0,
-						'cevada irrigada' => 6.0,
-						'feijao' => 6.0,
-						'feijaocaupi' => 5.5,
-						'girassol' => 6.5,
-						'mamona' => 6.0,
-						'milho' => 6.0,
-						'soja' => 6.5,
-						'sorgo' => 6.0,
-						'trigo' => 6.0
-					];
-
-					$pH_desejado = $pH_ideais[$cultura] ?? 6.5;
-
-					$fator = max(0, ($pH_desejado - $pH_atual) * 100);
-					$necessidade_calcario = $ctc * $fator / 1000;
-
-					return $necessidade_calcario;
-				}
-
-				// Receber dados de entrada via GET
-				// $cultura = strtolower($obj_cultura->label);
-				$pH_atual = $analise->ph ?? 5.5; // pH atual do solo
-				$ctc = $analise->ctc ?? 10; // Capacidade de Troca Catiônica (mmolc/dm³)
-
-				// Chamar a função de cálculo de calcário
-				$quantidade_calcario = calcularCalcario($cultura, $pH_atual, $ctc);
-
-				$res .= "Para a cultura: " . $cultura . "<h3>Observações Adubação: </h3> 1. A análise de uma amostra de solo é instrumento importante para auxiliar no processo de recomendação de adubação, contudo requer a coleta de uma amostra representativa. Deve-se coletar uma amostra de cada gleba da propriedade, resultante da mistura de várias sub-amostras. (Sugere-se consultar arquivo WebAgritec-amostragem do solo); \n2. Adubação nitrogenada - A quantidade total de N recomendada pode ser reduzida em cerca de 30% quando o solo apresentar teor alto de matéria orgânica. A dosagem de N em cobertura, quando recomendada, deve ser aplicada durante o desenvolvimento da cultura. Caso esta dosagem seja superior a 60 kg/ha, pode-se parcelar em duas aplicações. A aplicação deve ser feita em solo úmido e, quando possível, com leve incorporação ao solo; \n3. Adubação potássica - Quando o solo for arenoso ou a recomendação de adubação exceder 60 kg/ha de K2O, sugere-se aplicar metade da dose no plantio e metade junto com a cobertura de nitrogênio; \n4. Em lavouras aonde vem sendo utilizadas fontes de fertilizantes ou formulações de alta concentração (soma de N+P2O5+K2O acima de 35), existe grande probabilidade de ocorrer deficiência de enxofre (S) (veja foto ilustrativa). Neste caso, aplicar de 15 a 30 kg/ha de S; \n5. Em solos da região do cerrado e em solos arenosos, tem sido comum a deficiência de micronutrientes (Zn, Mn, Cu e B), (veja fotos ilustrativas). Neste caso, avaliar a disponibilidade, mediante análise de amostra de solo e aplicar fórmula NPK, com micronutrientes; \n6. A eficiência da adubação pode ser limitada pela ocorrência de camada compactada no solo, problema mais freqüente em lavouras sob preparo convencional. A solução deste problema abrange desde o cultivo de plantas descompactadoras até a subsolagem. (Veja detalhes no arquivo WebAgritec-compactação); \n7. Informações adicionais podem ser obtidas:\nDocumentos:\n- Manual de adubação e calagem para os estados do Rio Grande do Sul e Santa Catarina, 2004.\n- CERRADO. Correção do solo e adubação, 2002.\n-Recomendações para o uso de corretivos e fertilizantes em Minas gerais, 1999.\n- Boletim Técnico 100, IAC, 1996.\nInstituições:\nEmbrapa.\nInstituições estaduais de pesquisa.<hr>";
-
-				$res .= "Quantidade recomendada de calcário (ton/ha): " . round($quantidade_calcario, 2) . "\n<br>";
-
-				$res .= "<h3>Observações Calagem: </h3> 1. A dose de calcário foi calculada visando atingir uma saturação por bases em torno de 50%. Para atingir valores diferentes é necessário recalcular a dose, utilizando-se a fórmula tradicional: Dose (t/ha) = {(V desejado – V atual) x T} / PRNT.\n2. Para solos com teor de magnésio (Mg) inferior a 0,5 cmolc/dm3, utilizar preferencialmente o calcário dolomítico ou magnesiano. Observe, também, a relação Ca/Mg do solo, que deve se situar em torno de 3/1;\n3. Para que o calcário produza os efeitos desejáveis, é necessário haver umidade suficiente no solo para promover sua reação;\n4. A forma mais comum de aplicação é aquela em que se distribui o calcário uniformemente na superfície do terreno, seguida de incorporação. Contudo, quando a lavoura vem adotando o sistema plantio/semeadura direto, deve-se evitar a incorporação, ou seja, deixar na superfície;\n5. Em solos com predominância de argilas de alta atividade (2:1) é recomendável calcular a necessidade de calcário pelo critério SMP.\n";
-
-
-				$rec->recomendacao = $res;
-				$rec->update($user, true);
-
-
-
-
-
-				break;
-
-			default:
+                        default:
 				dol_syslog("Trigger '" . $this->name . "' for action '" . $action . "' launched by " . __FILE__ . ". id=" . $object->id);
 				break;
 		}
 
-		return 0;
-	}
+                return 0;
+        }
+
+        /**
+         * Build fertiliser recommendation when a recomendacaoadubo record is created.
+         */
+        public function recomendacaoaduboCreate($action, $object, User $user, Translate $langs, Conf $conf)
+        {
+                dol_include_once('/projet/class/project.class.php');
+                dol_include_once('/safra/class/recomendacaoadubo.class.php');
+                dol_include_once('/safra/class/cultura.class.php');
+                dol_include_once('/safra/class/analisesolo.class.php');
+
+                $recommendation = new RecomendacaoAdubo($object->db);
+                if ($recommendation->fetch($object->id) <= 0) {
+                        return 0;
+                }
+
+                $analysis = null;
+                if (!empty($recommendation->analise_solo)) {
+                        $analysisObject = new AnaliseSolo($object->db);
+                        if ($analysisObject->fetch($recommendation->analise_solo) > 0) {
+                                $analysis = $analysisObject;
+                        }
+                }
+
+                $culture = null;
+                if (!empty($recommendation->fk_project)) {
+                        $project = new Project($object->db);
+                        if ($project->fetch($recommendation->fk_project) > 0) {
+                                $project->fetch_optionals($recommendation->fk_project);
+                                $cultureId = !empty($project->array_options['options_fk_cultura']) ? (int) $project->array_options['options_fk_cultura'] : 0;
+                                if ($cultureId > 0) {
+                                        $cultureObject = new Cultura($object->db);
+                                        if ($cultureObject->fetch($cultureId) > 0) {
+                                                $culture = $cultureObject;
+                                        }
+                                }
+                        }
+                }
+
+                $guide = $this->buildCultureGuide($culture);
+
+                if (empty($analysis)) {
+                        $recommendation->recomendacao = $this->renderMissingAnalysisMessage($guide);
+                        $recommendation->update($user, true);
+
+                        return 1;
+                }
+
+                $recommendation->recomendacao = $this->generateFertilizationRecommendation($guide, $analysis);
+                $recommendation->update($user, true);
+
+                return 1;
+        }
+
+        /**
+         * Create a configuration array for a culture combining defaults and database values.
+         *
+         * @param Cultura|null $culture
+         * @return array
+         */
+        private function buildCultureGuide($culture)
+        {
+                $defaults = $this->getCultureDefaults();
+
+                $guide = $defaults['default'];
+                $guide['key'] = 'default';
+
+                if ($culture instanceof Cultura) {
+                        $key = $this->normaliseCultureKey($culture->ref ? $culture->ref : $culture->label);
+                        $guide['key'] = $key;
+                        $guide['display'] = $culture->label ? $culture->label : $culture->ref;
+
+                        if (!empty($defaults[$key])) {
+                                $guide = array_replace_recursive($guide, $defaults[$key]);
+                        }
+
+                        if (!empty($culture->necessidade_n)) {
+                                $guide['npk']['N']['base'] = (float) $culture->necessidade_n;
+                        }
+
+                        if (!empty($culture->necessidade_p)) {
+                                $guide['npk']['P'] = $this->scaleNutrientRecommendation((float) $culture->necessidade_p);
+                        }
+
+                        if (!empty($culture->necessidade_k)) {
+                                $guide['npk']['K'] = $this->scaleNutrientRecommendation((float) $culture->necessidade_k);
+                        }
+
+                        if (!empty($culture->saturacao_bases_ideal)) {
+                                $guide['target_base_saturation'] = (float) $culture->saturacao_bases_ideal;
+                        }
+                }
+
+                if (empty($guide['npk']['P'])) {
+                        $guide['npk']['P'] = $this->scaleNutrientRecommendation($guide['npk']['N']['base'] * 0.5);
+                }
+
+                if (empty($guide['npk']['K'])) {
+                        $guide['npk']['K'] = $this->scaleNutrientRecommendation($guide['npk']['N']['base'] * 0.5);
+                }
+
+                return $guide;
+        }
+
+        /**
+         * Produce the HTML recommendation block.
+         *
+         * @param array       $guide
+         * @param AnaliseSolo $analysis
+         * @return string
+         */
+        private function generateFertilizationRecommendation($guide, AnaliseSolo $analysis)
+        {
+                $npk = $this->calculateNpkRecommendation($guide, $analysis);
+                $formulation = $this->suggestCommercialFormulation($npk);
+                $liming = $this->calculateLimingNeed($guide, $analysis);
+                $micronutrients = $this->buildMicronutrientAlerts($analysis, $guide);
+
+                $html = '<h3>Recomendação de adubação para ' . dol_escape_htmltag($guide['display']) . '</h3>';
+                $html .= '<p><strong>Resumo da análise de solo:</strong></p>';
+                $html .= '<ul>';
+                $html .= '<li>pH: ' . $this->formatNumber($analysis->ph, 1) . '</li>';
+                $html .= '<li>Matéria orgânica: ' . $this->formatNumber($analysis->materia_organica, 1) . ' %</li>';
+                $html .= '<li>N total: ' . $this->formatNumber($analysis->n_total, 1) . ' mg/kg</li>';
+                $html .= '<li>Fósforo disponível: ' . $this->formatNumber($analysis->fosforo, 1) . ' mg/kg</li>';
+                $html .= '<li>Potássio disponível: ' . $this->formatNumber($analysis->potassio, 1) . ' mg/kg</li>';
+                $html .= '<li>Saturação por bases (V%): ' . $this->formatNumber($analysis->saturacao_bases, 1) . '</li>';
+                $html .= '</ul>';
+
+                $html .= '<p><strong>Recomendação de nutrientes (kg/ha)</strong></p>';
+                $html .= '<ul>';
+                $html .= '<li>Nitrogênio (N): ' . $this->formatNumber($npk['N']['quantity'], 1) . ' &mdash; nível do solo ' . $npk['N']['level'] . '</li>';
+                $html .= '<li>Fósforo (P<sub>2</sub>O<sub>5</sub>): ' . $this->formatNumber($npk['P']['quantity'], 1) . ' &mdash; nível do solo ' . $npk['P']['level'] . '</li>';
+                $html .= '<li>Potássio (K<sub>2</sub>O): ' . $this->formatNumber($npk['K']['quantity'], 1) . ' &mdash; nível do solo ' . $npk['K']['level'] . '</li>';
+                $html .= '</ul>';
+
+                if (!empty($formulation)) {
+                        $html .= '<p><strong>Formulação sugerida:</strong> ' . dol_escape_htmltag($formulation['label']) . ' &mdash; aplicar aproximadamente ' . $this->formatNumber($formulation['ton_per_ha'], 2) . ' t/ha.</p>';
+                }
+
+                if (!empty($guide['method'])) {
+                        $html .= '<p><strong>Método de aplicação recomendado:</strong> ' . dol_escape_htmltag($guide['method']) . '</p>';
+                }
+
+                if (!empty($liming)) {
+                        $html .= '<p><strong>Calagem estimada:</strong> ';
+                        $html .= 'dose aproximada de ' . $this->formatNumber($liming['ton_per_ha'], 2) . ' t/ha para atingir V% de ' . $this->formatNumber($liming['target_v'], 0) . ' (atual ' . $this->formatNumber($liming['current_v'], 1) . ').</p>';
+                }
+
+                if (!empty($micronutrients)) {
+                        $html .= '<p><strong>Alertas complementares:</strong></p><ul>';
+                        foreach ($micronutrients as $alert) {
+                                $html .= '<li>' . dol_escape_htmltag($alert) . '</li>';
+                        }
+                        $html .= '</ul>';
+                }
+
+                $html .= '<p><strong>Boas práticas adicionais:</strong></p>';
+                $html .= '<ul>';
+                $html .= '<li>Realizar a adubação com o solo úmido e, quando possível, incorporar levemente os fertilizantes.</li>';
+                $html .= '<li>Parcelar aplicações de N quando a dose superar 60 kg/ha e monitorar possíveis perdas por volatilização.</li>';
+                $html .= '<li>Revisar o plano de adubação após novas análises ou mudanças expressivas na produtividade esperada.</li>';
+                $html .= '<li>Consultar um profissional habilitado para ajustes finos e inclusão de micronutrientes específicos.</li>';
+                $html .= '</ul>';
+
+                return $html;
+        }
+
+        /**
+         * Message displayed when the recommendation has no soil analysis linked.
+         *
+         * @param array $guide
+         * @return string
+         */
+        private function renderMissingAnalysisMessage($guide)
+        {
+                $html = '<h3>Recomendação de adubação para ' . dol_escape_htmltag($guide['display']) . '</h3>';
+                $html .= '<p>Associe uma análise de solo válida para gerar recomendações automáticas de adubação e calagem.</p>';
+                $html .= '<p>Utilize análises realizadas preferencialmente nos últimos 12 meses para garantir um diagnóstico preciso.</p>';
+
+                return $html;
+        }
+
+        private function normaliseCultureKey($value)
+        {
+                $clean = strtolower(dol_string_unaccent($value));
+                $clean = preg_replace('/[^a-z0-9]+/', '_', $clean);
+
+                return trim($clean, '_');
+        }
+
+        private function getCultureDefaults()
+        {
+                return array(
+                        'default' => array(
+                                'display' => 'Cultura',
+                                'ideal_ph' => 6.0,
+                                'target_base_saturation' => 55,
+                                'method' => 'Distribuição uniforme no sulco ou a lanço com incorporação leve antes do plantio.',
+                                'npk' => array(
+                                        'N' => array(
+                                                'base' => 90,
+                                                'mo_adjustments' => array(
+                                                        array('min' => 3, 'percent' => -0.2),
+                                                        array('min' => 5, 'percent' => -0.35),
+                                                ),
+                                        ),
+                                        'P' => array(),
+                                        'K' => array(),
+                                ),
+                        ),
+                        'milho' => array(
+                                'ideal_ph' => 6.0,
+                                'target_base_saturation' => 60,
+                                'method' => 'Aplicar no sulco de plantio e complementar em cobertura no estádio vegetativo.',
+                                'npk' => array(
+                                        'N' => array(
+                                                'base' => 140,
+                                                'mo_adjustments' => array(
+                                                        array('min' => 3, 'percent' => -0.15),
+                                                        array('min' => 5, 'percent' => -0.3),
+                                                ),
+                                        ),
+                                ),
+                        ),
+                        'soja' => array(
+                                'ideal_ph' => 6.2,
+                                'target_base_saturation' => 60,
+                                'method' => 'Aplicar preferencialmente a lanço antes da semeadura e incorporar levemente.',
+                                'npk' => array(
+                                        'N' => array(
+                                                'base' => 40,
+                                                'mo_adjustments' => array(
+                                                        array('min' => 3, 'percent' => -0.25),
+                                                        array('min' => 5, 'percent' => -0.4),
+                                                ),
+                                        ),
+                                ),
+                        ),
+                        'arroz' => array(
+                                'ideal_ph' => 5.8,
+                                'target_base_saturation' => 55,
+                                'method' => 'Aplicar metade na base e metade em cobertura no perfilhamento inicial.',
+                                'npk' => array(
+                                        'N' => array('base' => 100),
+                                ),
+                        ),
+                        'sorgo' => array(
+                                'ideal_ph' => 5.8,
+                                'target_base_saturation' => 55,
+                                'method' => 'Aplicar no plantio e fracionar cobertura antes do perfilhamento.',
+                                'npk' => array(
+                                        'N' => array('base' => 80),
+                                ),
+                        ),
+                        'trigo' => array(
+                                'ideal_ph' => 6.0,
+                                'target_base_saturation' => 60,
+                                'method' => 'Aplicar no plantio e parcelar o N entre perfilhamento e alongamento.',
+                                'npk' => array(
+                                        'N' => array('base' => 100),
+                                ),
+                        ),
+                        'feijao' => array(
+                                'ideal_ph' => 6.0,
+                                'target_base_saturation' => 55,
+                                'method' => 'Aplicar no sulco e complementar em cobertura leve aos 20-25 dias.',
+                                'npk' => array(
+                                        'N' => array('base' => 60),
+                                ),
+                        ),
+                        'girassol' => array(
+                                'ideal_ph' => 6.3,
+                                'target_base_saturation' => 60,
+                                'method' => 'Aplicar a lanço antes do plantio com incorporação rasa.',
+                                'npk' => array(
+                                        'N' => array('base' => 100),
+                                ),
+                        ),
+                );
+        }
+
+        private function scaleNutrientRecommendation($base)
+        {
+                $baseValue = max(0, (float) $base);
+                if ($baseValue <= 0) {
+                        $baseValue = 60;
+                }
+
+                return array(
+                        'very_low' => round($baseValue * 1.4),
+                        'low' => round($baseValue * 1.2),
+                        'medium' => round($baseValue),
+                        'high' => round($baseValue * 0.6),
+                        'very_high' => 0,
+                );
+        }
+
+        private function calculateNpkRecommendation($guide, AnaliseSolo $analysis)
+        {
+                $ranges = $this->getDefaultNutrientRanges();
+
+                $npk = array();
+
+                $nitrogen = $guide['npk']['N']['base'];
+                $adjustPercent = 0;
+                if (!empty($guide['npk']['N']['mo_adjustments']) && $analysis->materia_organica !== null) {
+                        foreach ($guide['npk']['N']['mo_adjustments'] as $rule) {
+                                if ($analysis->materia_organica >= $rule['min']) {
+                                        $adjustPercent = min($adjustPercent, $rule['percent']);
+                                }
+                        }
+                }
+                if ($adjustPercent !== 0) {
+                        $nitrogen += $nitrogen * $adjustPercent;
+                }
+
+                $nLevel = $this->classifyNutrientLevel($analysis->n_total, $ranges['n_total']);
+                if ($nLevel === 'high') {
+                        $nitrogen *= 0.7;
+                } elseif ($nLevel === 'very_high') {
+                        $nitrogen *= 0.5;
+                }
+
+                $npk['N'] = array(
+                        'quantity' => max(0, round($nitrogen)),
+                        'level' => $this->describeLevel($nLevel),
+                );
+
+                $pLevel = $this->classifyNutrientLevel($analysis->fosforo, $ranges['fosforo']);
+                $pKey = isset($guide['npk']['P'][$pLevel]) ? $pLevel : 'medium';
+                $npk['P'] = array(
+                        'quantity' => max(0, round($guide['npk']['P'][$pKey])),
+                        'level' => $this->describeLevel($pLevel),
+                );
+
+                $kLevel = $this->classifyNutrientLevel($analysis->potassio, $ranges['potassio']);
+                $kKey = isset($guide['npk']['K'][$kLevel]) ? $kLevel : 'medium';
+                $npk['K'] = array(
+                        'quantity' => max(0, round($guide['npk']['K'][$kKey])),
+                        'level' => $this->describeLevel($kLevel),
+                );
+
+                return $npk;
+        }
+
+        private function getDefaultNutrientRanges()
+        {
+                return array(
+                        'n_total' => array(
+                                'very_low' => 8,
+                                'low' => 12,
+                                'medium' => 20,
+                                'high' => 30,
+                                'very_high' => null,
+                        ),
+                        'fosforo' => array(
+                                'very_low' => 8,
+                                'low' => 15,
+                                'medium' => 25,
+                                'high' => 40,
+                                'very_high' => null,
+                        ),
+                        'potassio' => array(
+                                'very_low' => 50,
+                                'low' => 80,
+                                'medium' => 120,
+                                'high' => 180,
+                                'very_high' => null,
+                        ),
+                );
+        }
+
+        private function classifyNutrientLevel($value, $range)
+        {
+                if ($value === null) {
+                        return 'unknown';
+                }
+
+                foreach ($range as $label => $maxValue) {
+                        if ($maxValue === null || $value <= $maxValue) {
+                                return $label;
+                        }
+                }
+
+                return array_key_last($range);
+        }
+
+        private function describeLevel($key)
+        {
+                $labels = array(
+                        'very_low' => 'muito baixo',
+                        'low' => 'baixo',
+                        'medium' => 'médio',
+                        'high' => 'alto',
+                        'very_high' => 'muito alto',
+                        'unknown' => 'não informado',
+                );
+
+                return isset($labels[$key]) ? $labels[$key] : $key;
+        }
+
+        private function suggestCommercialFormulation($npk)
+        {
+                if (empty($npk['N']['quantity']) && empty($npk['P']['quantity']) && empty($npk['K']['quantity'])) {
+                        return array();
+                }
+
+                $formulations = array(
+                        array('label' => '20-10-10', 'N' => 20, 'P' => 10, 'K' => 10),
+                        array('label' => '10-20-20', 'N' => 10, 'P' => 20, 'K' => 20),
+                        array('label' => '15-15-15', 'N' => 15, 'P' => 15, 'K' => 15),
+                        array('label' => '25-5-5', 'N' => 25, 'P' => 5, 'K' => 5),
+                        array('label' => '08-28-16', 'N' => 8, 'P' => 28, 'K' => 16),
+                        array('label' => '04-30-10', 'N' => 4, 'P' => 30, 'K' => 10),
+                        array('label' => '05-25-25', 'N' => 5, 'P' => 25, 'K' => 25),
+                        array('label' => '30-00-10', 'N' => 30, 'P' => 0, 'K' => 10),
+                );
+
+                $best = array();
+                $bestDelta = null;
+
+                foreach ($formulations as $formula) {
+                        $kgPerHa = 0;
+                        $components = array('N', 'P', 'K');
+                        foreach ($components as $component) {
+                                if ($npk[$component]['quantity'] <= 0 || empty($formula[$component])) {
+                                        continue;
+                                }
+                                $kgPerHa = max($kgPerHa, $npk[$component]['quantity'] / ($formula[$component] / 100));
+                        }
+
+                        if ($kgPerHa <= 0) {
+                                continue;
+                        }
+
+                        $delivered = array(
+                                'N' => $kgPerHa * $formula['N'] / 100,
+                                'P' => $kgPerHa * $formula['P'] / 100,
+                                'K' => $kgPerHa * $formula['K'] / 100,
+                        );
+
+                        $delta = abs($delivered['N'] - $npk['N']['quantity']) + abs($delivered['P'] - $npk['P']['quantity']) + abs($delivered['K'] - $npk['K']['quantity']);
+
+                        if ($bestDelta === null || $delta < $bestDelta) {
+                                $bestDelta = $delta;
+                                $best = array(
+                                        'label' => $formula['label'],
+                                        'ton_per_ha' => $kgPerHa / 1000,
+                                );
+                        }
+                }
+
+                return $best;
+        }
+
+        private function calculateLimingNeed($guide, AnaliseSolo $analysis)
+        {
+                if ($analysis->ctc === null || $analysis->saturacao_bases === null) {
+                        return array();
+                }
+
+                $target = !empty($guide['target_base_saturation']) ? $guide['target_base_saturation'] : 55;
+                $current = (float) $analysis->saturacao_bases;
+                $delta = max(0, $target - $current);
+
+                if ($delta <= 0) {
+                        return array();
+                }
+
+                $prnt = 80; // percentual de PRNT considerado.
+                $dose = ($analysis->ctc * $delta / 100) * (100 / $prnt);
+
+                return array(
+                        'ton_per_ha' => max(0, round($dose, 2)),
+                        'target_v' => $target,
+                        'current_v' => $current,
+                );
+        }
+
+        private function buildMicronutrientAlerts(AnaliseSolo $analysis, $guide)
+        {
+                $alerts = array();
+
+                $thresholds = array(
+                        'enxofre' => array('limit' => 12, 'message' => 'Teor baixo de enxofre; considerar fonte contendo S (15 a 30 kg/ha).'),
+                        'zinco' => array('limit' => 1.2, 'message' => 'Zinco abaixo do ideal; avaliar aplicação foliar ou no sulco.'),
+                        'boro' => array('limit' => 0.5, 'message' => 'Boro reduzido; considerar 1-2 kg/ha de B, evitando superdosagens.'),
+                        'manganes' => array('limit' => 5, 'message' => 'Manganês em nível baixo; monitorar sintomas e aplicar fontes específicas se necessário.'),
+                        'cobre' => array('limit' => 0.6, 'message' => 'Cobre limitado; considerar fontes cúpricas se persistirem deficiências.'),
+                );
+
+                foreach ($thresholds as $field => $data) {
+                        if ($analysis->$field !== null && $analysis->$field > 0 && $analysis->$field < $data['limit']) {
+                                $alerts[] = $data['message'];
+                        }
+                }
+
+                if ($analysis->materia_organica !== null && $analysis->materia_organica < 2) {
+                        $alerts[] = 'Matéria orgânica muito baixa; avalie incorporar resíduos ou adubos orgânicos.';
+                }
+
+                if ($analysis->ph !== null && $guide['ideal_ph'] !== null && $analysis->ph < $guide['ideal_ph'] - 0.5) {
+                        $alerts[] = 'pH abaixo do ideal para a cultura; confirme a necessidade de calagem e monitore alumínio trocável.';
+                }
+
+                return $alerts;
+        }
+
+        private function formatNumber($value, $decimals)
+        {
+                if ($value === null || $value === '') {
+                        return '-';
+                }
+
+                return number_format((float) $value, $decimals, ',', '.');
+        }
 }
