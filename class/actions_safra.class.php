@@ -417,9 +417,11 @@ class ActionsSafra extends CommonHookActions
                 if (
                         !empty($parameters['currentcontext'])
                         && $parameters['currentcontext'] === 'projectcard'
-                        && $action === 'create'
+                        && !empty($object->id)
                 ) {
                         $langs->loadLangs(array('safra@safra'));
+
+                        $selectedTalhaoId = empty($object->array_options['options_fk_talhao']) ? null : (string) $object->array_options['options_fk_talhao'];
 
                         $config = array(
                                 'ajaxTalhaoUrl' => dol_buildpath('/safra/ajax/talhao_geojson.php', 1),
@@ -433,7 +435,18 @@ class ActionsSafra extends CommonHookActions
                                 'leafletCssLocal' => dol_buildpath('/safra/css/leaflet.css', 1),
                                 'leafletJsLocal' => dol_buildpath('/safra/js/leaflet.js', 1),
                                 'wellknownJs' => dol_buildpath('/safra/js/wellknown.js', 1),
+                                'tileLayer' => array(
+                                        'url' => 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                                        'options' => array(
+                                                'attribution' => 'Tiles © Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                                                'maxZoom' => 19,
+                                        ),
+                                ),
                         );
+
+                        if ($selectedTalhaoId !== null) {
+                                $config['initialTalhaoId'] = $selectedTalhaoId;
+                        }
 
                         $this->resprints .= $this->getMapContainerOnce();
 
