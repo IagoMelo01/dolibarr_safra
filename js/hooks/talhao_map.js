@@ -11,6 +11,8 @@
   var selector  = 'select[id="options_fk_talhao"]';
   var container = cfg.mapContainerSelector || '#safra-map';
   var wrapper   = cfg.mapWrapperSelector || '#safra-map-wrapper';
+  var initialTalhaoId = cfg.initialTalhaoId != null && cfg.initialTalhaoId !== '' ? String(cfg.initialTalhaoId) : '';
+  var tileConfig = cfg.tileLayer || {};
 
   // ---- Carregar Leaflet 1x (ou usar local se CDN bloqueado) ----
   function loadLeaflet(cb) {
@@ -117,7 +119,15 @@
     }
 
     map = L.map(el, { attributionControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 22 }).addTo(map);
+
+    var defaultTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    var tileUrl = tileConfig.url || defaultTileUrl;
+    var tileOptions = Object.assign({
+      maxZoom: 20,
+      attribution: 'Tiles © Esri'
+    }, tileConfig.options || {});
+
+    L.tileLayer(tileUrl, tileOptions).addTo(map);
     map.setView([-15.78, -47.93], 4); // Brasil
     log('mapa criado');
     return map;
@@ -227,13 +237,6 @@
     currentSelect = select;
     currentSelect.dataset.safraMapBound = '1';
     currentSelect.addEventListener('change', onSelectChange);
-
-    if (currentSelect.value) {
-      fetchGeo(currentSelect.value);
-    } else {
-      clearLayer();
-      setHint(mapHint, false);
-    }
   }
 
   function onSelectChange(e) {
@@ -250,12 +253,11 @@
         delete currentSelect.dataset.safraMapBound;
         currentSelect = null;
       }
-      clearLayer();
-      setHint(mapHint, false);
-      return;
+      return false;
     }
 
     bindSelect(select);
+    return true;
   }
 
   function init() {
@@ -269,11 +271,16 @@
         if (!map) return;
 
         setHint(mapHint, false);
-        bindCurrentSelect();
+        var hasSelect = bindCurrentSelect();
+
+        startInitialFetch(hasSelect);
 
         if (!selectObserver) {
           selectObserver = new MutationObserver(function(){
-            bindCurrentSelect();
+            var found = bindCurrentSelect();
+            if (found) {
+              startInitialFetch(true);
+            }
           });
           selectObserver.observe(document.body, { childList: true, subtree: true });
         }
@@ -288,6 +295,25 @@
         invalidateLater();
       });
     });
+  }
+
+  function startInitialFetch(hasSelect) {
+    var idToFetch = null;
+
+    if (hasSelect && currentSelect && currentSelect.value) {
+      idToFetch = currentSelect.value;
+    }
+
+    if (!idToFetch && initialTalhaoId) {
+      idToFetch = initialTalhaoId;
+    }
+
+    if (idToFetch) {
+      fetchGeo(idToFetch);
+    } else {
+      clearLayer();
+      setHint(mapHint, false);
+    }
   }
 
   // roda quando DOM estiver pronto
