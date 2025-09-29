@@ -1477,11 +1477,277 @@ class modSafra extends DolibarrModules
 		//$this->export_sql_end[$r]  =' LEFT JOIN '.MAIN_DB_PREFIX.'cultura_line as tl ON tl.fk_cultura = t.rowid';
 		$this->export_sql_end[$r] .=' WHERE 1 = 1';
 		$this->export_sql_end[$r] .=' AND t.entity IN ('.getEntity('cultura').')';
-		$r++; */
-		/* END MODULEBUILDER EXPORT MYOBJECT */
+               $r++; */
+               /* END MODULEBUILDER EXPORT MYOBJECT */
 
-		// Imports profiles provided by this module
-		$r = 1;
+               // --- Refreshed menu structure --------------------------------------------------
+               $this->menu = array();
+               $r = 0;
+
+               // Top level + dashboard
+               $this->menu[$r++] = array(
+                       'fk_menu' => '',
+                       'type' => 'top',
+                       'titre' => 'SafraMenuTitle',
+                       'prefix' => img_picto('', $this->picto, 'class="pictofixedwidth valignmiddle"'),
+                       'mainmenu' => 'safra',
+                       'leftmenu' => '',
+                       'url' => '/safra/safraindex.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra',
+                       'type' => 'left',
+                       'titre' => 'SafraDashboard',
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_dashboard',
+                       'url' => '/safra/safraindex.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               // Cadastros
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuCadastros',
+                       'prefix' => img_picto('', 'fa-database', 'class="pictofixedwidth valignmiddle"'),
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_cadastros',
+                       'url' => '/safra/talhao_list.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $cadastros = array(
+                       array('Talhoes', 'talhao', '/safra/talhao_list.php', '/safra/talhao_card.php?action=create', '$user->hasRight("safra", "talhao", "read")', '$user->hasRight("safra", "talhao", "write")'),
+                       array('Culturas', 'cultura', '/safra/cultura_list.php', '/safra/cultura_card.php?action=create', '$user->hasRight("safra", "cultura", "read")', '$user->hasRight("safra", "cultura", "write")'),
+                       array('Cultivares', 'cultivar', '/safra/cultivar_list.php', '/safra/cultivar_card.php?action=create', '$user->hasRight("safra", "cultivar", "read")', '$user->hasRight("safra", "cultivar", "write")'),
+                       array('ProdutosTecnicosShort', 'produtostecnicos', '/safra/produtostecnicos_list.php', '/safra/produtostecnicos_card.php?action=create', '$user->hasRight("safra", "produtostecnicos", "read")', '$user->hasRight("safra", "produtostecnicos", "write")'),
+                       array('Municipios', 'municipio', '/safra/municipio_list.php', '/safra/municipio_card.php?action=create', '$user->hasRight("safra", "municipio", "read")', '$user->hasRight("safra", "municipio", "write")'),
+               );
+
+               foreach ($cadastros as $item) {
+                       list($labelKey, $code, $listUrl, $newUrl, $permRead, $permWrite) = $item;
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_cadastros',
+                               'type' => 'left',
+                               'titre' => 'SafraMenu'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_list',
+                               'url' => $listUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => $permRead,
+                               'target' => '',
+                               'user' => 2,
+                       );
+
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
+                               'type' => 'left',
+                               'titre' => 'SafraMenuNew'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_new',
+                               'url' => $newUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => $permWrite,
+                               'target' => '',
+                               'user' => 2,
+                       );
+               }
+
+               // Planejamento
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuPlanejamento',
+                       'prefix' => img_picto('', 'fa-route', 'class="pictofixedwidth valignmiddle"'),
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_planejamento',
+                       'url' => '/safra/janelaplantio_list.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $planejamento = array(
+                       array('JanelasPlantio', 'janelaplantio', '/safra/janelaplantio_list.php', '/safra/janelaplantio_card.php?action=create', '$user->hasRight("safra", "janelaplantio", "read")', '$user->hasRight("safra", "janelaplantio", "write")'),
+                       array('Zoneamentos', 'zoneamento', '/safra/zoneamento_list.php', '/safra/zoneamento_card.php?action=create', '$user->hasRight("safra", "zoneamento", "read")', '$user->hasRight("safra", "zoneamento", "write")'),
+                       array('Expectativas', 'expectativaprodutividade', '/safra/expectativaprodutividade_list.php', '/safra/expectativaprodutividade_card.php?action=create', '$user->hasRight("safra", "expectativaprodutividade", "read")', '$user->hasRight("safra", "expectativaprodutividade", "write")'),
+                       array('Recomendacoes', 'recomendacaoadubo', '/safra/recomendacaoadubo_list.php', '/safra/recomendacaoadubo_card.php?action=create', '$user->hasRight("safra", "recomendacaoadubo", "read")', '$user->hasRight("safra", "recomendacaoadubo", "write")'),
+               );
+
+               foreach ($planejamento as $item) {
+                       list($labelKey, $code, $listUrl, $newUrl, $permRead, $permWrite) = $item;
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_planejamento',
+                               'type' => 'left',
+                               'titre' => 'SafraMenu'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_list',
+                               'url' => $listUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => $permRead,
+                               'target' => '',
+                               'user' => 2,
+                       );
+
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
+                               'type' => 'left',
+                               'titre' => 'SafraMenuNew'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_new',
+                               'url' => $newUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => $permWrite,
+                               'target' => '',
+                               'user' => 2,
+                       );
+               }
+
+               // Operações
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuOperacoes',
+                       'prefix' => img_picto('', 'fa-tractor', 'class="pictofixedwidth valignmiddle"'),
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_operacoes',
+                       'url' => '/safra/aplicacao_list.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $operacoes = array(
+                       array('Aplicacoes', 'aplicacao', '/safra/aplicacao_list.php', '/safra/aplicacao_card.php?action=create', '$user->hasRight("safra", "aplicacao", "read")', '$user->hasRight("safra", "aplicacao", "write")'),
+                       array('Eventos', 'evento', '/safra/evento_list.php', '/safra/evento_card.php?action=create', '$user->hasRight("safra", "evento", "read")', '$user->hasRight("safra", "evento", "write")'),
+                       array('Colheitas', 'colheita', '/safra/colheita_list.php', '/safra/colheita_card.php?action=create', '$user->hasRight("safra", "colheita", "read")', '$user->hasRight("safra", "colheita", "write")'),
+               );
+
+               foreach ($operacoes as $item) {
+                       list($labelKey, $code, $listUrl, $newUrl, $permRead, $permWrite) = $item;
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_operacoes',
+                               'type' => 'left',
+                               'titre' => 'SafraMenu'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_list',
+                               'url' => $listUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => $permRead,
+                               'target' => '',
+                               'user' => 2,
+                       );
+
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
+                               'type' => 'left',
+                               'titre' => 'SafraMenuNew'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_new',
+                               'url' => $newUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => $permWrite,
+                               'target' => '',
+                               'user' => 2,
+                       );
+               }
+
+               // Monitoramento
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuMonitoramento',
+                       'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_monitoramento',
+                       'url' => '/safra/ndvi_list.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $monitoramento = array(
+                       array('NDVI', 'ndvi', '/safra/ndvi_list.php', '/safra/ndvi_card.php?action=create'),
+                       array('NDMI', 'ndmi', '/safra/ndmi_list.php', '/safra/ndmi_card.php?action=create'),
+                       array('NDWI', 'ndwi', '/safra/ndwi_list.php', '/safra/ndwi_card.php?action=create'),
+                       array('SWIR', 'swir', '/safra/swir_list.php', '/safra/swir_card.php?action=create'),
+                       array('EVI', 'evi', '/safra/evi_list.php', '/safra/evi_card.php?action=create'),
+                       array('AnalisesSolo', 'analisesolo', '/safra/analisesolo_list.php', '/safra/analisesolo_card.php?action=create'),
+               );
+
+               foreach ($monitoramento as $item) {
+                       list($labelKey, $code, $listUrl, $newUrl) = $item;
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_monitoramento',
+                               'type' => 'left',
+                               'titre' => 'SafraMenu'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_list',
+                               'url' => $listUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => '$user->hasRight("safra", "'.$code.'", "read")',
+                               'target' => '',
+                               'user' => 2,
+                       );
+
+                       $this->menu[$r++] = array(
+                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
+                               'type' => 'left',
+                               'titre' => 'SafraMenuNew'.$labelKey,
+                               'mainmenu' => 'safra',
+                               'leftmenu' => 'safra_'.$code.'_new',
+                               'url' => $newUrl,
+                               'langs' => 'safra@safra',
+                               'position' => 1000 + $r,
+                               'enabled' => 'isModEnabled("safra")',
+                               'perms' => '$user->hasRight("safra", "'.$code.'", "write")',
+                               'target' => '',
+                               'user' => 2,
+                       );
+               }
+
+               // Imports profiles provided by this module
+               $r = 1;
 		/* BEGIN MODULEBUILDER IMPORT MYOBJECT */
 		/*
 		$langs->load("safra@safra");
