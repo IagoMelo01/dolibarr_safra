@@ -366,12 +366,20 @@ div.mainmenu.safra {
 }
 
 .safra-card--chart {
-        min-height: 340px;
+        min-height: 0;
+}
+
+.safra-chart-container {
+        position: relative;
+        width: 100%;
+        height: 260px;
 }
 
 .safra-chart {
-        width: 100%;
-        height: 260px;
+        position: absolute;
+        inset: 0;
+        width: 100% !important;
+        height: 100% !important;
 }
 
 .safra-empty {

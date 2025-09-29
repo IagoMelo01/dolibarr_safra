@@ -52,6 +52,10 @@
   // ---- Mapa ----
   var map = null;
   var layer = null;
+  var currentSelect = null;
+  var selectObserver = null;
+  var fetchCounter = 0;
+  var currentFetchController = null;
 
   function ensureMap() {
     var el = document.querySelector(container);
@@ -101,13 +105,35 @@
   }
 
   function fetchGeo(id) {
-    if (!id) { clearLayer(); setHint(mapHint, false); return; }
     if (!ajaxUrl) { err('ajaxTalhaoUrl não definido'); return; }
+
+    if (currentFetchController) {
+      currentFetchController.abort();
+    }
+
+    if (!id) {
+      clearLayer();
+      setHint(mapHint, false);
+      currentFetchController = null;
+      return;
+    }
+
+    currentFetchController = new AbortController();
+    var signal = currentFetchController.signal;
+    var requestId = ++fetchCounter;
+
     setHint('Carregando polígono...', false);
 
-    fetch(ajaxUrl + '?id=' + encodeURIComponent(id), { credentials: 'same-origin' })
+    fetch(ajaxUrl + '?id=' + encodeURIComponent(id) + '&_ts=' + Date.now(), {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      signal: signal
+    })
       .then(function(r){ return r.json(); })
       .then(function(data){
+        if (requestId !== fetchCounter) return;
+        currentFetchController = null;
+
         if (!data || data.error) {
           setHint(data && data.error ? data.error : 'Erro ao carregar o polígono.', true);
           clearLayer();
@@ -122,10 +148,38 @@
         setHint(''); // volta ao padrão
       })
       .catch(function(e){
+        if (signal && signal.aborted) return;
+        currentFetchController = null;
         err(e);
         setHint('Falha na requisição do polígono.', true);
         clearLayer();
       });
+  }
+
+  function bindSelect(select) {
+    if (!select || select === currentSelect) return;
+
+    if (currentSelect) {
+      currentSelect.removeEventListener('change', onSelectChange);
+      delete currentSelect.dataset.safraMapBound;
+    }
+
+    currentSelect = select;
+    currentSelect.dataset.safraMapBound = '1';
+    currentSelect.addEventListener('change', onSelectChange);
+
+    if (currentSelect.value) {
+      fetchGeo(currentSelect.value);
+    } else {
+      clearLayer();
+      setHint(mapHint, false);
+    }
+  }
+
+  function onSelectChange(e) {
+    var val = e.target.value || '';
+    log('change -> id', val);
+    fetchGeo(val);
   }
 
   function init() {
@@ -139,18 +193,16 @@
       ensureMap();
       if (!map) return;
 
-      // listener
-      select.addEventListener('change', function(e){
-        var val = e.target.value || '';
-        log('change -> id', val);
-        fetchGeo(val);
-      });
+      bindSelect(select);
 
-      // se já tiver valor (modo edição)
-      if (select.value) {
-        fetchGeo(select.value);
-      } else {
-        setHint(mapHint, false);
+      if (!selectObserver) {
+        selectObserver = new MutationObserver(function(){
+          var maybe = document.querySelector(selector);
+          if (maybe && maybe !== currentSelect) {
+            bindSelect(maybe);
+          }
+        });
+        selectObserver.observe(document.body, { childList: true, subtree: true });
       }
 
       // se o mapa estiver em tab Dolibarr, tente invalidar em eventos comuns

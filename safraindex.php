@@ -354,7 +354,7 @@ print '</section>';
 print '<section class="safra-card safra-card--chart">';
 print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByTalhao').'</h2></div>';
 if ($countTalhoes > 0) {
-        print '<canvas id="talhaoAreaChart" class="safra-chart"></canvas>';
+        print '<div class="safra-chart-container"><canvas id="talhaoAreaChart" class="safra-chart"></canvas></div>';
 } else {
         print '<p class="safra-empty">'.$langs->trans('SafraNoTalhaoData').'</p>';
 }
@@ -363,7 +363,7 @@ print '</section>';
 print '<section class="safra-card safra-card--chart">';
 print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByMunicipio').'</h2></div>';
 if (!empty($areaByMunicipioData)) {
-        print '<canvas id="municipioAreaChart" class="safra-chart"></canvas>';
+        print '<div class="safra-chart-container"><canvas id="municipioAreaChart" class="safra-chart"></canvas></div>';
 } else {
         print '<p class="safra-empty">'.$langs->trans('SafraNoMunicipioData').'</p>';
 }
