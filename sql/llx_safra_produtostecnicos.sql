@@ -19,8 +19,6 @@ CREATE TABLE llx_safra_produtostecnicos(
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
 	label varchar(255), 
-	fk_soc integer, 
-	fk_project integer, 
 	description text, 
 	note_public text, 
 	note_private text, 
@@ -31,6 +29,11 @@ CREATE TABLE llx_safra_produtostecnicos(
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
 	model_pdf varchar(255), 
-	status integer NOT NULL
+	status integer NOT NULL, 
+	ingrediente_ativo text, 
+	classe varchar(128), 
+	titular_registro text, 
+	classificacao_toxicologica varchar(128), 
+	classificacao_ambiental varchar(128)
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

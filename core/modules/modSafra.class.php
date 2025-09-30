@@ -513,6 +513,21 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'produtostecnicos';
 		$this->rights[$r][5] = 'delete';
 		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (16 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read Pragas object of Safra';
+		$this->rights[$r][4] = 'pragas';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (16 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update Pragas object of Safra';
+		$this->rights[$r][4] = 'pragas';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (16 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete Pragas object of Safra';
+		$this->rights[$r][4] = 'pragas';
+		$this->rights[$r][5] = 'delete';
+		$r++;
 
 		/* END MODULEBUILDER PERMISSIONS */
 
@@ -585,6 +600,54 @@ class modSafra extends DolibarrModules
 			'object' => 'ProdutosTecnicos'
 		);
 		/* END MODULEBUILDER LEFTMENU PRODUTOSTECNICOS */
+		/* BEGIN MODULEBUILDER LEFTMENU PRAGAS */
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra',
+			'type' => 'left',
+			'titre' => 'Pragas',
+			'prefix' => img_picto('', $this->picto, 'class="paddingright pictofixedwidth valignmiddle"'),
+			'mainmenu' => 'safra',
+			'leftmenu' => 'pragas',
+			'url' => '/safra/pragas_list.php',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "pragas", "read")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'Pragas'
+		);
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
+			'type' => 'left',
+			'titre' => 'List Pragas',
+			'mainmenu' => 'safra',
+			'leftmenu' => 'safra_pragas_list',
+			'url' => '/safra/pragas_list.php',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "pragas", "read")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'Pragas'
+		);
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
+			'type' => 'left',
+			'titre' => 'New Pragas',
+			'mainmenu' => 'safra',
+			'leftmenu' => 'safra_pragas_new',
+			'url' => '/safra/pragas_card.php?action=create',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "pragas", "write")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'Pragas'
+		);
+		/* END MODULEBUILDER LEFTMENU PRAGAS */
 		/* BEGIN MODULEBUILDER LEFTMENU MYOBJECT */
 		/* LEFTMENU CULTURA */
 		$this->menu[$r++]=array(

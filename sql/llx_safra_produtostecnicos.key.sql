@@ -17,8 +17,6 @@
 -- BEGIN MODULEBUILDER INDEXES
 ALTER TABLE llx_safra_produtostecnicos ADD INDEX idx_safra_produtostecnicos_rowid (rowid);
 ALTER TABLE llx_safra_produtostecnicos ADD UNIQUE INDEX uk_safra_produtostecnicos_ref (ref);
-ALTER TABLE llx_safra_produtostecnicos ADD INDEX idx_safra_produtostecnicos_fk_soc (fk_soc);
-ALTER TABLE llx_safra_produtostecnicos ADD INDEX idx_safra_produtostecnicos_fk_project (fk_project);
 ALTER TABLE llx_safra_produtostecnicos ADD INDEX idx_safra_produtostecnicos_status (status);
 -- END MODULEBUILDER INDEXES
 

@@ -56,7 +56,7 @@ class ProdutosTecnicos extends CommonObject
 	/**
 	 * @var string 	String with name of icon for produtostecnicos. Must be a 'fa-xxx' fontawesome code (or 'fa-xxx_fa_color_size') or 'produtostecnicos@safra' if picto is file 'img/object_produtostecnicos.png'.
 	 */
-	public $picto = 'fa-file';
+	public $picto = 'fa-wine-bottle';
 
 
 	const STATUS_DRAFT = 0;
@@ -113,10 +113,8 @@ class ProdutosTecnicos extends CommonObject
 	 */
 	public $fields = array(
 		"rowid" => array("type" => "integer", "label" => "TechnicalID", "enabled" => "1", 'position' => 1, 'notnull' => 1, "visible" => "0", "noteditable" => "1", "index" => "1", "css" => "left", "comment" => "Id"),
-		"ref" => array("type" => "varchar(128)", "label" => "Ref", "enabled" => "1", 'position' => 20, 'notnull' => 1, "visible" => "1", "index" => "1", "searchall" => "1", "showoncombobox" => "1", "validate" => "1", "comment" => "Reference of object"),
-		"label" => array("type" => "varchar(255)", "label" => "Label", "enabled" => "1", 'position' => 30, 'notnull' => 0, "visible" => "1", "alwayseditable" => "1", "searchall" => "1", "css" => "minwidth300", "cssview" => "wordbreak", "help" => "Help text", "showoncombobox" => "2", "validate" => "1",),
-		"fk_soc" => array("type" => "integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label" => "ThirdParty", "picto" => "company", "enabled" => "isModEnabled('societe')", 'position' => 50, 'notnull' => -1, "visible" => "1", "index" => "1", "css" => "maxwidth500 widthcentpercentminusxx", "csslist" => "tdoverflowmax150", "help" => "OrganizationEventLinkToThirdParty", "validate" => "1",),
-		"fk_project" => array("type" => "integer:Project:projet/class/project.class.php:1", "label" => "Project", "picto" => "project", "enabled" => "isModEnabled('project')", 'position' => 52, 'notnull' => -1, "visible" => "-1", "index" => "1", "css" => "maxwidth500 widthcentpercentminusxx", "csslist" => "tdoverflowmax150", "validate" => "1",),
+		"ref" => array("type" => "varchar(128)", "label" => "Registro", "enabled" => "1", 'position' => 20, 'notnull' => 1, "visible" => "1", "index" => "1", "searchall" => "1", "validate" => "1", "comment" => "Reference of object"),
+		"label" => array("type" => "varchar(255)", "label" => "Marca Comercial", "enabled" => "1", 'position' => 30, 'notnull' => 0, "visible" => "1", "searchall" => "1", "css" => "minwidth300", "cssview" => "wordbreak", "help" => "Help text", "validate" => "1",),
 		"description" => array("type" => "text", "label" => "Description", "enabled" => "1", 'position' => 60, 'notnull' => 0, "visible" => "3", "validate" => "1",),
 		"note_public" => array("type" => "html", "label" => "NotePublic", "enabled" => "1", 'position' => 61, 'notnull' => 0, "visible" => "0", "cssview" => "wordbreak", "validate" => "1",),
 		"note_private" => array("type" => "html", "label" => "NotePrivate", "enabled" => "1", 'position' => 62, 'notnull' => 0, "visible" => "0", "cssview" => "wordbreak", "validate" => "1",),
@@ -128,12 +126,15 @@ class ProdutosTecnicos extends CommonObject
 		"import_key" => array("type" => "varchar(14)", "label" => "ImportId", "enabled" => "1", 'position' => 1000, 'notnull' => -1, "visible" => "-2",),
 		"model_pdf" => array("type" => "varchar(255)", "label" => "Model pdf", "enabled" => "1", 'position' => 1010, 'notnull' => -1, "visible" => "0",),
 		"status" => array("type" => "integer", "label" => "Status", "enabled" => "1", 'position' => 2000, 'notnull' => 1, "visible" => "1", "index" => "1", "arrayofkeyval" => array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate" => "1",),
+		"ingrediente_ativo" => array("type" => "text", "label" => "Ingrediente Ativo", "enabled" => "1", 'position' => 31, 'notnull' => 0, "visible" => "1",),
+		"classe" => array("type" => "varchar(128)", "label" => "Classe", "enabled" => "1", 'position' => 32, 'notnull' => 0, "visible" => "1",),
+		"titular_registro" => array("type" => "text", "label" => "Titular do registro", "enabled" => "1", 'position' => 33, 'notnull' => 0, "visible" => "1",),
+		"classificacao_toxicologica" => array("type" => "varchar(128)", "label" => "Classificação Toxicológica", "enabled" => "1", 'position' => 34, 'notnull' => 0, "visible" => "1",),
+		"classificacao_ambiental" => array("type" => "varchar(128)", "label" => "Classificação Ambiental", "enabled" => "1", 'position' => 35, 'notnull' => 0, "visible" => "1",),
 	);
 	public $rowid;
 	public $ref;
 	public $label;
-	public $fk_soc;
-	public $fk_project;
 	public $description;
 	public $note_public;
 	public $note_private;
@@ -145,6 +146,11 @@ class ProdutosTecnicos extends CommonObject
 	public $import_key;
 	public $model_pdf;
 	public $status;
+	public $ingrediente_ativo;
+	public $classe;
+	public $titular_registro;
+	public $classificacao_toxicologica;
+	public $classificacao_ambiental;
 	// END MODULEBUILDER PROPERTIES
 
 
