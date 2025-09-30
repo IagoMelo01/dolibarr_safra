@@ -731,96 +731,49 @@ class modSafra extends DolibarrModules
 		);
 		/* END LEFTMENU NEW TALHAO */
 
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra',
-			 'type' => 'left',
-			 'titre' => 'Análises de Satélite',
-			 'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'ndvi',
-			 'url' => '#',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+                $this->menu[$r++]=array(
+                         'fk_menu' => 'fk_mainmenu=safra',
+                         'type' => 'left',
+                         'titre' => 'Análises de Satélite',
+                         'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
+                         'mainmenu' => 'safra',
+                         'leftmenu' => 'ndvi',
+                         'url' => '/safra/ndvi_view.php',
+                         'langs' => 'safra@safra',
+                         'position' => 1000 + $r,
+                         'enabled' => 'isModEnabled(\'safra\')',
+                         'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
+                         'target' => '',
+                         'user' => 2,
+                );
 
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
-			 'type' => 'left',
-			 'titre' => 'NDVI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndvi',
-			 'url' => '/safra/ndvi_view.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+                $satelliteMenus = array(
+                        array('code' => 'ndvi', 'title' => 'NDVI'),
+                        array('code' => 'ndmi', 'title' => 'NDMI'),
+                        array('code' => 'swir', 'title' => 'SWIR'),
+                        array('code' => 'ndwi', 'title' => 'NDWI'),
+                        array('code' => 'evi', 'title' => 'EVI'),
+                );
 
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
-			 'type' => 'left',
-			 'titre' => 'NDMI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndmi',
-			 'url' => '/safra/ndmi_view.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+                foreach ($satelliteMenus as $menuItem) {
+                        $code = $menuItem['code'];
+                        $title = $menuItem['title'];
 
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
-			 'type' => 'left',
-			 'titre' => 'SWIR',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_swir',
-			 'url' => '/safra/swir_view.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
-			 'type' => 'left',
-			 'titre' => 'NDWI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_ndwi',
-			 'url' => '/safra/ndwi_view.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'write\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
-			 'type' => 'left',
-			 'titre' => 'EVI',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_evi',
-			 'url' => '/safra/evi_view.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'ndvi\', \'write\')',
-			 'target' => '',
-			 'user' => 2,
-		);
+                        $this->menu[$r++] = array(
+                                'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
+                                'type' => 'left',
+                                'titre' => $title,
+                                'mainmenu' => 'safra',
+                                'leftmenu' => 'safra_'.$code,
+                                'url' => '/safra/'.$code.'_view.php',
+                                'langs' => 'safra@safra',
+                                'position' => 1000 + $r,
+                                'enabled' => 'isModEnabled(\'safra\')',
+                                'perms' => '$user->hasRight(\'safra\', \''.$code.'\', \'read\')',
+                                'target' => '',
+                                'user' => 2,
+                        );
+                }
 
 		/* LEFTMENU SWIR */
 		// $this->menu[$r++]=array(
@@ -1703,16 +1656,24 @@ class modSafra extends DolibarrModules
                );
 
                $monitoramento = array(
-                       array('NDVI', 'ndvi', '/safra/ndvi_view.php', '/safra/ndvi_card.php?action=create'),
-                       array('NDMI', 'ndmi', '/safra/ndmi_view.php', '/safra/ndmi_card.php?action=create'),
-                       array('NDWI', 'ndwi', '/safra/ndwi_view.php', '/safra/ndwi_card.php?action=create'),
-                       array('SWIR', 'swir', '/safra/swir_view.php', '/safra/swir_card.php?action=create'),
-                       array('EVI', 'evi', '/safra/evi_view.php', '/safra/evi_card.php?action=create'),
-                       array('AnalisesSolo', 'analisesolo', '/safra/analisesolo_list.php', '/safra/analisesolo_card.php?action=create'),
+                       array('labelKey' => 'NDVI', 'code' => 'ndvi'),
+                       array('labelKey' => 'NDMI', 'code' => 'ndmi'),
+                       array('labelKey' => 'NDWI', 'code' => 'ndwi'),
+                       array('labelKey' => 'SWIR', 'code' => 'swir'),
+                       array('labelKey' => 'EVI', 'code' => 'evi'),
+                       array(
+                               'labelKey' => 'AnalisesSolo',
+                               'code' => 'analisesolo',
+                               'listUrl' => '/safra/analisesolo_list.php',
+                               'newUrl' => '/safra/analisesolo_card.php?action=create',
+                       ),
                );
 
                foreach ($monitoramento as $item) {
-                       list($labelKey, $code, $listUrl, $newUrl) = $item;
+                       $labelKey = $item['labelKey'];
+                       $code = $item['code'];
+                       $listUrl = isset($item['listUrl']) ? $item['listUrl'] : '/safra/'.$code.'_view.php';
+                       $newUrl = isset($item['newUrl']) ? $item['newUrl'] : '/safra/'.$code.'_card.php?action=create';
                        $this->menu[$r++] = array(
                                'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_monitoramento',
                                'type' => 'left',
