@@ -18,7 +18,7 @@ CREATE TABLE llx_safra_pragas(
 	-- BEGIN MODULEBUILDER FIELDS
 	rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, 
 	ref varchar(128) NOT NULL, 
-	label varchar(255), 
+	label text, 
 	description text, 
 	note_public text, 
 	note_private text, 
