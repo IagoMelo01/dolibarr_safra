@@ -79,6 +79,13 @@ class SafraProdutoFormulado extends CommonObject
     private $cultureCodeField;
 
     /**
+     * Track schema availability to avoid redundant checks.
+     *
+     * @var bool
+     */
+    private static $schemaReady = false;
+
+    /**
      * Constructor.
      *
      * @param DoliDB $db Database handler
@@ -86,6 +93,76 @@ class SafraProdutoFormulado extends CommonObject
     public function __construct(DoliDB $db)
     {
         $this->db = $db;
+    }
+
+    /**
+     * Ensure database schema exists for formulated products and their links.
+     *
+     * @param DoliDB $db Database handler
+     *
+     * @return bool True when schema is ready, false on failure
+     */
+    public static function ensureDatabaseSchema(DoliDB $db)
+    {
+        if (self::$schemaReady) {
+            return true;
+        }
+
+        $prefix = MAIN_DB_PREFIX;
+        $queries = array(
+            'CREATE TABLE IF NOT EXISTS '.$prefix."safra_produto_formulado (\n"
+            ."  rowid INT AUTO_INCREMENT PRIMARY KEY,\n"
+            ."  ref VARCHAR(128) NOT NULL,\n"
+            ."  label VARCHAR(255) NOT NULL,\n"
+            ."  description TEXT NULL,\n"
+            ."  status TINYINT NOT NULL DEFAULT 1,\n"
+            ."  date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n"
+            ."  tms TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n"
+            ."  fk_user_creat INT NOT NULL,\n"
+            ."  fk_user_modif INT NULL,\n"
+            ."  UNIQUE KEY uk_safra_pf_ref (ref)\n"
+            .') ENGINE=innodb',
+            'CREATE TABLE IF NOT EXISTS '.$prefix."safra_cultura (\n"
+            ."  rowid INT AUTO_INCREMENT PRIMARY KEY,\n"
+            ."  code VARCHAR(64) NOT NULL,\n"
+            ."  label VARCHAR(255) NOT NULL,\n"
+            ."  UNIQUE KEY uk_safra_cultura_code (code)\n"
+            .') ENGINE=innodb',
+            'CREATE TABLE IF NOT EXISTS '.$prefix."safra_produto_cultura (\n"
+            ."  rowid INT AUTO_INCREMENT PRIMARY KEY,\n"
+            ."  fk_produto INT NOT NULL,\n"
+            ."  fk_cultura INT NOT NULL,\n"
+            ."  dose_label VARCHAR(128) NULL,\n"
+            ."  observacao VARCHAR(255) NULL,\n"
+            ."  UNIQUE KEY uk_pf_cultura (fk_produto, fk_cultura),\n"
+            ."  INDEX idx_pf (fk_produto),\n"
+            ."  INDEX idx_cult (fk_cultura),\n"
+            ."  CONSTRAINT fk_spc_prod FOREIGN KEY (fk_produto) REFERENCES ".$prefix."safra_produto_formulado(rowid) ON DELETE CASCADE,\n"
+            ."  CONSTRAINT fk_spc_cult FOREIGN KEY (fk_cultura) REFERENCES ".$prefix."safra_cultura(rowid) ON DELETE CASCADE\n"
+            .') ENGINE=innodb',
+            'CREATE TABLE IF NOT EXISTS '.$prefix."safra_produto_praga (\n"
+            ."  rowid INT AUTO_INCREMENT PRIMARY KEY,\n"
+            ."  fk_produto INT NOT NULL,\n"
+            ."  fk_praga INT NOT NULL,\n"
+            ."  observacao VARCHAR(255) NULL,\n"
+            ."  UNIQUE KEY uk_pf_praga (fk_produto, fk_praga),\n"
+            ."  INDEX idx_pf (fk_produto),\n"
+            ."  INDEX idx_pg (fk_praga),\n"
+            ."  CONSTRAINT fk_spp_prod FOREIGN KEY (fk_produto) REFERENCES ".$prefix."safra_produto_formulado(rowid) ON DELETE CASCADE,\n"
+            ."  CONSTRAINT fk_spp_prag FOREIGN KEY (fk_praga) REFERENCES ".$prefix."safra_pragas(rowid) ON DELETE CASCADE\n"
+            .') ENGINE=innodb',
+        );
+
+        foreach ($queries as $sql) {
+            if (!$db->query($sql)) {
+                dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+                return false;
+            }
+        }
+
+        self::$schemaReady = true;
+
+        return true;
     }
 
     /**

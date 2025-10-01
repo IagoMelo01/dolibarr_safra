@@ -46,6 +46,11 @@ require_once __DIR__.'/../class/safra_praga.class.php';
 
 $langs->loadLangs(array('safra@safra'));
 
+$safra_produto_schema_ok = SafraProdutoFormulado::ensureDatabaseSchema($db);
+if (!$safra_produto_schema_ok) {
+    setEventMessages($langs->trans('ProdutoFormuladoSchemaError'), null, 'errors');
+}
+
 $action = GETPOST('action', 'aZ09');
 $id = GETPOSTINT('id');
 $ref = GETPOST('ref', 'alphanohtml');
@@ -95,6 +100,27 @@ llxHeader('', $title);
 $token = newToken();
 
 if ($action === 'create') {
+    $availableCulturas = array();
+    $availablePragas = array();
+    $selectedCulturas = GETPOST('fk_culturas', 'array:int');
+    if (!is_array($selectedCulturas)) {
+        $selectedCulturas = array();
+    }
+    $selectedPragas = GETPOST('fk_pragas', 'array:int');
+    if (!is_array($selectedPragas)) {
+        $selectedPragas = array();
+    }
+    $createDoseLabel = GETPOST('dose_label_cultura', 'alphanohtml');
+    $createObservationCult = GETPOST('observacao_cultura', 'alphanohtml');
+    $createObservationPraga = GETPOST('observacao_praga', 'alphanohtml');
+
+    if ($safra_produto_schema_ok) {
+        $culturaDao = new SafraCultura($db);
+        $availableCulturas = $culturaDao->fetchAllForSelect();
+        $pragaDao = new SafraPraga($db);
+        $availablePragas = $pragaDao->fetchAllForSelect();
+    }
+
     print load_fiche_titre($langs->trans('NewProdutoFormulado'), '', 'fa-flask');
     print '<form method="POST" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'">';
     print '<input type="hidden" name="token" value="'.$token.'">';
@@ -109,6 +135,44 @@ if ($action === 'create') {
     ), GETPOSTINT('status') ?: SafraProdutoFormulado::STATUS_ACTIVE).'</td></tr>';
     print '<tr><td>'.$langs->trans('Description').'</td><td><textarea name="description" class="flat quatrevingtpercent" rows="4">'.dol_escape_htmltag(GETPOST('description', 'restricthtml')).'</textarea></td></tr>';
     print '</table>';
+
+    if ($safra_produto_schema_ok) {
+        print '<div class="fichecenter">';
+        print '<p class="opacitymedium">'.$langs->trans('ProdutoFormuladoInitialInfo').'</p>';
+        print '<div class="fichehalfleft">';
+        print '<table class="noborder centpercent">';
+        print '<tr class="liste_titre"><th colspan="2">'.$langs->trans('ProdutoFormuladoInitialCulturas').'</th></tr>';
+        print '<tr><td class="width25p">'.$langs->trans('SelectCulturas').'</td><td>';
+        print '<select name="fk_culturas[]" class="flat minwidth300 select2" multiple>';
+        foreach ($availableCulturas as $cultura) {
+            $selected = in_array((int) $cultura->rowid, $selectedCulturas, true) ? ' selected' : '';
+            $label = ($cultura->code ? $cultura->code.' - ' : '').$cultura->label;
+            print '<option value="'.(int) $cultura->rowid.'"'.$selected.'>'.dol_escape_htmltag($label).'</option>';
+        }
+        print '</select>';
+        print '</td></tr>';
+        print '<tr><td>'.$langs->trans('DoseLabel').'</td><td><input type="text" name="dose_label_cultura" class="flat minwidth200" value="'.dol_escape_htmltag($createDoseLabel).'"></td></tr>';
+        print '<tr><td>'.$langs->trans('Observation').'</td><td><input type="text" name="observacao_cultura" class="flat minwidth200" value="'.dol_escape_htmltag($createObservationCult).'"></td></tr>';
+        print '</table>';
+        print '</div>';
+        print '<div class="fichehalfright">';
+        print '<table class="noborder centpercent">';
+        print '<tr class="liste_titre"><th colspan="2">'.$langs->trans('ProdutoFormuladoInitialPragas').'</th></tr>';
+        print '<tr><td class="width25p">'.$langs->trans('SelectPragas').'</td><td>';
+        print '<select name="fk_pragas[]" class="flat minwidth300 select2" multiple>';
+        foreach ($availablePragas as $praga) {
+            $selected = in_array((int) $praga->rowid, $selectedPragas, true) ? ' selected' : '';
+            $label = $praga->ref.' - '.$praga->label;
+            print '<option value="'.(int) $praga->rowid.'"'.$selected.'>'.dol_escape_htmltag($label).'</option>';
+        }
+        print '</select>';
+        print '</td></tr>';
+        print '<tr><td>'.$langs->trans('Observation').'</td><td><input type="text" name="observacao_praga" class="flat minwidth200" value="'.dol_escape_htmltag($createObservationPraga).'"></td></tr>';
+        print '</table>';
+        print '</div>';
+        print '<div class="clearboth"></div>';
+        print '</div>';
+    }
 
     print '<div class="center">';
     print '<input type="submit" class="button" value="'.$langs->trans('Create').'"> ';
@@ -198,8 +262,8 @@ if ($action === 'create') {
                     print '<option value="'.(int) $cultura->rowid.'">'.dol_escape_htmltag(($cultura->code ? $cultura->code.' - ' : '').$cultura->label).'</option>';
                 }
                 print '</select></td></tr>';
-                print '<tr><td>'.$langs->trans('DoseLabel').'</td><td><input type="text" name="dose_label" class="flat minwidth200"></td></tr>';
-                print '<tr><td>'.$langs->trans('Observation').'</td><td><input type="text" name="observacao" class="flat minwidth200"></td></tr>';
+                print '<tr><td>'.$langs->trans('DoseLabel').'</td><td><input type="text" name="dose_label_cultura" class="flat minwidth200"></td></tr>';
+                print '<tr><td>'.$langs->trans('Observation').'</td><td><input type="text" name="observacao_cultura" class="flat minwidth200"></td></tr>';
                 print '</table>';
                 print '</div>';
                 print '<div class="clearboth"></div>';
@@ -230,7 +294,7 @@ if ($action === 'create') {
                     print '<option value="'.(int) $praga->rowid.'">'.dol_escape_htmltag($praga->ref.' - '.$praga->label).'</option>';
                 }
                 print '</select></td></tr>';
-                print '<tr><td>'.$langs->trans('Observation').'</td><td><input type="text" name="observacao" class="flat minwidth200"></td></tr>';
+                print '<tr><td>'.$langs->trans('Observation').'</td><td><input type="text" name="observacao_praga" class="flat minwidth200"></td></tr>';
                 print '</table>';
                 print '</div>';
                 print '<div class="clearboth"></div>';
@@ -243,7 +307,7 @@ if ($action === 'create') {
     setEventMessages($langs->trans('ErrorRecordNotFound'), null, 'errors');
 }
 
-if (!empty($object->id) && in_array($tab ?: 'card', array('culturas', 'pragas'), true)) {
+if ($action === 'create' || (!empty($object->id) && in_array($tab ?: 'card', array('culturas', 'pragas'), true))) {
     print '<script>jQuery(function(){jQuery(".select2").select2();});</script>';
 }
 

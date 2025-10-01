@@ -30,6 +30,10 @@ if (!function_exists('safra_validate_token')) {
     }
 }
 
+if (isset($safra_produto_schema_ok) && !$safra_produto_schema_ok) {
+    return;
+}
+
 if ($action === 'add' && $user->rights->safra->produtoformulado->write) {
     safra_validate_token(GETPOST('token', 'alpha'));
 
@@ -37,6 +41,20 @@ if ($action === 'add' && $user->rights->safra->produtoformulado->write) {
     $object->label = trim(GETPOST('label', 'alphanohtml'));
     $object->description = GETPOST('description', 'restricthtml');
     $object->status = GETPOSTINT('status');
+    $cultureIds = GETPOST('fk_culturas', 'array:int');
+    $cultureDose = trim(GETPOST('dose_label_cultura', 'alphanohtml'));
+    if ($cultureDose === '') {
+        $cultureDose = trim(GETPOST('dose_label', 'alphanohtml'));
+    }
+    $cultureObservation = trim(GETPOST('observacao_cultura', 'alphanohtml'));
+    if ($cultureObservation === '') {
+        $cultureObservation = trim(GETPOST('observacao', 'alphanohtml'));
+    }
+    $pragaIds = GETPOST('fk_pragas', 'array:int');
+    $pragaObservation = trim(GETPOST('observacao_praga', 'alphanohtml'));
+    if ($pragaObservation === '') {
+        $pragaObservation = trim(GETPOST('observacao', 'alphanohtml'));
+    }
 
     $error = 0;
     if ($object->ref === '') {
@@ -52,12 +70,38 @@ if ($action === 'add' && $user->rights->safra->produtoformulado->write) {
         $db->begin();
         $result = $object->create($user);
         if ($result > 0) {
-            $db->commit();
-            header('Location: '.dol_buildpath('/safra/produto_formulado/card.php', 1).'?id='.(int) $object->id);
-            exit;
+            $linkError = 0;
+            if (!empty($cultureIds)) {
+                foreach ($cultureIds as $cultureId) {
+                    $res = $object->addCulture((int) $cultureId, $cultureDose !== '' ? $cultureDose : null, $cultureObservation !== '' ? $cultureObservation : null);
+                    if ($res < 0) {
+                        $linkError++;
+                        break;
+                    }
+                }
+            }
+            if (!$linkError && !empty($pragaIds)) {
+                foreach ($pragaIds as $pragaId) {
+                    $res = $object->addPraga((int) $pragaId, $pragaObservation !== '' ? $pragaObservation : null);
+                    if ($res < 0) {
+                        $linkError++;
+                        break;
+                    }
+                }
+            }
+
+            if (!$linkError) {
+                $db->commit();
+                header('Location: '.dol_buildpath('/safra/produto_formulado/card.php', 1).'?id='.(int) $object->id);
+                exit;
+            }
+
+            $db->rollback();
+            setEventMessages($object->error ?: $langs->trans('ErrorProdutoFormuladoLinkSave'), $object->errors, 'errors');
+        } else {
+            $db->rollback();
+            setEventMessages($object->error, $object->errors, 'errors');
         }
-        $db->rollback();
-        setEventMessages($object->error, $object->errors, 'errors');
         $action = 'create';
     } else {
         $action = 'create';
@@ -119,8 +163,14 @@ if ($action === 'addculture' && $user->rights->safra->produtoformulado->write) {
     safra_validate_token(GETPOST('token', 'alpha'));
 
     $cultureIds = GETPOST('fk_culturas', 'array:int');
-    $doseLabel = trim(GETPOST('dose_label', 'alphanohtml'));
-    $observacao = trim(GETPOST('observacao', 'alphanohtml'));
+    $doseLabel = trim(GETPOST('dose_label_cultura', 'alphanohtml'));
+    if ($doseLabel === '') {
+        $doseLabel = trim(GETPOST('dose_label', 'alphanohtml'));
+    }
+    $observacao = trim(GETPOST('observacao_cultura', 'alphanohtml'));
+    if ($observacao === '') {
+        $observacao = trim(GETPOST('observacao', 'alphanohtml'));
+    }
 
     if (empty($cultureIds)) {
         setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentities('Cultura')), null, 'errors');
@@ -169,7 +219,10 @@ if ($action === 'addpraga' && $user->rights->safra->produtoformulado->write) {
     safra_validate_token(GETPOST('token', 'alpha'));
 
     $pragaIds = GETPOST('fk_pragas', 'array:int');
-    $observacao = trim(GETPOST('observacao', 'alphanohtml'));
+    $observacao = trim(GETPOST('observacao_praga', 'alphanohtml'));
+    if ($observacao === '') {
+        $observacao = trim(GETPOST('observacao', 'alphanohtml'));
+    }
 
     if (empty($pragaIds)) {
         setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentities('Praga')), null, 'errors');

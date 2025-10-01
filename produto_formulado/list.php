@@ -61,6 +61,11 @@ if (!$user->rights->safra->produtoformulado->read) {
     accessforbidden();
 }
 
+$safra_produto_schema_ok = SafraProdutoFormulado::ensureDatabaseSchema($db);
+if (!$safra_produto_schema_ok) {
+    setEventMessages($langs->trans('ProdutoFormuladoSchemaError'), null, 'errors');
+}
+
 $action = GETPOST('action', 'aZ09');
 $sortfield = GETPOST('sortfield', 'alpha');
 $sortorder = GETPOST('sortorder', 'alpha');
@@ -83,39 +88,43 @@ if ($action === 'clear') {
 $object = new SafraProdutoFormulado($db);
 $form = new Form($db);
 
-$sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation,';
-$sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
-$sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
-$sql .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
-$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
-$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
-$sql .= ' WHERE 1=1';
-if ($search_ref !== '') {
-    $sql .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
-}
-if ($search_label !== '') {
-    $sql .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
-}
-if ($search_status !== '' && $search_status !== null) {
-    $sql .= ' AND pf.status = '.((int) $search_status);
-}
-$sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation';
-if (!$sortfield) {
-    $sortfield = 'pf.ref';
-}
-if (!$sortorder) {
-    $sortorder = 'ASC';
-}
-$sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
-$sql .= $db->plimit($limit + 1, $offset);
+$resql = false;
+$num = 0;
+if ($safra_produto_schema_ok) {
+    $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation,';
+    $sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
+    $sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
+    $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
+    $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
+    $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
+    $sql .= ' WHERE 1=1';
+    if ($search_ref !== '') {
+        $sql .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
+    }
+    if ($search_label !== '') {
+        $sql .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
+    }
+    if ($search_status !== '' && $search_status !== null) {
+        $sql .= ' AND pf.status = '.((int) $search_status);
+    }
+    $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation';
+    if (!$sortfield) {
+        $sortfield = 'pf.ref';
+    }
+    if (!$sortorder) {
+        $sortorder = 'ASC';
+    }
+    $sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
+    $sql .= $db->plimit($limit + 1, $offset);
 
-$resql = $db->query($sql);
-if (!$resql) {
-    dol_print_error($db);
-    exit;
-}
+    $resql = $db->query($sql);
+    if (!$resql) {
+        dol_print_error($db);
+        exit;
+    }
 
-$num = $db->num_rows($resql);
+    $num = $db->num_rows($resql);
+}
 $moreforfilter = ''; // placeholder
 
 $help_url = '';
@@ -169,26 +178,38 @@ print '<button type="submit" name="action" value="clear" class="button">'.$langs
 print '</td>';
 print '</tr>';
 
-$i = 0;
-while ($i < min($num, $limit)) {
-    $obj = $db->fetch_object($resql);
-    if (!$obj) {
-        break;
-    }
-    $object->id = $obj->rowid;
-    $object->ref = $obj->ref;
-    $object->label = $obj->label;
-    $object->status = $obj->status;
+if ($safra_produto_schema_ok && $resql) {
+    $i = 0;
+    while ($i < min($num, $limit)) {
+        $obj = $db->fetch_object($resql);
+        if (!$obj) {
+            break;
+        }
+        $object->id = $obj->rowid;
+        $object->ref = $obj->ref;
+        $object->label = $obj->label;
+        $object->status = $obj->status;
 
-    print '<tr class="oddeven">';
-    print '<td>'.$object->getNomUrl(1).'</td>';
-    print '<td>'.dol_escape_htmltag($obj->label).'</td>';
-    print '<td class="center">'.$object->getLibStatut(5).'</td>';
-    print '<td class="center">'.(int) $obj->nb_culturas.'</td>';
-    print '<td class="center">'.(int) $obj->nb_pragas.'</td>';
-    print '<td class="center">'.dol_print_date($db->jdate($obj->date_creation), 'day').'</td>';
-    print '</tr>';
-    $i++;
+        print '<tr class="oddeven">';
+        print '<td>'.$object->getNomUrl(1).'</td>';
+        print '<td>'.dol_escape_htmltag($obj->label).'</td>';
+        print '<td class="center">'.$object->getLibStatut(5).'</td>';
+        print '<td class="center">'.(int) $obj->nb_culturas.'</td>';
+        print '<td class="center">'.(int) $obj->nb_pragas.'</td>';
+        print '<td class="center">'.dol_print_date($db->jdate($obj->date_creation), 'day').'</td>';
+        print '</tr>';
+        $i++;
+    }
+
+    if ($num === 0) {
+        print '<tr class="oddeven"><td colspan="6" class="center">'.$langs->trans('NoRecordFound').'</td></tr>';
+    }
+} else {
+    print '<tr class="oddeven"><td colspan="6" class="center">'.$langs->trans('ProdutoFormuladoSchemaMissing').'</td></tr>';
+}
+
+if ($resql) {
+    $db->free($resql);
 }
 
 print '</table>';
