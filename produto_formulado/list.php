@@ -78,11 +78,13 @@ $offset = $limit * $page;
 
 $search_ref = trim(GETPOST('search_ref', 'alphanohtml'));
 $search_label = trim(GETPOST('search_label', 'alphanohtml'));
-$search_status = GETPOSTINT('search_status');
+$search_status_raw = GETPOST('search_status', 'alpha');
+$search_status = ($search_status_raw === '' || $search_status_raw === null) ? null : (int) $search_status_raw;
 
 if ($action === 'clear') {
     $search_ref = $search_label = '';
-    $search_status = '';
+    $search_status_raw = '';
+    $search_status = null;
 }
 
 $object = new SafraProdutoFormulado($db);
@@ -104,7 +106,7 @@ if ($safra_produto_schema_ok) {
     if ($search_label !== '') {
         $sql .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
     }
-    if ($search_status !== '' && $search_status !== null) {
+    if ($search_status !== null) {
         $sql .= ' AND pf.status = '.((int) $search_status);
     }
     $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation';
@@ -140,8 +142,8 @@ if ($search_ref !== '') {
 if ($search_label !== '') {
     $param .= '&search_label='.urlencode($search_label);
 }
-if ($search_status !== '' && $search_status !== null) {
-    $param .= '&search_status='.(int) $search_status;
+if ($search_status_raw !== '' && $search_status_raw !== null) {
+    $param .= '&search_status='.urlencode($search_status_raw);
 }
 
 print '<form method="GET" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'" class="listform">';
@@ -169,7 +171,7 @@ $statuses = array(
     SafraProdutoFormulado::STATUS_ACTIVE => $langs->trans('ProdutoFormuladoStatusActive'),
     SafraProdutoFormulado::STATUS_DISABLED => $langs->trans('ProdutoFormuladoStatusDisabled'),
 );
-print '<td class="liste_titre center">'.$form->selectarray('search_status', $statuses, $search_status, 0).'</td>';
+print '<td class="liste_titre center">'.$form->selectarray('search_status', $statuses, $search_status_raw, 0).'</td>';
 print '<td class="liste_titre"></td>';
 print '<td class="liste_titre"></td>';
 print '<td class="liste_titre" style="text-align:right">';
