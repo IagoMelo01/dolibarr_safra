@@ -1,0 +1,1 @@
+-- No additional keys for safra_produto_praga
