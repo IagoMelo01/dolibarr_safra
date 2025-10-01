@@ -134,6 +134,9 @@ if ($action === 'create') {
         SafraProdutoFormulado::STATUS_DISABLED => $langs->trans('ProdutoFormuladoStatusDisabled'),
     ), GETPOSTINT('status') ?: SafraProdutoFormulado::STATUS_ACTIVE).'</td></tr>';
     print '<tr><td>'.$langs->trans('Description').'</td><td><textarea name="description" class="flat quatrevingtpercent" rows="4">'.dol_escape_htmltag(GETPOST('description', 'restricthtml')).'</textarea></td></tr>';
+    print '<tr><td>'.$langs->trans('IngredienteAtivo').'</td><td><input type="text" name="ingrediente_ativo" class="flat minwidth300" value="'.dol_escape_htmltag(GETPOST('ingrediente_ativo', 'restricthtml')).'"></td></tr>';
+    print '<tr><td>'.$langs->trans('ModoAcao').'</td><td><input type="text" name="modo_acao" class="flat minwidth300" value="'.dol_escape_htmltag(GETPOST('modo_acao', 'restricthtml')).'"></td></tr>';
+    print '<tr><td>'.$langs->trans('Classe').'</td><td><input type="text" name="classe" class="flat minwidth300" value="'.dol_escape_htmltag(GETPOST('classe', 'restricthtml')).'"></td></tr>';
     print '</table>';
 
     if ($safra_produto_schema_ok) {
@@ -195,6 +198,9 @@ if ($action === 'create') {
             SafraProdutoFormulado::STATUS_DISABLED => $langs->trans('ProdutoFormuladoStatusDisabled'),
         ), $object->status).'</td></tr>';
         print '<tr><td>'.$langs->trans('Description').'</td><td><textarea name="description" class="flat quatrevingtpercent" rows="4">'.dol_escape_htmltag($object->description).'</textarea></td></tr>';
+        print '<tr><td>'.$langs->trans('IngredienteAtivo').'</td><td><input type="text" name="ingrediente_ativo" class="flat minwidth300" value="'.dol_escape_htmltag($object->ingrediente_ativo).'"></td></tr>';
+        print '<tr><td>'.$langs->trans('ModoAcao').'</td><td><input type="text" name="modo_acao" class="flat minwidth300" value="'.dol_escape_htmltag($object->modo_acao).'"></td></tr>';
+        print '<tr><td>'.$langs->trans('Classe').'</td><td><input type="text" name="classe" class="flat minwidth300" value="'.dol_escape_htmltag($object->classe).'"></td></tr>';
         print '</table>';
 
         print '<div class="center">';
@@ -221,6 +227,9 @@ if ($action === 'create') {
         print '<tr><td>'.$langs->trans('Status').'</td><td>'.$object->getLibStatut(5).'</td></tr>';
         print '<tr><td>'.$langs->trans('DateCreation').'</td><td>'.dol_print_date($db->jdate($object->date_creation), 'dayhour').'</td></tr>';
         print '<tr><td>'.$langs->trans('Description').'</td><td>'.dol_nl2br(dol_escape_htmltag($object->description)).'</td></tr>';
+        print '<tr><td>'.$langs->trans('IngredienteAtivo').'</td><td>'.dol_escape_htmltag($object->ingrediente_ativo).'</td></tr>';
+        print '<tr><td>'.$langs->trans('ModoAcao').'</td><td>'.dol_escape_htmltag($object->modo_acao).'</td></tr>';
+        print '<tr><td>'.$langs->trans('Classe').'</td><td>'.dol_escape_htmltag($object->classe).'</td></tr>';
         print '</table>';
         print '</div>';
         print '<div class="fichehalfright">';

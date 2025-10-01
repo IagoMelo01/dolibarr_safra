@@ -48,6 +48,9 @@ class SafraProdutoFormulado extends CommonObject
         'ref' => array('type' => 'varchar(128)', 'label' => 'Ref', 'enabled' => 1, 'position' => 20, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'searchall' => 1, 'showoncombobox' => 1),
         'label' => array('type' => 'varchar(255)', 'label' => 'Label', 'enabled' => 1, 'position' => 30, 'notnull' => 1, 'visible' => 1, 'searchall' => 1, 'css' => 'minwidth200'),
         'description' => array('type' => 'text', 'label' => 'Description', 'enabled' => 1, 'position' => 40, 'notnull' => 0, 'visible' => 3),
+        'ingrediente_ativo' => array('type' => 'varchar(255)', 'label' => 'IngredienteAtivo', 'enabled' => 1, 'position' => 41, 'notnull' => 0, 'visible' => 1, 'searchall' => 1, 'css' => 'minwidth200'),
+        'modo_acao' => array('type' => 'varchar(255)', 'label' => 'ModoAcao', 'enabled' => 1, 'position' => 42, 'notnull' => 0, 'visible' => 1, 'searchall' => 1, 'css' => 'minwidth200'),
+        'classe' => array('type' => 'varchar(255)', 'label' => 'Classe', 'enabled' => 1, 'position' => 43, 'notnull' => 0, 'visible' => 1, 'searchall' => 1, 'css' => 'minwidth200'),
         'status' => array('type' => 'integer', 'label' => 'Status', 'enabled' => 1, 'position' => 50, 'notnull' => 1, 'visible' => 1, 'index' => 1, 'arrayofkeyval' => array(
             self::STATUS_DISABLED => 'Disabled',
             self::STATUS_ACTIVE => 'Active',
@@ -62,6 +65,9 @@ class SafraProdutoFormulado extends CommonObject
     public $ref;
     public $label;
     public $description;
+    public $ingrediente_ativo;
+    public $modo_acao;
+    public $classe;
     public $status = self::STATUS_ACTIVE;
     public $date_creation;
     public $tms;
@@ -115,6 +121,9 @@ class SafraProdutoFormulado extends CommonObject
             ."  ref VARCHAR(128) NOT NULL,\n"
             ."  label VARCHAR(255) NOT NULL,\n"
             ."  description TEXT NULL,\n"
+            ."  ingrediente_ativo VARCHAR(255) NULL,\n"
+            ."  modo_acao VARCHAR(255) NULL,\n"
+            ."  classe VARCHAR(255) NULL,\n"
             ."  status TINYINT NOT NULL DEFAULT 1,\n"
             ."  date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n"
             ."  tms TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n"
@@ -160,9 +169,58 @@ class SafraProdutoFormulado extends CommonObject
             }
         }
 
+        $table = $prefix.'safra_produto_formulado';
+        $columnDefinitions = array(
+            'ingrediente_ativo' => "ingrediente_ativo VARCHAR(255) NULL AFTER description",
+            'modo_acao' => "modo_acao VARCHAR(255) NULL AFTER ingrediente_ativo",
+            'classe' => "classe VARCHAR(255) NULL AFTER modo_acao",
+        );
+
+        foreach ($columnDefinitions as $column => $definition) {
+            if (!self::ensureColumnExists($db, $table, $column, $definition)) {
+                return false;
+            }
+        }
+
         self::$schemaReady = true;
 
         return true;
+    }
+
+    /**
+     * Ensure a column exists on a table.
+     *
+     * @param DoliDB $db         Database handler
+     * @param string $table      Table name with prefix
+     * @param string $column     Column name to ensure
+     * @param string $definition Column definition used when adding
+     *
+     * @return bool
+     */
+    private static function ensureColumnExists(DoliDB $db, $table, $column, $definition)
+    {
+        $sql = "SHOW COLUMNS FROM ".$table." LIKE '".$db->escape($column)."'";
+        $resql = $db->query($sql);
+        if (!$resql) {
+            dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+            return false;
+        }
+
+        $exists = $db->num_rows($resql) > 0;
+        $db->free($resql);
+
+        if ($exists) {
+            return true;
+        }
+
+        $alterSql = 'ALTER TABLE '.$table.' ADD COLUMN '.$definition;
+        if ($db->query($alterSql)) {
+            return true;
+        }
+
+        dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+
+        return false;
     }
 
     /**

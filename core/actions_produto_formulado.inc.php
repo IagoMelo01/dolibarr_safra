@@ -40,6 +40,9 @@ if ($action === 'add' && $user->rights->safra->produtoformulado->write) {
     $object->ref = trim(GETPOST('ref', 'alphanohtml'));
     $object->label = trim(GETPOST('label', 'alphanohtml'));
     $object->description = GETPOST('description', 'restricthtml');
+    $object->ingrediente_ativo = trim(GETPOST('ingrediente_ativo', 'restricthtml')) ?: null;
+    $object->modo_acao = trim(GETPOST('modo_acao', 'restricthtml')) ?: null;
+    $object->classe = trim(GETPOST('classe', 'restricthtml')) ?: null;
     $object->status = GETPOSTINT('status');
     $cultureIds = GETPOST('fk_culturas', 'array:int');
     $cultureDose = trim(GETPOST('dose_label_cultura', 'alphanohtml'));
@@ -114,6 +117,9 @@ if ($action === 'update' && $user->rights->safra->produtoformulado->write) {
     $object->ref = trim(GETPOST('ref', 'alphanohtml'));
     $object->label = trim(GETPOST('label', 'alphanohtml'));
     $object->description = GETPOST('description', 'restricthtml');
+    $object->ingrediente_ativo = trim(GETPOST('ingrediente_ativo', 'restricthtml')) ?: null;
+    $object->modo_acao = trim(GETPOST('modo_acao', 'restricthtml')) ?: null;
+    $object->classe = trim(GETPOST('classe', 'restricthtml')) ?: null;
     $object->status = GETPOSTINT('status');
 
     $error = 0;
