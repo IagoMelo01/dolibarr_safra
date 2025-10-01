@@ -187,3 +187,22 @@ SafraWeatherDesc86 = Heavy snow showers
 SafraWeatherDesc95 = Thunderstorm, slight or moderate
 SafraWeatherDesc96 = Thunderstorm with light hail
 SafraWeatherDesc99 = Thunderstorm with heavy hail
+
+# Produto formulado
+ProdutoFormuladoListTitle = Formulated products
+NewProdutoFormulado = New formulated product
+ProdutoFormuladoCardTitle = Formulated product
+ConfirmDeleteProdutoFormulado = Do you really want to delete this formulated product?
+ProdutoFormuladoStatusActive = Active
+ProdutoFormuladoStatusActiveShort = Active
+ProdutoFormuladoStatusDisabled = Disabled
+ProdutoFormuladoStatusDisabledShort = Disabled
+CulturasCount = Cultures
+PragasCount = Pests
+SelectCulturas = Select cultures
+SelectPragas = Select pests
+DoseLabel = Dose label
+Observation = Observation
+ScientificName = Scientific name
+SafraMenuProdutosFormulados = Formulated products
+SafraMenuNewProdutosFormulados = New formulated product

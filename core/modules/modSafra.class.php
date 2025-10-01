@@ -523,11 +523,26 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'pragas';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (16 * 10) + 2 + 1);
-		$this->rights[$r][1] = 'Delete Pragas object of Safra';
-		$this->rights[$r][4] = 'pragas';
-		$this->rights[$r][5] = 'delete';
-		$r++;
+                $this->rights[$r][0] = $this->numero . sprintf('%02d', (16 * 10) + 2 + 1);
+                $this->rights[$r][1] = 'Delete Pragas object of Safra';
+                $this->rights[$r][4] = 'pragas';
+                $this->rights[$r][5] = 'delete';
+                $r++;
+                $this->rights[$r][0] = $this->numero . sprintf('%02d', (17 * 10) + 0 + 1);
+                $this->rights[$r][1] = 'Read Produto Formulado object of Safra';
+                $this->rights[$r][4] = 'produtoformulado';
+                $this->rights[$r][5] = 'read';
+                $r++;
+                $this->rights[$r][0] = $this->numero . sprintf('%02d', (17 * 10) + 1 + 1);
+                $this->rights[$r][1] = 'Create/Update Produto Formulado object of Safra';
+                $this->rights[$r][4] = 'produtoformulado';
+                $this->rights[$r][5] = 'write';
+                $r++;
+                $this->rights[$r][0] = $this->numero . sprintf('%02d', (17 * 10) + 2 + 1);
+                $this->rights[$r][1] = 'Delete Produto Formulado object of Safra';
+                $this->rights[$r][4] = 'produtoformulado';
+                $this->rights[$r][5] = 'delete';
+                $r++;
 
 		/* END MODULEBUILDER PERMISSIONS */
 
@@ -1552,6 +1567,7 @@ class modSafra extends DolibarrModules
                        array('Culturas', 'cultura', '/safra/cultura_list.php', '/safra/cultura_card.php?action=create', '$user->hasRight("safra", "cultura", "read")', '$user->hasRight("safra", "cultura", "write")'),
                        array('Cultivares', 'cultivar', '/safra/cultivar_list.php', '/safra/cultivar_card.php?action=create', '$user->hasRight("safra", "cultivar", "read")', '$user->hasRight("safra", "cultivar", "write")'),
                        array('ProdutosTecnicosShort', 'produtostecnicos', '/safra/produtostecnicos_list.php', '/safra/produtostecnicos_card.php?action=create', '$user->hasRight("safra", "produtostecnicos", "read")', '$user->hasRight("safra", "produtostecnicos", "write")'),
+                       array('ProdutosFormulados', 'produto_formulado', '/safra/produto_formulado/list.php', '/safra/produto_formulado/card.php?action=create', '$user->hasRight("safra", "produtoformulado", "read")', '$user->hasRight("safra", "produtoformulado", "write")'),
                        array('Municipios', 'municipio', '/safra/municipio_list.php', '/safra/municipio_card.php?action=create', '$user->hasRight("safra", "municipio", "read")', '$user->hasRight("safra", "municipio", "write")'),
                );
 
