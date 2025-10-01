@@ -78,11 +78,15 @@ $offset = $limit * $page;
 
 $search_ref = trim(GETPOST('search_ref', 'alphanohtml'));
 $search_label = trim(GETPOST('search_label', 'alphanohtml'));
+$search_ingrediente = trim(GETPOST('search_ingrediente_ativo', 'restricthtml'));
+$search_modo_acao = trim(GETPOST('search_modo_acao', 'restricthtml'));
+$search_classe = trim(GETPOST('search_classe', 'restricthtml'));
 $search_status_raw = GETPOST('search_status', 'alpha');
 $search_status = ($search_status_raw === '' || $search_status_raw === null) ? null : (int) $search_status_raw;
 
 if ($action === 'clear') {
     $search_ref = $search_label = '';
+    $search_ingrediente = $search_modo_acao = $search_classe = '';
     $search_status_raw = '';
     $search_status = null;
 }
@@ -93,7 +97,7 @@ $form = new Form($db);
 $resql = false;
 $num = 0;
 if ($safra_produto_schema_ok) {
-    $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation,';
+    $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
     $sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
     $sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
     $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
@@ -109,7 +113,16 @@ if ($safra_produto_schema_ok) {
     if ($search_status !== null) {
         $sql .= ' AND pf.status = '.((int) $search_status);
     }
-    $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.status, pf.date_creation';
+    if ($search_ingrediente !== '') {
+        $sql .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
+    }
+    if ($search_modo_acao !== '') {
+        $sql .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
+    }
+    if ($search_classe !== '') {
+        $sql .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
+    }
+    $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation';
     if (!$sortfield) {
         $sortfield = 'pf.ref';
     }
@@ -142,6 +155,15 @@ if ($search_ref !== '') {
 if ($search_label !== '') {
     $param .= '&search_label='.urlencode($search_label);
 }
+if ($search_ingrediente !== '') {
+    $param .= '&search_ingrediente_ativo='.urlencode($search_ingrediente);
+}
+if ($search_modo_acao !== '') {
+    $param .= '&search_modo_acao='.urlencode($search_modo_acao);
+}
+if ($search_classe !== '') {
+    $param .= '&search_classe='.urlencode($search_classe);
+}
 if ($search_status_raw !== '' && $search_status_raw !== null) {
     $param .= '&search_status='.urlencode($search_status_raw);
 }
@@ -156,6 +178,9 @@ print '<table class="tagtable liste">';
 print '<tr class="liste_titre">';
 print_liste_field_titre($langs->trans('Ref'), $_SERVER['PHP_SELF'], 'pf.ref', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('Label'), $_SERVER['PHP_SELF'], 'pf.label', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('IngredienteAtivo'), $_SERVER['PHP_SELF'], 'pf.ingrediente_ativo', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('ModoAcao'), $_SERVER['PHP_SELF'], 'pf.modo_acao', '', $param, '', $sortfield, $sortorder);
+print_liste_field_titre($langs->trans('Classe'), $_SERVER['PHP_SELF'], 'pf.classe', '', $param, '', $sortfield, $sortorder);
 print_liste_field_titre($langs->trans('Status'), $_SERVER['PHP_SELF'], 'pf.status', '', $param, '', $sortfield, $sortorder, 'center');
 print_liste_field_titre($langs->trans('CulturasCount'), $_SERVER['PHP_SELF'], 'nb_culturas', '', $param, '', $sortfield, $sortorder, 'center');
 print_liste_field_titre($langs->trans('PragasCount'), $_SERVER['PHP_SELF'], 'nb_pragas', '', $param, '', $sortfield, $sortorder, 'center');
@@ -166,6 +191,9 @@ print '</tr>';
 print '<tr class="liste_titre">';
 print '<td class="liste_titre"><input type="text" class="flat" name="search_ref" value="'.dol_escape_htmltag($search_ref).'" /></td>';
 print '<td class="liste_titre"><input type="text" class="flat" name="search_label" value="'.dol_escape_htmltag($search_label).'" /></td>';
+print '<td class="liste_titre"><input type="text" class="flat" name="search_ingrediente_ativo" value="'.dol_escape_htmltag($search_ingrediente).'" /></td>';
+print '<td class="liste_titre"><input type="text" class="flat" name="search_modo_acao" value="'.dol_escape_htmltag($search_modo_acao).'" /></td>';
+print '<td class="liste_titre"><input type="text" class="flat" name="search_classe" value="'.dol_escape_htmltag($search_classe).'" /></td>';
 $statuses = array(
     '' => '',
     SafraProdutoFormulado::STATUS_ACTIVE => $langs->trans('ProdutoFormuladoStatusActive'),
@@ -190,11 +218,17 @@ if ($safra_produto_schema_ok && $resql) {
         $object->id = $obj->rowid;
         $object->ref = $obj->ref;
         $object->label = $obj->label;
+        $object->ingrediente_ativo = $obj->ingrediente_ativo;
+        $object->modo_acao = $obj->modo_acao;
+        $object->classe = $obj->classe;
         $object->status = $obj->status;
 
         print '<tr class="oddeven">';
         print '<td>'.$object->getNomUrl(1).'</td>';
         print '<td>'.dol_escape_htmltag($obj->label).'</td>';
+        print '<td>'.dol_escape_htmltag($obj->ingrediente_ativo).'</td>';
+        print '<td>'.dol_escape_htmltag($obj->modo_acao).'</td>';
+        print '<td>'.dol_escape_htmltag($obj->classe).'</td>';
         print '<td class="center">'.$object->getLibStatut(5).'</td>';
         print '<td class="center">'.(int) $obj->nb_culturas.'</td>';
         print '<td class="center">'.(int) $obj->nb_pragas.'</td>';
@@ -204,10 +238,10 @@ if ($safra_produto_schema_ok && $resql) {
     }
 
     if ($num === 0) {
-        print '<tr class="oddeven"><td colspan="6" class="center">'.$langs->trans('NoRecordFound').'</td></tr>';
+        print '<tr class="oddeven"><td colspan="9" class="center">'.$langs->trans('NoRecordFound').'</td></tr>';
     }
 } else {
-    print '<tr class="oddeven"><td colspan="6" class="center">'.$langs->trans('ProdutoFormuladoSchemaMissing').'</td></tr>';
+    print '<tr class="oddeven"><td colspan="9" class="center">'.$langs->trans('ProdutoFormuladoSchemaMissing').'</td></tr>';
 }
 
 if ($resql) {
