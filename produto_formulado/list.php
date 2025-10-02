@@ -96,32 +96,56 @@ $form = new Form($db);
 
 $resql = false;
 $num = 0;
+$nbtotalofrecords = 0;
 if ($safra_produto_schema_ok) {
+    $sqlFilters = '';
+    if ($search_ref !== '') {
+        $sqlFilters .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
+    }
+    if ($search_label !== '') {
+        $sqlFilters .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
+    }
+    if ($search_status !== null) {
+        $sqlFilters .= ' AND pf.status = '.((int) $search_status);
+    }
+    if ($search_ingrediente !== '') {
+        $sqlFilters .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
+    }
+    if ($search_modo_acao !== '') {
+        $sqlFilters .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
+    }
+    if ($search_classe !== '') {
+        $sqlFilters .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
+    }
+
+    $sqlCount = 'SELECT COUNT(DISTINCT pf.rowid) AS total_records';
+    $sqlCount .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
+    $sqlCount .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
+    $sqlCount .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
+    $sqlCount .= ' WHERE 1=1'.$sqlFilters;
+
+    $resqlCount = $db->query($sqlCount);
+    if ($resqlCount) {
+        $objCount = $db->fetch_object($resqlCount);
+        $nbtotalofrecords = $objCount ? (int) $objCount->total_records : 0;
+        $db->free($resqlCount);
+    } else {
+        dol_print_error($db);
+        exit;
+    }
+
+    if ($limit > 0 && ($page * $limit) >= $nbtotalofrecords) {
+        $page = 0;
+        $offset = 0;
+    }
+
     $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
     $sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
     $sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
     $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
     $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
     $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
-    $sql .= ' WHERE 1=1';
-    if ($search_ref !== '') {
-        $sql .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
-    }
-    if ($search_label !== '') {
-        $sql .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
-    }
-    if ($search_status !== null) {
-        $sql .= ' AND pf.status = '.((int) $search_status);
-    }
-    if ($search_ingrediente !== '') {
-        $sql .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
-    }
-    if ($search_modo_acao !== '') {
-        $sql .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
-    }
-    if ($search_classe !== '') {
-        $sql .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
-    }
+    $sql .= ' WHERE 1=1'.$sqlFilters;
     $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation';
     if (!$sortfield) {
         $sortfield = 'pf.ref';
@@ -171,7 +195,18 @@ if ($search_status_raw !== '' && $search_status_raw !== null) {
 print '<form method="GET" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'" class="listform">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 
-print_barre_liste($title, $page, $_SERVER['PHP_SELF'], $param, $sortfield, $sortorder, '', $num, $db->num_rows($resql), 'generic');
+print_barre_liste(
+    $title,
+    $page,
+    $_SERVER['PHP_SELF'],
+    $param,
+    $sortfield,
+    $sortorder,
+    '',
+    $limit > 0 ? min($num, $limit) : $num,
+    $nbtotalofrecords,
+    'generic'
+);
 
 print '<div class="div-table-responsive">';
 print '<table class="tagtable liste">';
@@ -210,7 +245,8 @@ print '</tr>';
 
 if ($safra_produto_schema_ok && $resql) {
     $i = 0;
-    while ($i < min($num, $limit)) {
+    $maxRows = $limit > 0 ? min($num, $limit) : $num;
+    while ($i < $maxRows) {
         $obj = $db->fetch_object($resql);
         if (!$obj) {
             break;
