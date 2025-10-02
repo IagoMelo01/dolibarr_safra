@@ -98,34 +98,38 @@ $resql = false;
 $num = 0;
 $nbtotalofrecords = 0;
 if ($safra_produto_schema_ok) {
-    $sql_base = ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
-    $sql_base .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
-    $sql_base .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
-    $sql_base .= ' WHERE 1=1';
+    $sql_from = ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
+    $sql_where = ' WHERE 1=1';
     if ($search_ref !== '') {
-        $sql_base .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
+        $sql_where .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
     }
     if ($search_label !== '') {
-        $sql_base .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
+        $sql_where .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
     }
     if ($search_status !== null) {
-        $sql_base .= ' AND pf.status = '.((int) $search_status);
+        $sql_where .= ' AND pf.status = '.((int) $search_status);
     }
     if ($search_ingrediente !== '') {
-        $sql_base .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
+        $sql_where .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
     }
     if ($search_modo_acao !== '') {
-        $sql_base .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
+        $sql_where .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
     }
     if ($search_classe !== '') {
-        $sql_base .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
+        $sql_where .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
     }
 
     $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
-    $sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
-    $sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
-    $sql .= $sql_base;
-    $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation';
+    $sql .= ' COALESCE(pc.nb_culturas, 0) AS nb_culturas,';
+    $sql .= ' COALESCE(pp.nb_pragas, 0) AS nb_pragas';
+    $sql .= $sql_from;
+    $sql .= ' LEFT JOIN (';
+    $sql .= ' SELECT fk_produto, COUNT(*) AS nb_culturas FROM '.MAIN_DB_PREFIX.'safra_produto_cultura GROUP BY fk_produto';
+    $sql .= ' ) AS pc ON pc.fk_produto = pf.rowid';
+    $sql .= ' LEFT JOIN (';
+    $sql .= ' SELECT fk_produto, COUNT(*) AS nb_pragas FROM '.MAIN_DB_PREFIX.'safra_produto_praga GROUP BY fk_produto';
+    $sql .= ' ) AS pp ON pp.fk_produto = pf.rowid';
+    $sql .= $sql_where;
     if (!$sortfield) {
         $sortfield = 'pf.ref';
     }
@@ -143,7 +147,7 @@ if ($safra_produto_schema_ok) {
 
     $num = $db->num_rows($resql);
 
-    $sql_count = 'SELECT COUNT(DISTINCT pf.rowid) AS total'.$sql_base;
+    $sql_count = 'SELECT COUNT(*) AS total'.$sql_from.$sql_where;
     $resql_count = $db->query($sql_count);
     if ($resql_count) {
         $obj_count = $db->fetch_object($resql_count);
