@@ -73,7 +73,7 @@ $page = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTI
 if ($page === '' || $page === null || $page < 0) {
     $page = 0;
 }
-$limit = GETPOSTINT('limit') ?: $conf->liste_limit;
+$limit = GETPOSTISSET('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
 $offset = $limit * $page;
 $button_search = GETPOST('button_search', 'aZ09');
 $button_removefilter = GETPOST('button_removefilter', 'aZ09');
@@ -128,6 +128,24 @@ if ($safra_produto_schema_ok) {
         $sql_where .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
     }
 
+    $sql_count = 'SELECT COUNT(pf.rowid) AS total'.$sql_from.$sql_where;
+    $resql_count = $db->query($sql_count);
+    if ($resql_count) {
+        $obj_count = $db->fetch_object($resql_count);
+        if ($obj_count) {
+            $nbtotalofrecords = (int) $obj_count->total;
+        }
+        $db->free($resql_count);
+    } else {
+        dol_print_error($db);
+        exit;
+    }
+
+    if ($limit > 0 && ($page * $limit) >= $nbtotalofrecords) {
+        $page = 0;
+        $offset = 0;
+    }
+
     $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
     $sql .= ' COALESCE(pc.nb_culturas, 0) AS nb_culturas,';
     $sql .= ' COALESCE(pp.nb_pragas, 0) AS nb_pragas';
@@ -147,7 +165,7 @@ if ($safra_produto_schema_ok) {
     }
     $sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
     if ($limit > 0) {
-        $sql .= $db->plimit($limit, $offset);
+        $sql .= $db->plimit($limit + 1, $offset);
     }
 
     $resql = $db->query($sql);
@@ -157,18 +175,8 @@ if ($safra_produto_schema_ok) {
     }
 
     $num = $db->num_rows($resql);
-
-    $sql_count = 'SELECT COUNT(DISTINCT pf.rowid) AS total'.$sql_from.$sql_where;
-    $resql_count = $db->query($sql_count);
-    if ($resql_count) {
-        $obj_count = $db->fetch_object($resql_count);
-        if ($obj_count) {
-            $nbtotalofrecords = (int) $obj_count->total;
-        }
-        $db->free($resql_count);
-    } else {
-        dol_print_error($db);
-        exit;
+    if ($limit > 0 && $num > $limit) {
+        $num = $limit;
     }
 }
 $moreforfilter = ''; // placeholder
