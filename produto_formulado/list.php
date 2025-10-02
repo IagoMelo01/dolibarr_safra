@@ -69,7 +69,7 @@ if (!$safra_produto_schema_ok) {
 $action = GETPOST('action', 'aZ09');
 $sortfield = GETPOST('sortfield', 'alpha');
 $sortorder = GETPOST('sortorder', 'alpha');
-$page = GETPOSTINT('page');
+$page = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT('page');
 if (!is_numeric($page) || $page < 0) {
     $page = 0;
 }
@@ -89,6 +89,8 @@ if ($action === 'clear') {
     $search_ingrediente = $search_modo_acao = $search_classe = '';
     $search_status_raw = '';
     $search_status = null;
+    $page = 0;
+    $offset = 0;
 }
 
 $object = new SafraProdutoFormulado($db);
@@ -137,7 +139,9 @@ if ($safra_produto_schema_ok) {
         $sortorder = 'ASC';
     }
     $sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
-    $sql .= $db->plimit($limit, $offset);
+    if ($limit) {
+        $sql .= $db->plimit($limit + 1, $offset);
+    }
 
     $resql = $db->query($sql);
     if (!$resql) {
@@ -146,6 +150,9 @@ if ($safra_produto_schema_ok) {
     }
 
     $num = $db->num_rows($resql);
+    if ($limit > 0 && $num > $limit) {
+        $num = $limit;
+    }
 
     $sql_count = 'SELECT COUNT(*) AS total'.$sql_from.$sql_where;
     $resql_count = $db->query($sql_count);
@@ -187,12 +194,16 @@ if ($search_classe !== '') {
 if ($search_status_raw !== '' && $search_status_raw !== null) {
     $param .= '&search_status='.urlencode($search_status_raw);
 }
+if ($limit > 0 && $limit != $conf->liste_limit) {
+    $param .= '&limit='.((int) $limit);
+}
 
 print '<form method="GET" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'" class="listform">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="sortfield" value="'.dol_escape_htmltag($sortfield).'">';
 print '<input type="hidden" name="sortorder" value="'.dol_escape_htmltag($sortorder).'">';
 print '<input type="hidden" name="page" value="'.((int) $page).'">';
+print '<input type="hidden" name="page_y" value="">';
 
 print_barre_liste(
     $title,
