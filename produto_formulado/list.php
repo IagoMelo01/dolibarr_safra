@@ -67,14 +67,16 @@ if (!$safra_produto_schema_ok) {
 }
 
 $action = GETPOST('action', 'aZ09');
-$sortfield = GETPOST('sortfield', 'alpha');
-$sortorder = GETPOST('sortorder', 'alpha');
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09');
 $page = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT('page');
-if (!is_numeric($page) || $page < 0) {
+if ($page === '' || $page === null || $page < 0) {
     $page = 0;
 }
 $limit = GETPOSTINT('limit') ?: $conf->liste_limit;
 $offset = $limit * $page;
+$button_search = GETPOST('button_search', 'aZ09');
+$button_removefilter = GETPOST('button_removefilter', 'aZ09');
 
 $search_ref = trim(GETPOST('search_ref', 'alphanohtml'));
 $search_label = trim(GETPOST('search_label', 'alphanohtml'));
@@ -84,11 +86,16 @@ $search_classe = trim(GETPOST('search_classe', 'restricthtml'));
 $search_status_raw = GETPOST('search_status', 'alpha');
 $search_status = ($search_status_raw === '' || $search_status_raw === null) ? null : (int) $search_status_raw;
 
-if ($action === 'clear') {
+if ($action === 'clear' || $button_removefilter) {
     $search_ref = $search_label = '';
     $search_ingrediente = $search_modo_acao = $search_classe = '';
     $search_status_raw = '';
     $search_status = null;
+    $page = 0;
+    $offset = 0;
+}
+
+if ($button_search || $button_removefilter) {
     $page = 0;
     $offset = 0;
 }
@@ -139,8 +146,8 @@ if ($safra_produto_schema_ok) {
         $sortorder = 'ASC';
     }
     $sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
-    if ($limit) {
-        $sql .= $db->plimit($limit + 1, $offset);
+    if ($limit > 0) {
+        $sql .= $db->plimit($limit, $offset);
     }
 
     $resql = $db->query($sql);
@@ -150,11 +157,8 @@ if ($safra_produto_schema_ok) {
     }
 
     $num = $db->num_rows($resql);
-    if ($limit > 0 && $num > $limit) {
-        $num = $limit;
-    }
 
-    $sql_count = 'SELECT COUNT(*) AS total'.$sql_from.$sql_where;
+    $sql_count = 'SELECT COUNT(DISTINCT pf.rowid) AS total'.$sql_from.$sql_where;
     $resql_count = $db->query($sql_count);
     if ($resql_count) {
         $obj_count = $db->fetch_object($resql_count);
@@ -194,7 +198,7 @@ if ($search_classe !== '') {
 if ($search_status_raw !== '' && $search_status_raw !== null) {
     $param .= '&search_status='.urlencode($search_status_raw);
 }
-if ($limit > 0 && $limit != $conf->liste_limit) {
+if ($limit > 0) {
     $param .= '&limit='.((int) $limit);
 }
 
@@ -203,6 +207,7 @@ print '<input type="hidden" name="token" value="'.newToken().'">';
 print '<input type="hidden" name="sortfield" value="'.dol_escape_htmltag($sortfield).'">';
 print '<input type="hidden" name="sortorder" value="'.dol_escape_htmltag($sortorder).'">';
 print '<input type="hidden" name="page" value="'.((int) $page).'">';
+print '<input type="hidden" name="pageplusone" value="'.((int) $page + 1).'">';
 print '<input type="hidden" name="page_y" value="">';
 
 print_barre_liste(
@@ -255,8 +260,8 @@ print '<td class="liste_titre center">'.$form->selectarray('search_status', $sta
 print '<td class="liste_titre"></td>';
 print '<td class="liste_titre"></td>';
 print '<td class="liste_titre" style="text-align:right">';
-print '<button type="submit" class="button reposition">'.$langs->trans('Search').'</button> ';
-print '<button type="submit" name="action" value="clear" class="button">'.$langs->trans('Reset').'</button>';
+print '<button type="submit" name="button_search" value="1" class="button reposition">'.$langs->trans('Search').'</button> ';
+print '<button type="submit" name="button_removefilter" value="1" class="button">'.$langs->trans('Reset').'</button>';
 print '</td>';
 print '</tr>';
 
