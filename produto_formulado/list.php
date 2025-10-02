@@ -70,7 +70,7 @@ $action = GETPOST('action', 'aZ09');
 $sortfield = GETPOST('sortfield', 'alpha');
 $sortorder = GETPOST('sortorder', 'alpha');
 $page = GETPOSTINT('page');
-if ($page < 0) {
+if (!is_numeric($page) || $page < 0) {
     $page = 0;
 }
 $limit = GETPOSTINT('limit') ?: $conf->liste_limit;
@@ -186,6 +186,9 @@ if ($search_status_raw !== '' && $search_status_raw !== null) {
 
 print '<form method="GET" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'" class="listform">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="sortfield" value="'.dol_escape_htmltag($sortfield).'">';
+print '<input type="hidden" name="sortorder" value="'.dol_escape_htmltag($sortorder).'">';
+print '<input type="hidden" name="page" value="'.((int) $page).'">';
 
 print_barre_liste(
     $title,
@@ -201,7 +204,10 @@ print_barre_liste(
     0,
     '',
     '',
-    $limit
+    $limit,
+    0,
+    0,
+    1
 );
 
 print '<div class="div-table-responsive">';
