@@ -96,32 +96,35 @@ $form = new Form($db);
 
 $resql = false;
 $num = 0;
+$nbtotalofrecords = 0;
 if ($safra_produto_schema_ok) {
+    $sql_base = ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
+    $sql_base .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
+    $sql_base .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
+    $sql_base .= ' WHERE 1=1';
+    if ($search_ref !== '') {
+        $sql_base .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
+    }
+    if ($search_label !== '') {
+        $sql_base .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
+    }
+    if ($search_status !== null) {
+        $sql_base .= ' AND pf.status = '.((int) $search_status);
+    }
+    if ($search_ingrediente !== '') {
+        $sql_base .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
+    }
+    if ($search_modo_acao !== '') {
+        $sql_base .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
+    }
+    if ($search_classe !== '') {
+        $sql_base .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
+    }
+
     $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
     $sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
     $sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
-    $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
-    $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
-    $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
-    $sql .= ' WHERE 1=1';
-    if ($search_ref !== '') {
-        $sql .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
-    }
-    if ($search_label !== '') {
-        $sql .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
-    }
-    if ($search_status !== null) {
-        $sql .= ' AND pf.status = '.((int) $search_status);
-    }
-    if ($search_ingrediente !== '') {
-        $sql .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
-    }
-    if ($search_modo_acao !== '') {
-        $sql .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
-    }
-    if ($search_classe !== '') {
-        $sql .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
-    }
+    $sql .= $sql_base;
     $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation';
     if (!$sortfield) {
         $sortfield = 'pf.ref';
@@ -130,7 +133,7 @@ if ($safra_produto_schema_ok) {
         $sortorder = 'ASC';
     }
     $sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
-    $sql .= $db->plimit($limit + 1, $offset);
+    $sql .= $db->plimit($limit, $offset);
 
     $resql = $db->query($sql);
     if (!$resql) {
@@ -139,6 +142,19 @@ if ($safra_produto_schema_ok) {
     }
 
     $num = $db->num_rows($resql);
+
+    $sql_count = 'SELECT COUNT(DISTINCT pf.rowid) AS total'.$sql_base;
+    $resql_count = $db->query($sql_count);
+    if ($resql_count) {
+        $obj_count = $db->fetch_object($resql_count);
+        if ($obj_count) {
+            $nbtotalofrecords = (int) $obj_count->total;
+        }
+        $db->free($resql_count);
+    } else {
+        dol_print_error($db);
+        exit;
+    }
 }
 $moreforfilter = ''; // placeholder
 
@@ -171,7 +187,22 @@ if ($search_status_raw !== '' && $search_status_raw !== null) {
 print '<form method="GET" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'" class="listform">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
 
-print_barre_liste($title, $page, $_SERVER['PHP_SELF'], $param, $sortfield, $sortorder, '', $num, $db->num_rows($resql), 'generic');
+print_barre_liste(
+    $title,
+    $page,
+    $_SERVER['PHP_SELF'],
+    $param,
+    $sortfield,
+    $sortorder,
+    '',
+    $num,
+    $nbtotalofrecords,
+    'generic',
+    0,
+    '',
+    '',
+    $limit
+);
 
 print '<div class="div-table-responsive">';
 print '<table class="tagtable liste">';
@@ -210,7 +241,7 @@ print '</tr>';
 
 if ($safra_produto_schema_ok && $resql) {
     $i = 0;
-    while ($i < min($num, $limit)) {
+    while ($i < $num) {
         $obj = $db->fetch_object($resql);
         if (!$obj) {
             break;
