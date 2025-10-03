@@ -185,6 +185,16 @@ $help_url = '';
 $title = $langs->trans('ProdutoFormuladoListTitle');
 llxHeader('', $title, $help_url);
 
+print '<div style="max-width:78%;margin-bottom:5px;overflow-x:auto;text-align:center;">';
+
+print '<div class="tabsAction">';
+if ($user->rights->safra->produtoformulado->write) {
+    $newUrl = dol_buildpath('/safra/produto_formulado/card.php', 1).'?action=create';
+    print '<a class="butAction" href="'.$newUrl.'">'.$langs->trans('NewProdutoFormulado').'</a>';
+}
+print '</div>';
+
+
 print load_fiche_titre($title, '', 'fa-flask');
 
 $param = '';
@@ -218,25 +228,29 @@ print '<input type="hidden" name="page" value="'.((int) $page).'">';
 print '<input type="hidden" name="pageplusone" value="'.((int) $page + 1).'">';
 print '<input type="hidden" name="page_y" value="">';
 
-print_barre_liste(
-    $title,
-    $page,
-    $_SERVER['PHP_SELF'],
-    $param,
-    $sortfield,
-    $sortorder,
-    '',
-    $num,
-    $nbtotalofrecords,
-    'generic',
-    0,
-    '',
-    '',
-    $limit,
-    0,
-    0,
-    1
-);
+
+
+// print_barre_liste(
+//     $title,                // 1
+//     $page,                 // 2
+//     $_SERVER['PHP_SELF'],  // 3
+//     $param,                // 4
+//     $sortfield,            // 5
+//     $sortorder,            // 6
+//     '',                    // 7  $pageforadd / $morehtmlright (deixa vazio)
+//     $num,                  // 8  qtde exibida nesta página (<= $limit)
+//     $nbtotalofrecords,     // 9  total (COUNT)
+//     '',                    // 10 $picto (vazio pra não imprimir texto)
+//     0,                     // 11 $optioncss
+//     '',                    // 12 $morehtml (right)
+//     '',                    // 13 $moreforfilter (left)
+//     $limit,                // 14 *** LIMIT por página ***
+//     0,                     // 15 (depende da versão; pode ser $type/$model) deixe 0
+//     0,                     // 16 idem
+//     1                      // 17 ativa modo list/pagination em várias versões
+// );
+
+
 
 print '<div class="div-table-responsive">';
 print '<table class="tagtable liste">';
@@ -316,14 +330,38 @@ if ($resql) {
 print '</table>';
 print '</div>';
 
-print '<div class="tabsAction">';
-if ($user->rights->safra->produtoformulado->write) {
-    $newUrl = dol_buildpath('/safra/produto_formulado/card.php', 1).'?action=create';
-    print '<a class="butAction" href="'.$newUrl.'">'.$langs->trans('NewProdutoFormulado').'</a>';
+
+
+$nbpages = ($limit > 0) ? (int) ceil($nbtotalofrecords / $limit) : 1;
+if ($nbpages > 1) {
+	$cur = max(0, (int) $page);
+	$qs  = $param . '&limit=' . (int) $limit;
+
+	echo '<div class="pagination" style="margin-top:8px; text-align:right;">';
+
+	// Prev
+	if ($cur > 0) {
+		echo '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?pageplusone='.($cur).'&'.$qs.'">&laquo; Anterior</a> ';
+	} else {
+		echo '<span class="butActionRefused">&laquo; Anterior</span> ';
+	}
+
+	// Página atual / total
+	echo '<span class="pagination_page">'.($cur+1).' / '.$nbpages.'</span> ';
+
+	// Next
+	if ($cur < $nbpages - 1) {
+		echo ' <a class="butAction" href="'.$_SERVER['PHP_SELF'].'?pageplusone='.($cur+2).'&'.$qs.'">Próxima &raquo;</a>';
+	} else {
+		echo ' <span class="butActionRefused">Próxima &raquo;</span>';
+	}
+
+	echo '</div>';
 }
-print '</div>';
 
 print '</form>';
+
+print '</div>'; // max-width
 
 llxFooter();
 $db->close();
