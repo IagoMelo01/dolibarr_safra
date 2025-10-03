@@ -67,14 +67,16 @@ if (!$safra_produto_schema_ok) {
 }
 
 $action = GETPOST('action', 'aZ09');
-$sortfield = GETPOST('sortfield', 'alpha');
-$sortorder = GETPOST('sortorder', 'alpha');
-$page = GETPOSTINT('page');
-if ($page < 0) {
+$sortfield = GETPOST('sortfield', 'aZ09comma');
+$sortorder = GETPOST('sortorder', 'aZ09');
+$page = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT('page');
+if ($page === '' || $page === null || $page < 0) {
     $page = 0;
 }
-$limit = GETPOSTINT('limit') ?: $conf->liste_limit;
+$limit = GETPOSTISSET('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
 $offset = $limit * $page;
+$button_search = GETPOST('button_search', 'aZ09');
+$button_removefilter = GETPOST('button_removefilter', 'aZ09');
 
 $search_ref = trim(GETPOST('search_ref', 'alphanohtml'));
 $search_label = trim(GETPOST('search_label', 'alphanohtml'));
@@ -84,11 +86,18 @@ $search_classe = trim(GETPOST('search_classe', 'restricthtml'));
 $search_status_raw = GETPOST('search_status', 'alpha');
 $search_status = ($search_status_raw === '' || $search_status_raw === null) ? null : (int) $search_status_raw;
 
-if ($action === 'clear') {
+if ($action === 'clear' || $button_removefilter) {
     $search_ref = $search_label = '';
     $search_ingrediente = $search_modo_acao = $search_classe = '';
     $search_status_raw = '';
     $search_status = null;
+    $page = 0;
+    $offset = 0;
+}
+
+if ($button_search || $button_removefilter) {
+    $page = 0;
+    $offset = 0;
 }
 
 $object = new SafraProdutoFormulado($db);
@@ -96,33 +105,58 @@ $form = new Form($db);
 
 $resql = false;
 $num = 0;
+$nbtotalofrecords = 0;
 if ($safra_produto_schema_ok) {
-    $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
-    $sql .= ' COUNT(DISTINCT pc.rowid) AS nb_culturas,';
-    $sql .= ' COUNT(DISTINCT pp.rowid) AS nb_pragas';
-    $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
-    $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_cultura AS pc ON pc.fk_produto = pf.rowid';
-    $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ON pp.fk_produto = pf.rowid';
-    $sql .= ' WHERE 1=1';
+    $sql_from = ' FROM '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf';
+    $sql_where = ' WHERE 1=1';
     if ($search_ref !== '') {
-        $sql .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
+        $sql_where .= " AND pf.ref LIKE '%".$db->escape($search_ref)."%'";
     }
     if ($search_label !== '') {
-        $sql .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
+        $sql_where .= " AND pf.label LIKE '%".$db->escape($search_label)."%'";
     }
     if ($search_status !== null) {
-        $sql .= ' AND pf.status = '.((int) $search_status);
+        $sql_where .= ' AND pf.status = '.((int) $search_status);
     }
     if ($search_ingrediente !== '') {
-        $sql .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
+        $sql_where .= " AND pf.ingrediente_ativo LIKE '%".$db->escape($search_ingrediente)."%'";
     }
     if ($search_modo_acao !== '') {
-        $sql .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
+        $sql_where .= " AND pf.modo_acao LIKE '%".$db->escape($search_modo_acao)."%'";
     }
     if ($search_classe !== '') {
-        $sql .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
+        $sql_where .= " AND pf.classe LIKE '%".$db->escape($search_classe)."%'";
     }
-    $sql .= ' GROUP BY pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation';
+
+    $sql_count = 'SELECT COUNT(pf.rowid) AS total'.$sql_from.$sql_where;
+    $resql_count = $db->query($sql_count);
+    if ($resql_count) {
+        $obj_count = $db->fetch_object($resql_count);
+        if ($obj_count) {
+            $nbtotalofrecords = (int) $obj_count->total;
+        }
+        $db->free($resql_count);
+    } else {
+        dol_print_error($db);
+        exit;
+    }
+
+    if ($limit > 0 && ($page * $limit) >= $nbtotalofrecords) {
+        $page = 0;
+        $offset = 0;
+    }
+
+    $sql = 'SELECT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe, pf.status, pf.date_creation,';
+    $sql .= ' COALESCE(pc.nb_culturas, 0) AS nb_culturas,';
+    $sql .= ' COALESCE(pp.nb_pragas, 0) AS nb_pragas';
+    $sql .= $sql_from;
+    $sql .= ' LEFT JOIN (';
+    $sql .= ' SELECT fk_produto, COUNT(*) AS nb_culturas FROM '.MAIN_DB_PREFIX.'safra_produto_cultura GROUP BY fk_produto';
+    $sql .= ' ) AS pc ON pc.fk_produto = pf.rowid';
+    $sql .= ' LEFT JOIN (';
+    $sql .= ' SELECT fk_produto, COUNT(*) AS nb_pragas FROM '.MAIN_DB_PREFIX.'safra_produto_praga GROUP BY fk_produto';
+    $sql .= ' ) AS pp ON pp.fk_produto = pf.rowid';
+    $sql .= $sql_where;
     if (!$sortfield) {
         $sortfield = 'pf.ref';
     }
@@ -130,7 +164,9 @@ if ($safra_produto_schema_ok) {
         $sortorder = 'ASC';
     }
     $sql .= ' ORDER BY '.preg_replace('/[^a-zA-Z0-9_\.]/', '', $sortfield).' '.($sortorder === 'DESC' ? 'DESC' : 'ASC');
-    $sql .= $db->plimit($limit + 1, $offset);
+    if ($limit > 0) {
+        $sql .= $db->plimit($limit + 1, $offset);
+    }
 
     $resql = $db->query($sql);
     if (!$resql) {
@@ -139,12 +175,25 @@ if ($safra_produto_schema_ok) {
     }
 
     $num = $db->num_rows($resql);
+    if ($limit > 0 && $num > $limit) {
+        $num = $limit;
+    }
 }
 $moreforfilter = ''; // placeholder
 
 $help_url = '';
 $title = $langs->trans('ProdutoFormuladoListTitle');
 llxHeader('', $title, $help_url);
+
+print '<div style="max-width:78%;margin-bottom:5px;overflow-x:auto;text-align:center;">';
+
+print '<div class="tabsAction">';
+if ($user->rights->safra->produtoformulado->write) {
+    $newUrl = dol_buildpath('/safra/produto_formulado/card.php', 1).'?action=create';
+    print '<a class="butAction" href="'.$newUrl.'">'.$langs->trans('NewProdutoFormulado').'</a>';
+}
+print '</div>';
+
 
 print load_fiche_titre($title, '', 'fa-flask');
 
@@ -167,11 +216,41 @@ if ($search_classe !== '') {
 if ($search_status_raw !== '' && $search_status_raw !== null) {
     $param .= '&search_status='.urlencode($search_status_raw);
 }
+if ($limit > 0) {
+    $param .= '&limit='.((int) $limit);
+}
 
 print '<form method="GET" action="'.htmlspecialchars($_SERVER['PHP_SELF']).'" class="listform">';
 print '<input type="hidden" name="token" value="'.newToken().'">';
+print '<input type="hidden" name="sortfield" value="'.dol_escape_htmltag($sortfield).'">';
+print '<input type="hidden" name="sortorder" value="'.dol_escape_htmltag($sortorder).'">';
+print '<input type="hidden" name="page" value="'.((int) $page).'">';
+print '<input type="hidden" name="pageplusone" value="'.((int) $page + 1).'">';
+print '<input type="hidden" name="page_y" value="">';
 
-print_barre_liste($title, $page, $_SERVER['PHP_SELF'], $param, $sortfield, $sortorder, '', $num, $db->num_rows($resql), 'generic');
+
+
+// print_barre_liste(
+//     $title,                // 1
+//     $page,                 // 2
+//     $_SERVER['PHP_SELF'],  // 3
+//     $param,                // 4
+//     $sortfield,            // 5
+//     $sortorder,            // 6
+//     '',                    // 7  $pageforadd / $morehtmlright (deixa vazio)
+//     $num,                  // 8  qtde exibida nesta página (<= $limit)
+//     $nbtotalofrecords,     // 9  total (COUNT)
+//     '',                    // 10 $picto (vazio pra não imprimir texto)
+//     0,                     // 11 $optioncss
+//     '',                    // 12 $morehtml (right)
+//     '',                    // 13 $moreforfilter (left)
+//     $limit,                // 14 *** LIMIT por página ***
+//     0,                     // 15 (depende da versão; pode ser $type/$model) deixe 0
+//     0,                     // 16 idem
+//     1                      // 17 ativa modo list/pagination em várias versões
+// );
+
+
 
 print '<div class="div-table-responsive">';
 print '<table class="tagtable liste">';
@@ -203,14 +282,14 @@ print '<td class="liste_titre center">'.$form->selectarray('search_status', $sta
 print '<td class="liste_titre"></td>';
 print '<td class="liste_titre"></td>';
 print '<td class="liste_titre" style="text-align:right">';
-print '<button type="submit" class="button reposition">'.$langs->trans('Search').'</button> ';
-print '<button type="submit" name="action" value="clear" class="button">'.$langs->trans('Reset').'</button>';
+print '<button type="submit" name="button_search" value="1" class="button reposition">'.$langs->trans('Search').'</button> ';
+print '<button type="submit" name="button_removefilter" value="1" class="button">'.$langs->trans('Reset').'</button>';
 print '</td>';
 print '</tr>';
 
 if ($safra_produto_schema_ok && $resql) {
     $i = 0;
-    while ($i < min($num, $limit)) {
+    while ($i < $num) {
         $obj = $db->fetch_object($resql);
         if (!$obj) {
             break;
@@ -251,14 +330,38 @@ if ($resql) {
 print '</table>';
 print '</div>';
 
-print '<div class="tabsAction">';
-if ($user->rights->safra->produtoformulado->write) {
-    $newUrl = dol_buildpath('/safra/produto_formulado/card.php', 1).'?action=create';
-    print '<a class="butAction" href="'.$newUrl.'">'.$langs->trans('NewProdutoFormulado').'</a>';
+
+
+$nbpages = ($limit > 0) ? (int) ceil($nbtotalofrecords / $limit) : 1;
+if ($nbpages > 1) {
+	$cur = max(0, (int) $page);
+	$qs  = $param . '&limit=' . (int) $limit;
+
+	echo '<div class="pagination" style="margin-top:8px; text-align:right;">';
+
+	// Prev
+	if ($cur > 0) {
+		echo '<a class="butAction" href="'.$_SERVER['PHP_SELF'].'?pageplusone='.($cur).'&'.$qs.'">&laquo; Anterior</a> ';
+	} else {
+		echo '<span class="butActionRefused">&laquo; Anterior</span> ';
+	}
+
+	// Página atual / total
+	echo '<span class="pagination_page">'.($cur+1).' / '.$nbpages.'</span> ';
+
+	// Next
+	if ($cur < $nbpages - 1) {
+		echo ' <a class="butAction" href="'.$_SERVER['PHP_SELF'].'?pageplusone='.($cur+2).'&'.$qs.'">Próxima &raquo;</a>';
+	} else {
+		echo ' <span class="butActionRefused">Próxima &raquo;</span>';
+	}
+
+	echo '</div>';
 }
-print '</div>';
 
 print '</form>';
+
+print '</div>'; // max-width
 
 llxFooter();
 $db->close();
