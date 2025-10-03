@@ -31,6 +31,7 @@
  */
 
 require_once DOL_DOCUMENT_ROOT . '/core/triggers/dolibarrtriggers.class.php';
+dol_include_once('/safra/class/safra_product_link.class.php');
 
 
 /**
@@ -88,8 +89,8 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 	 * @param Conf 			$conf 		Object conf
 	 * @return int              		Return integer <0 if KO, 0 if no triggered ran, >0 if OK
 	 */
-	public function runTrigger($action, $object, User $user, Translate $langs, Conf $conf)
-	{
+        public function runTrigger($action, $object, User $user, Translate $langs, Conf $conf)
+        {
 
 		global $conf;
 		if (!isModEnabled('safra')) {
@@ -109,10 +110,10 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 			);
 
 			return call_user_func($callback, $action, $object, $user, $langs, $conf);
-		}
+                }
 
-		// Or you can execute some code here
-		switch ($action) {
+                // Or you can execute some code here
+                switch ($action) {
 			// Users
 			//case 'USER_CREATE':
 			//case 'USER_MODIFY':
@@ -488,6 +489,71 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 		}
 
                 return 0;
+        }
+
+        /**
+         * Handle product creation trigger.
+         */
+        public function productCreate($action, $object, User $user, Translate $langs, Conf $conf)
+        {
+                return $this->handleProductLinks($object, $user);
+        }
+
+        /**
+         * Handle product modification trigger.
+         */
+        public function productModify($action, $object, User $user, Translate $langs, Conf $conf)
+        {
+                return $this->handleProductLinks($object, $user);
+        }
+
+        /**
+         * Persist Safra product links after creation or modification.
+         *
+         * @param CommonObject $object Product object
+         * @param User         $user   Current user
+         *
+         * @return int
+         */
+        private function handleProductLinks($object, User $user)
+        {
+                if (empty($object->id) || !GETPOSTISSET('safra_product_links_submitted')) {
+                        return 0;
+                }
+
+                $formuladosAllowed = !empty($user->rights->safra->produtoformulado->write) || !empty($user->rights->safra->produtoformulado->read);
+                $tecnicosAllowed = !empty($user->rights->safra->produtostecnicos->write) || !empty($user->rights->safra->produtostecnicos->read);
+
+                if (!$formuladosAllowed && !$tecnicosAllowed) {
+                        return 0;
+                }
+
+                $formuladosEnabled = GETPOST('safra_link_formulados_flag', 'int');
+                $tecnicosEnabled = GETPOST('safra_link_tecnicos_flag', 'int');
+
+                $formuladosIds = $formuladosEnabled ? GETPOST('safra_fk_formulados', 'array:int') : array();
+                $tecnicosIds = $tecnicosEnabled ? GETPOST('safra_fk_tecnicos', 'array:int') : array();
+
+                if (!is_array($formuladosIds)) {
+                        $formuladosIds = array();
+                }
+                if (!is_array($tecnicosIds)) {
+                        $tecnicosIds = array();
+                }
+
+                if ($formuladosAllowed) {
+                        if (!SafraProductLink::replaceProductLinks($this->db, $object->id, 'formulados', $formuladosIds)) {
+                                return -1;
+                        }
+                }
+
+                if ($tecnicosAllowed) {
+                        if (!SafraProductLink::replaceProductLinks($this->db, $object->id, 'tecnicos', $tecnicosIds)) {
+                                return -1;
+                        }
+                }
+
+                return 1;
         }
 
         /**

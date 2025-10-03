@@ -24,6 +24,7 @@
  */
 
 require_once DOL_DOCUMENT_ROOT . '/core/class/commonhookactions.class.php';
+dol_include_once('/safra/class/safra_product_link.class.php');
 
 /**
  * Class ActionsSafra
@@ -323,48 +324,66 @@ class ActionsSafra extends CommonHookActions
 	 *                                          =0 if OK but we want to process standard actions too,
 	 *                                          >0 if OK and we want to replace standard actions.
 	 */
-	public function completeTabsHead(&$parameters, &$object, &$action, $hookmanager)
-	{
-		global $langs, $conf, $user;
+        public function completeTabsHead(&$parameters, &$object, &$action, $hookmanager)
+        {
+                global $langs, $user;
 
-		if (!isset($parameters['object']->element)) {
-			return 0;
-		}
-		if ($parameters['mode'] == 'remove') {
-			// used to make some tabs removed
-			return 0;
-		} elseif ($parameters['mode'] == 'add') {
-			$langs->load('safra@safra');
-			// used when we want to add some tabs
-			$counter = count($parameters['head']);
-			$element = $parameters['object']->element;
-			$id = $parameters['object']->id;
-			// verifier le type d'onglet comme member_stats où ça ne doit pas apparaitre
-			// if (in_array($element, ['societe', 'member', 'contrat', 'fichinter', 'project', 'propal', 'commande', 'facture', 'order_supplier', 'invoice_supplier'])) {
-			if (in_array($element, ['context1', 'context2'])) {
-				$datacount = 0;
+                if (empty($parameters['object']->element)) {
+                        return 0;
+                }
 
-				$parameters['head'][$counter][0] = dol_buildpath('/safra/safra_tab.php', 1) . '?id=' . $id . '&amp;module=' . $element;
-				$parameters['head'][$counter][1] = $langs->trans('SafraTab');
-				if ($datacount > 0) {
-					$parameters['head'][$counter][1] .= '<span class="badge marginleftonlyshort">' . $datacount . '</span>';
-				}
-				$parameters['head'][$counter][2] = 'safraemails';
-				$counter++;
-			}
-			if ($counter > 0 && (int) DOL_VERSION < 14) {
-				$this->results = $parameters['head'];
-				// return 1 to replace standard code
-				return 1;
-			} else {
-				// en V14 et + $parameters['head'] est modifiable par référence
-				return 0;
-			}
-		} else {
-			// Bad value for $parameters['mode']
-			return -1;
-		}
-	}
+                if ($parameters['mode'] === 'remove') {
+                        return 0;
+                }
+
+                if ($parameters['mode'] !== 'add') {
+                        return -1;
+                }
+
+                if ($parameters['object']->element !== 'product' || !isModEnabled('safra')) {
+                        return 0;
+                }
+
+                $langs->load('safra@safra');
+
+                $counter = count($parameters['head']);
+                $added = false;
+                $id = (int) $parameters['object']->id;
+                if ($id <= 0) {
+                        return 0;
+                }
+
+                if (!empty($user->rights->safra->produtoformulado->read)) {
+                        $count = count(SafraProductLink::fetchLinkedIds($this->db, $id, 'formulados'));
+                        $parameters['head'][$counter][0] = dol_buildpath('/safra/product_safra_links.php', 1) . '?id=' . $id . '&type=formulados';
+                        $parameters['head'][$counter][1] = $langs->trans('SafraProductTabFormulados');
+                        if ($count > 0) {
+                                $parameters['head'][$counter][1] .= '<span class="badge marginleftonlyshort">' . $count . '</span>';
+                        }
+                        $parameters['head'][$counter][2] = 'safra_formulados';
+                        $counter++;
+                        $added = true;
+                }
+
+                if (!empty($user->rights->safra->produtostecnicos->read)) {
+                        $count = count(SafraProductLink::fetchLinkedIds($this->db, $id, 'tecnicos'));
+                        $parameters['head'][$counter][0] = dol_buildpath('/safra/product_safra_links.php', 1) . '?id=' . $id . '&type=tecnicos';
+                        $parameters['head'][$counter][1] = $langs->trans('SafraProductTabTecnicos');
+                        if ($count > 0) {
+                                $parameters['head'][$counter][1] .= '<span class="badge marginleftonlyshort">' . $count . '</span>';
+                        }
+                        $parameters['head'][$counter][2] = 'safra_tecnicos';
+                        $counter++;
+                        $added = true;
+                }
+
+                if ($added && (int) DOL_VERSION < 14) {
+                        $this->results = $parameters['head'];
+                        return 1;
+                }
+
+                return 0;
+        }
 
 	/* Add here any other hooked methods... */
 
@@ -412,7 +431,95 @@ class ActionsSafra extends CommonHookActions
 
         public function formObjectOptions($parameters, &$object, &$action, $hookmanager)
         {
-                global $langs;
+                global $langs, $user;
+
+                if (!empty($parameters['currentcontext']) && $parameters['currentcontext'] === 'productcard') {
+                        if (!isModEnabled('safra') || !in_array($action, array('create', 'edit'), true)) {
+                                return 0;
+                        }
+
+                        $canFormulados = !empty($user->rights->safra->produtoformulado->read);
+                        $canTecnicos = !empty($user->rights->safra->produtostecnicos->read);
+
+                        if (!$canFormulados && !$canTecnicos) {
+                                return 0;
+                        }
+
+                        $langs->load('safra@safra');
+
+                        print '<input type="hidden" name="safra_product_links_submitted" value="1">';
+
+                        $formuladosSelected = array();
+                        $tecnicosSelected = array();
+
+                        if (!empty($object->id)) {
+                                $formuladosSelected = SafraProductLink::fetchLinkedIds($this->db, $object->id, 'formulados');
+                                $tecnicosSelected = SafraProductLink::fetchLinkedIds($this->db, $object->id, 'tecnicos');
+                        } else {
+                                if (GETPOSTISSET('safra_fk_formulados')) {
+                                        $formuladosSelected = GETPOST('safra_fk_formulados', 'array:int');
+                                }
+                                if (GETPOSTISSET('safra_fk_tecnicos')) {
+                                        $tecnicosSelected = GETPOST('safra_fk_tecnicos', 'array:int');
+                                }
+                        }
+
+                        if (!is_array($formuladosSelected)) {
+                                $formuladosSelected = array();
+                        }
+                        if (!is_array($tecnicosSelected)) {
+                                $tecnicosSelected = array();
+                        }
+
+                        $formuladosToggle = GETPOSTISSET('safra_link_formulados_flag') ? GETPOST('safra_link_formulados_flag', 'int') : (!empty($formuladosSelected) ? 1 : 0);
+                        $tecnicosToggle = GETPOSTISSET('safra_link_tecnicos_flag') ? GETPOST('safra_link_tecnicos_flag', 'int') : (!empty($tecnicosSelected) ? 1 : 0);
+
+                        if ($canFormulados) {
+                                $options = SafraProductLink::fetchOptions($this->db, 'formulados');
+                                print '<tr class="safra-product-link-row">';
+                                print '<td class="titlefield">';
+                                print '<label><input type="checkbox" id="safra_link_formulados_toggle" name="safra_link_formulados_flag" value="1"'.($formuladosToggle ? ' checked' : '').'> ';
+                                print $langs->trans('SafraProductLinkFormulados');
+                                print '</label>';
+                                print '</td>';
+                                print '<td>';
+                                print '<div id="safra_link_formulados_container" class="safra-link-container"'.($formuladosToggle ? '' : ' style="display:none;"').'>';
+                                print '<select name="safra_fk_formulados[]" class="flat minwidth300 select2" multiple data-placeholder="'.dol_escape_htmltag($langs->trans('SafraProductLinkPlaceholder')).'">';
+                                foreach ($options as $id => $label) {
+                                        $selected = in_array((int) $id, $formuladosSelected, true) ? ' selected' : '';
+                                        print '<option value="'.((int) $id).'"'.$selected.'>'.dol_escape_htmltag($label).'</option>';
+                                }
+                                print '</select>';
+                                print '<div class="opacitymedium small">'.$langs->trans('SafraProductLinkFormuladosHelp').'</div>';
+                                print '</div>';
+                                print '</td>';
+                                print '</tr>';
+                        }
+
+                        if ($canTecnicos) {
+                                $options = SafraProductLink::fetchOptions($this->db, 'tecnicos');
+                                print '<tr class="safra-product-link-row">';
+                                print '<td class="titlefield">';
+                                print '<label><input type="checkbox" id="safra_link_tecnicos_toggle" name="safra_link_tecnicos_flag" value="1"'.($tecnicosToggle ? ' checked' : '').'> ';
+                                print $langs->trans('SafraProductLinkTecnicos');
+                                print '</label>';
+                                print '</td>';
+                                print '<td>';
+                                print '<div id="safra_link_tecnicos_container" class="safra-link-container"'.($tecnicosToggle ? '' : ' style="display:none;"').'>';
+                                print '<select name="safra_fk_tecnicos[]" class="flat minwidth300 select2" multiple data-placeholder="'.dol_escape_htmltag($langs->trans('SafraProductLinkPlaceholder')).'">';
+                                foreach ($options as $id => $label) {
+                                        $selected = in_array((int) $id, $tecnicosSelected, true) ? ' selected' : '';
+                                        print '<option value="'.((int) $id).'"'.$selected.'>'.dol_escape_htmltag($label).'</option>';
+                                }
+                                print '</select>';
+                                print '<div class="opacitymedium small">'.$langs->trans('SafraProductLinkTecnicosHelp').'</div>';
+                                print '</div>';
+                                print '</td>';
+                                print '</tr>';
+                        }
+
+                        return 0;
+                }
 
                 if (
                         !empty($parameters['currentcontext'])
