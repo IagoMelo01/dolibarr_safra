@@ -96,5 +96,41 @@ if (empty($dolibarr_nocache)) {
 ?>
 
 /* Javascript library of module Safra */
+(function ($) {
+    function toggleContainer($checkbox, $container) {
+        if ($checkbox.is(':checked')) {
+            $container.show();
+        } else {
+            $container.hide();
+        }
+    }
 
-<!-- <script src="./js/script.js"></script> -->
+    $(document).ready(function () {
+        var $formuladosToggle = $('#safra_link_formulados_toggle');
+        var $formuladosContainer = $('#safra_link_formulados_container');
+        if ($formuladosToggle.length && $formuladosContainer.length) {
+            toggleContainer($formuladosToggle, $formuladosContainer);
+            $formuladosToggle.on('change', function () {
+                toggleContainer($formuladosToggle, $formuladosContainer);
+            });
+        }
+
+        var $tecnicosToggle = $('#safra_link_tecnicos_toggle');
+        var $tecnicosContainer = $('#safra_link_tecnicos_container');
+        if ($tecnicosToggle.length && $tecnicosContainer.length) {
+            toggleContainer($tecnicosToggle, $tecnicosContainer);
+            $tecnicosToggle.on('change', function () {
+                toggleContainer($tecnicosToggle, $tecnicosContainer);
+            });
+        }
+
+        var $tabToggle = $('#safra_link_toggle');
+        var $tabContainer = $('#safra_link_selector');
+        if ($tabToggle.length && $tabContainer.length) {
+            toggleContainer($tabToggle, $tabContainer);
+            $tabToggle.on('change', function () {
+                toggleContainer($tabToggle, $tabContainer);
+            });
+        }
+    });
+})(jQuery);

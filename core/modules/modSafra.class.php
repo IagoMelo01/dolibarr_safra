@@ -117,6 +117,7 @@ class modSafra extends DolibarrModules
                         'hooks' => array(
                                 'data' => array(
                                         'projectcard',
+                                        'productcard',
                                 ),
                                 //   'entity' => '0',
                         ),
