@@ -58,7 +58,7 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
-require_once DOL_DOCUMENT_ROOT.'/product/lib/product.lib.php';
+dol_include_once('/product/lib/product.lib.php');
 
 dol_include_once('/safra/class/safra_product_link.class.php');
 

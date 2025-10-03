@@ -90,7 +90,7 @@ class SafraProductLink
         $links = array();
         $resql = $db->query($sql);
         if ($resql) {
-            while ($obj = $db->fetchObject($resql)) {
+            while ($obj = $db->fetch_object($resql)) {
                 $links[] = $obj;
             }
             $db->free($resql);
@@ -246,7 +246,7 @@ class SafraProductLink
         $options = array();
         $resql = $db->query($sql);
         if ($resql) {
-            while ($obj = $db->fetchObject($resql)) {
+            while ($obj = $db->fetch_object($resql)) {
                 $label = $obj->ref;
                 if (!empty($obj->label)) {
                     $label .= ' - '.$obj->label;
@@ -286,7 +286,7 @@ class SafraProductLink
         $sql = 'SELECT ref, label FROM '.$table.' WHERE rowid = '.$id;
         $resql = $db->query($sql);
         if ($resql) {
-            $obj = $db->fetchObject($resql);
+            $obj = $db->fetch_object($resql);
             $db->free($resql);
             if ($obj) {
                 $label = $obj->ref;
