@@ -289,7 +289,7 @@ class ActionsSafra extends CommonHookActions
 
                         if (!empty($productRows)) {
                                 $this->resprints .= implode('', $productRows);
-                                $this->resprints .= '<script>jQuery(function($){function safraToggleLinkRow(cb,container){var checked=$(cb).is(\':checked\');$(container).toggle(checked);}safraToggleLinkRow("#safra_link_enable_formulado","#safra_link_formulados_container");safraToggleLinkRow("#safra_link_enable_tecnico","#safra_link_produtostecnicos_container");$("#safra_link_enable_formulado").on("change",function(){safraToggleLinkRow(this,"#safra_link_formulados_container");});$("#safra_link_enable_tecnico").on("change",function(){safraToggleLinkRow(this,"#safra_link_produtostecnicos_container");});});</script>';
+                                $this->resprints .= '<script>jQuery(function($){function safraToggleLinkRow(cb,container){var checked=$(cb).is(\':checked\');$(container).toggle(checked);}safraToggleLinkRow("#safra_link_enable_formulado","#safra_link_formulados_container");safraToggleLinkRow("#safra_link_enable_tecnico","#safra_link_produtostecnicos_container");$("#safra_link_enable_formulado").on("change",function(){safraToggleLinkRow(this,"#safra_link_formulados_container");});$("#safra_link_enable_tecnico").on("change",function(){safraToggleLinkRow(this,"#safra_link_produtostecnicos_container");});if($.fn.select2){$(".safra-select2").select2({width:"resolve"});}});</script>';
                         }
                 }
 
@@ -333,8 +333,14 @@ class ActionsSafra extends CommonHookActions
 
         private function renderProductLinkRow($checkboxName, $selectName, $label, $help, array $options, array $selection, $enabled)
         {
+                global $form;
+
+                if (!is_object($form)) {
+                        require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
+                        $form = new Form($this->db);
+                }
+
                 $checkboxId = dol_string_nospecial(trim($checkboxName));
-                $selectId = dol_string_nospecial(trim($selectName)) . '_select';
                 $containerId = $selectName . '_container';
 
                 $out = "\t\t<tr class=\"oddeven\">";
@@ -344,12 +350,18 @@ class ActionsSafra extends CommonHookActions
                 $out .= '</td>';
                 $out .= '<td>';
                 $out .= '<div id="' . dol_escape_htmltag($containerId) . '"' . ($enabled ? '' : ' style="display:none"') . '>';
-                $out .= '<select id="' . dol_escape_htmltag($selectId) . '" name="' . dol_escape_htmltag($selectName) . '[]" class="flat minwidth300" multiple>';
-                foreach ($options as $id => $optionLabel) {
-                        $selected = in_array((int) $id, $selection, true) ? ' selected' : '';
-                        $out .= '<option value="' . (int) $id . '"' . $selected . '>' . dol_escape_htmltag($optionLabel) . '</option>';
-                }
-                $out .= '</select>';
+                $out .= $form->multiselectarray(
+                        $selectName,
+                        $options,
+                        $selection,
+                        0,
+                        0,
+                        '',
+                        '',
+                        0,
+                        0,
+                        'minwidth300 select2 safra-select2'
+                );
                 $out .= '<div class="opacitymedium small">' . dol_escape_htmltag($help) . '</div>';
                 $out .= '</div>';
                 $out .= '</td>';
