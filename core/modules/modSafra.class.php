@@ -117,6 +117,8 @@ class modSafra extends DolibarrModules
                         'hooks' => array(
                                 'data' => array(
                                         'projectcard',
+                                        'productcard',
+                                        'productdao',
                                 ),
                                 //   'entity' => '0',
                         ),
@@ -174,7 +176,13 @@ class modSafra extends DolibarrModules
 		}
 
 		// Array to add new pages in new tabs
-		$this->tabs = array();
+                $this->tabs = array();
+                $this->tabs[] = array(
+                        'data' => 'product:+safra_product_formulado:SafraProductFormuladoTab:safra@safra:$user->hasRight(\'safra\', \'produtoformulado\', \'read\'):/safra/product_safra_links.php?id=__ID__&type=formulado'
+                );
+                $this->tabs[] = array(
+                        'data' => 'product:+safra_product_tecnico:SafraProductTecnicoTab:safra@safra:$user->hasRight(\'safra\', \'produtostecnicos\', \'read\'):/safra/product_safra_links.php?id=__ID__&type=tecnico'
+                );
 		// Example:
 		// $this->tabs[] = array('data'=>'objecttype:+tabname1:Title1:mylangfile@safra:$user->hasRight('safra', 'read'):/safra/mynewtab1.php?id=__ID__');  					// To add a new tab identified by code tabname1
 		// $this->tabs[] = array('data'=>'objecttype:+tabname2:SUBSTITUTION_Title2:mylangfile@safra:$user->hasRight('othermodule', 'read'):/safra/mynewtab2.php?id=__ID__',  	// To add another new tab identified by code tabname2. Label will be result of calling all substitution functions on 'Title2' key.

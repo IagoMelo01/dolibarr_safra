@@ -141,10 +141,11 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 			//case 'CONTACT_DELETE':
 			//case 'CONTACT_ENABLEDISABLE':
 
-			// Products
-			//case 'PRODUCT_CREATE':
-			//case 'PRODUCT_MODIFY':
-			//case 'PRODUCT_DELETE':
+                        // Products
+                        case 'PRODUCT_CREATE':
+                        case 'PRODUCT_MODIFY':
+                                return $this->persistSafraProductLinks($object, $user, $langs);
+                        //case 'PRODUCT_DELETE':
 			//case 'PRODUCT_PRICE_MODIFY':
 			//case 'PRODUCT_SET_MULTILANGS':
 			//case 'PRODUCT_DEL_MULTILANGS':
@@ -488,6 +489,62 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 		}
 
                 return 0;
+        }
+
+        /**
+         * Persist Safra product links submitted from the Dolibarr product form.
+         *
+         * @param Product   $object
+         * @param User      $user
+         * @param Translate $langs
+         *
+         * @return int
+         */
+        private function persistSafraProductLinks($object, User $user, Translate $langs)
+        {
+                if (empty($object->id) || empty($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+                        return 0;
+                }
+
+                dol_include_once('/safra/class/safra_product_link.class.php');
+
+                $selections = SafraProductLink::getPostedSelections();
+                if (empty($selections)) {
+                        return 0;
+                }
+
+                $langs->loadLangs(array('safra@safra'));
+
+                if (!SafraProductLink::ensureDatabaseSchema($this->db)) {
+                        setEventMessages($langs->trans('SafraProductLinkSchemaError'), null, 'errors');
+
+                        return -1;
+                }
+
+                $handled = false;
+                $hasError = false;
+
+                if (isset($selections[SafraProductLink::TYPE_FORMULADO]) && !empty($user->rights->safra->produtoformulado->write)) {
+                        $handled = true;
+                        if (!SafraProductLink::replaceLinks($this->db, $object->id, SafraProductLink::TYPE_FORMULADO, $selections[SafraProductLink::TYPE_FORMULADO]['ids'])) {
+                                setEventMessages($langs->trans('SafraProductLinkSaveError'), null, 'errors');
+                                $hasError = true;
+                        }
+                }
+
+                if (isset($selections[SafraProductLink::TYPE_TECNICO]) && !empty($user->rights->safra->produtostecnicos->write)) {
+                        $handled = true;
+                        if (!SafraProductLink::replaceLinks($this->db, $object->id, SafraProductLink::TYPE_TECNICO, $selections[SafraProductLink::TYPE_TECNICO]['ids'])) {
+                                setEventMessages($langs->trans('SafraProductLinkSaveError'), null, 'errors');
+                                $hasError = true;
+                        }
+                }
+
+                if ($hasError) {
+                        return -1;
+                }
+
+                return $handled ? 1 : 0;
         }
 
         /**
