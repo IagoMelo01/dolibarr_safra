@@ -14,6 +14,14 @@ class SafraProductLink
     public const TYPE_TECNICO = 'tecnico';
 
     /**
+     * Cached copy of the last posted selections so different hooks can reuse the
+     * sanitized values during the same request lifecycle.
+     *
+     * @var array|null
+     */
+    private static $postedSelections = null;
+
+    /**
      * Ensure linking tables exist.
      *
      * @param DoliDB $db Database handler
@@ -53,6 +61,87 @@ class SafraProductLink
         }
 
         return true;
+    }
+
+    /**
+     * Capture product link selections from the current HTTP request.
+     *
+     * This method normalizes and caches the posted values so they can be reused
+     * later (for example by the product trigger executed after the main object
+     * save).
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function capturePostedSelections()
+    {
+        if (self::$postedSelections !== null) {
+            return self::$postedSelections;
+        }
+
+        self::$postedSelections = array();
+
+        if (empty($_SERVER['REQUEST_METHOD']) || strtoupper($_SERVER['REQUEST_METHOD']) !== 'POST') {
+            return self::$postedSelections;
+        }
+
+        $map = array(
+            self::TYPE_FORMULADO => array(
+                'checkbox' => 'safra_link_enable_formulado',
+                'select' => 'safra_link_formulados',
+            ),
+            self::TYPE_TECNICO => array(
+                'checkbox' => 'safra_link_enable_tecnico',
+                'select' => 'safra_link_produtostecnicos',
+            ),
+        );
+
+        foreach ($map as $type => $names) {
+            $present = GETPOSTISSET($names['checkbox'].'_present') || GETPOSTISSET($names['select']);
+            if (!$present) {
+                continue;
+            }
+
+            $enabled = GETPOSTISSET($names['checkbox']) ? (bool) GETPOSTINT($names['checkbox']) : false;
+
+            $selection = GETPOST($names['select'], 'array:int');
+            if (!is_array($selection)) {
+                $selection = array();
+            }
+
+            $cleanIds = array();
+            foreach ($selection as $id) {
+                $id = (int) $id;
+                if ($id > 0) {
+                    $cleanIds[$id] = $id;
+                }
+            }
+
+            if (!$enabled) {
+                $cleanIds = array();
+            }
+
+            self::$postedSelections[$type] = array(
+                'present' => true,
+                'enabled' => $enabled,
+                'ids' => array_values($cleanIds),
+            );
+        }
+
+        return self::$postedSelections;
+    }
+
+    /**
+     * Get posted selections, capturing them if needed.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function getPostedSelections()
+    {
+        if (self::$postedSelections === null) {
+            return self::capturePostedSelections();
+        }
+
+        return self::$postedSelections;
     }
 
     /**

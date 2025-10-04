@@ -111,66 +111,10 @@ class ActionsSafra extends CommonHookActions
                 }
 
                 if (in_array('productdao', $contexts, true)) {
-                        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                                return 0;
-                        }
+                        if (!empty($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                                dol_include_once('/safra/class/safra_product_link.class.php');
 
-                        $hasFormulado = GETPOSTISSET('safra_link_enable_formulado') || GETPOSTISSET('safra_link_enable_formulado_present');
-                        $hasTecnico = GETPOSTISSET('safra_link_enable_tecnico') || GETPOSTISSET('safra_link_enable_tecnico_present');
-                        $hasFormuladoSelection = GETPOSTISSET('safra_link_formulados');
-                        $hasTecnicoSelection = GETPOSTISSET('safra_link_produtostecnicos');
-
-                        if (!$hasFormulado && !$hasTecnico && !$hasFormuladoSelection && !$hasTecnicoSelection) {
-                                return 0;
-                        }
-
-                        if (empty($object) || !is_object($object) || (int) $object->id <= 0) {
-                                return 0;
-                        }
-
-                        $langs->loadLangs(array('safra@safra'));
-
-                        dol_include_once('/safra/class/safra_product_link.class.php');
-
-                        if (!SafraProductLink::ensureDatabaseSchema($this->db)) {
-                                setEventMessages($langs->trans('SafraProductLinkSchemaError'), null, 'errors');
-
-                                return 0;
-                        }
-
-                        $formuladoSelection = GETPOST('safra_link_formulados', 'array:int');
-                        if (!is_array($formuladoSelection)) {
-                                $formuladoSelection = array();
-                        }
-
-                        $tecnicoSelection = GETPOST('safra_link_produtostecnicos', 'array:int');
-                        if (!is_array($tecnicoSelection)) {
-                                $tecnicoSelection = array();
-                        }
-
-                        $formuladoRowPresent = $hasFormulado;
-                        $tecnicoRowPresent = $hasTecnico;
-
-                        $formuladoEnabled = $formuladoRowPresent ? (GETPOSTISSET('safra_link_enable_formulado') ? (bool) GETPOSTINT('safra_link_enable_formulado') : false) : null;
-                        $tecnicoEnabled = $tecnicoRowPresent ? (GETPOSTISSET('safra_link_enable_tecnico') ? (bool) GETPOSTINT('safra_link_enable_tecnico') : false) : null;
-
-                        if ($formuladoEnabled === false) {
-                                $formuladoSelection = array();
-                        }
-                        if ($tecnicoEnabled === false) {
-                                $tecnicoSelection = array();
-                        }
-
-                        if ($formuladoRowPresent && !empty($user->rights->safra->produtoformulado->write)) {
-                                if (!SafraProductLink::replaceLinks($this->db, $object->id, SafraProductLink::TYPE_FORMULADO, $formuladoSelection)) {
-                                        setEventMessages($langs->trans('SafraProductLinkSaveError'), null, 'errors');
-                                }
-                        }
-
-                        if ($tecnicoRowPresent && !empty($user->rights->safra->produtostecnicos->write)) {
-                                if (!SafraProductLink::replaceLinks($this->db, $object->id, SafraProductLink::TYPE_TECNICO, $tecnicoSelection)) {
-                                        setEventMessages($langs->trans('SafraProductLinkSaveError'), null, 'errors');
-                                }
+                                SafraProductLink::capturePostedSelections();
                         }
 
                         return 0;
@@ -200,15 +144,24 @@ class ActionsSafra extends CommonHookActions
                         if (!SafraProductLink::ensureDatabaseSchema($db)) {
                                 $productRows[] = "\t\t<tr><td colspan=\"2\" class=\"error\">" . dol_escape_htmltag($langs->trans('SafraProductLinkSchemaError')) . '</td></tr>';
                         } else {
-                                if (!empty($user->rights->safra->produtoformulado->read)) {
-                                        $formuladoSelection = GETPOST('safra_link_formulados', 'array:int');
-                                        if (!is_array($formuladoSelection)) {
-                                                $formuladoSelection = array();
-                                        }
+                                $postedSelections = SafraProductLink::getPostedSelections();
 
+                                if (!empty($user->rights->safra->produtoformulado->read)) {
+                                        $formuladoSelection = array();
                                         $formuladoEnabled = null;
-                                        if (GETPOSTISSET('safra_link_enable_formulado_present')) {
-                                                $formuladoEnabled = GETPOSTISSET('safra_link_enable_formulado') ? 1 : 0;
+
+                                        if (isset($postedSelections[SafraProductLink::TYPE_FORMULADO])) {
+                                                $formuladoSelection = $postedSelections[SafraProductLink::TYPE_FORMULADO]['ids'];
+                                                $formuladoEnabled = $postedSelections[SafraProductLink::TYPE_FORMULADO]['enabled'] ? 1 : 0;
+                                        } else {
+                                                $formuladoSelection = GETPOST('safra_link_formulados', 'array:int');
+                                                if (!is_array($formuladoSelection)) {
+                                                        $formuladoSelection = array();
+                                                }
+
+                                                if (GETPOSTISSET('safra_link_enable_formulado_present')) {
+                                                        $formuladoEnabled = GETPOSTISSET('safra_link_enable_formulado') ? 1 : 0;
+                                                }
                                         }
 
                                         if ((int) $object->id > 0 && $formuladoEnabled === null && empty($formuladoSelection)) {
@@ -244,14 +197,21 @@ class ActionsSafra extends CommonHookActions
                                 }
 
                                 if (!empty($user->rights->safra->produtostecnicos->read)) {
-                                        $tecnicoSelection = GETPOST('safra_link_produtostecnicos', 'array:int');
-                                        if (!is_array($tecnicoSelection)) {
-                                                $tecnicoSelection = array();
-                                        }
-
+                                        $tecnicoSelection = array();
                                         $tecnicoEnabled = null;
-                                        if (GETPOSTISSET('safra_link_enable_tecnico_present')) {
-                                                $tecnicoEnabled = GETPOSTISSET('safra_link_enable_tecnico') ? 1 : 0;
+
+                                        if (isset($postedSelections[SafraProductLink::TYPE_TECNICO])) {
+                                                $tecnicoSelection = $postedSelections[SafraProductLink::TYPE_TECNICO]['ids'];
+                                                $tecnicoEnabled = $postedSelections[SafraProductLink::TYPE_TECNICO]['enabled'] ? 1 : 0;
+                                        } else {
+                                                $tecnicoSelection = GETPOST('safra_link_produtostecnicos', 'array:int');
+                                                if (!is_array($tecnicoSelection)) {
+                                                        $tecnicoSelection = array();
+                                                }
+
+                                                if (GETPOSTISSET('safra_link_enable_tecnico_present')) {
+                                                        $tecnicoEnabled = GETPOSTISSET('safra_link_enable_tecnico') ? 1 : 0;
+                                                }
                                         }
 
                                         if ((int) $object->id > 0 && $tecnicoEnabled === null && empty($tecnicoSelection)) {
