@@ -106,9 +106,10 @@ class modSafra extends DolibarrModules
 			// Set this to 1 if module has its own theme directory (theme)
 			'theme' => 0,
 			// Set this to relative path of css file if module has its own css file
-			'css' => array(
-				'/safra/css/safra.css.php',
-			),
+                        'css' => array(
+                                '/safra/css/safra.css.php',
+                                '/safra/css/satellite_view.css.php',
+                        ),
 			// Set this to relative path of js file if module must load a js on all pages
 			'js' => array(
 				'/safra/js/safra.js.php',
