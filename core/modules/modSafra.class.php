@@ -1589,6 +1589,7 @@ class modSafra extends DolibarrModules
                        array('Talhoes', 'talhao', '/safra/talhao_list.php', '/safra/talhao_card.php?action=create', '$user->hasRight("safra", "talhao", "read")', '$user->hasRight("safra", "talhao", "write")'),
                        array('Culturas', 'cultura', '/safra/cultura_list.php', '/safra/cultura_card.php?action=create', '$user->hasRight("safra", "cultura", "read")', '$user->hasRight("safra", "cultura", "write")'),
                        array('Cultivares', 'cultivar', '/safra/cultivar_list.php', '/safra/cultivar_card.php?action=create', '$user->hasRight("safra", "cultivar", "read")', '$user->hasRight("safra", "cultivar", "write")'),
+                       array('Pragas', 'pragas', '/safra/pragas_list.php', '/safra/pragas_card.php?action=create', '$user->hasRight("safra", "pragas", "read")', '$user->hasRight("safra", "pragas", "write")'),
                        array('ProdutosTecnicosShort', 'produtostecnicos', '/safra/produtostecnicos_list.php', '/safra/produtostecnicos_card.php?action=create', '$user->hasRight("safra", "produtostecnicos", "read")', '$user->hasRight("safra", "produtostecnicos", "write")'),
                        array('ProdutosFormulados', 'produto_formulado', '/safra/produto_formulado/list.php', '/safra/produto_formulado/card.php?action=create', '$user->hasRight("safra", "produtoformulado", "read")', '$user->hasRight("safra", "produtoformulado", "write")'),
                        array('Municipios', 'municipio', '/safra/municipio_list.php', '/safra/municipio_card.php?action=create', '$user->hasRight("safra", "municipio", "read")', '$user->hasRight("safra", "municipio", "write")'),
@@ -1625,6 +1626,23 @@ class modSafra extends DolibarrModules
                                'target' => '',
                                'user' => 2,
                        );
+
+                       if ($code === 'pragas') {
+                               $this->menu[$r++] = array(
+                                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_pragas_list',
+                                       'type' => 'left',
+                                       'titre' => 'SafraMenuPragaProductSearch',
+                                       'mainmenu' => 'safra',
+                                       'leftmenu' => 'safra_pragas_produtos',
+                                       'url' => '/safra/pragas_produtos.php',
+                                       'langs' => 'safra@safra',
+                                       'position' => 1000 + $r,
+                                       'enabled' => 'isModEnabled("safra")',
+                                       'perms' => '$user->hasRight("safra", "pragas", "read") && $user->hasRight("safra", "produtoformulado", "read") && $user->hasRight("produit", "lire")',
+                                       'target' => '',
+                                       'user' => 2,
+                               );
+                       }
                }
 
                // Planejamento
