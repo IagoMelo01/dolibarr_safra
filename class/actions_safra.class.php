@@ -318,7 +318,7 @@ class ActionsSafra extends CommonHookActions
                         0,
                         '',
                         '',
-                        0,
+                        400,
                         0,
                         'minwidth300 select2 safra-select2'
                 );
