@@ -155,6 +155,7 @@ $list_talhao = $obj_talhao->fetchAll();
 $json_data = [];
 $area_array = [];
 $name_array = [];
+$id_array = [];
 foreach ($list_talhao as $key => $talhao) {
     if ($talhao->label) {
         $name_array[] = $talhao->label;
@@ -163,6 +164,7 @@ foreach ($list_talhao as $key => $talhao) {
     }
     $json_data[] = $talhao->geo_json;
     $area_array[] = $talhao->area;
+    $id_array[] = (int) $talhao->id;
     // print $talhao->getKanbanView();
 }
 
@@ -269,6 +271,16 @@ if ($consulta != '') {
 
 print '</div>';
 
+?>
+<script>
+    const talhao_array = <?php echo json_encode($name_array, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    const talhao_ids = <?php echo json_encode($id_array); ?>;
+    const talhao_selected = <?php echo isset($_POST['talhao_list']) ? (int) $_POST['talhao_list'] : 'null'; ?>;
+    const json = <?php echo json_encode($json_data); ?>;
+    const area_array = <?php echo json_encode($area_array); ?>;
+    const arquivo_post = <?php echo json_encode($consulta ? $consulta : ''); ?>;
+</script>
+<?php
 // include do script
 include_once "./js/ndwi_view.js.php";
 
