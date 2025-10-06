@@ -477,6 +477,176 @@ class SafraProdutoFormulado extends CommonObject
     }
 
     /**
+     * Fetch formulated products linked to a pest (praga).
+     *
+     * Each result is enriched with the linked technical product (if any) and
+     * the Dolibarr standard product along with its current stock.
+     *
+     * @param DoliDB $db     Database handler
+     * @param int    $pragaId Identifier of the pest
+     *
+     * @return array<int,object>
+     */
+    public static function fetchForPraga(DoliDB $db, $pragaId)
+    {
+        $results = array();
+
+        $sql = 'SELECT DISTINCT pf.rowid, pf.ref, pf.label, pf.ingrediente_ativo, pf.modo_acao, pf.classe ';
+        $sql .= 'FROM '.MAIN_DB_PREFIX.'safra_produto_praga AS pp ';
+        $sql .= 'INNER JOIN '.MAIN_DB_PREFIX.'safra_produto_formulado AS pf ON pf.rowid = pp.fk_produto ';
+        $sql .= 'WHERE pp.fk_praga = '.((int) $pragaId).' ';
+        $sql .= 'ORDER BY pf.label';
+
+        dol_syslog(__METHOD__." sql=".$sql, LOG_DEBUG);
+
+        $resql = $db->query($sql);
+        if (!$resql) {
+            dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+            return $results;
+        }
+
+        while ($obj = $db->fetch_object($resql)) {
+            $technicalId = self::findLinkedIdBidirectional($db, 'safra_produto_formulado', 'safra_produtostecnicos', (int) $obj->rowid);
+            $technical = $technicalId ? self::fetchTechnicalProductInfo($db, $technicalId) : null;
+
+            $productId = self::findLinkedIdBidirectional($db, 'safra_produto_formulado', 'product', (int) $obj->rowid);
+            if (!$productId && $technicalId) {
+                $productId = self::findLinkedIdBidirectional($db, 'safra_produtostecnicos', 'product', $technicalId);
+            }
+            $product = $productId ? self::fetchDolibarrProductInfo($db, $productId) : null;
+
+            $results[] = (object) array(
+                'id' => (int) $obj->rowid,
+                'ref' => $obj->ref,
+                'label' => $obj->label,
+                'ingrediente_ativo' => $obj->ingrediente_ativo,
+                'modo_acao' => $obj->modo_acao,
+                'classe' => $obj->classe,
+                'technical' => $technical,
+                'product' => $product,
+            );
+        }
+
+        $db->free($resql);
+
+        return $results;
+    }
+
+    /**
+     * Find linked element id looking both directions between two element types.
+     *
+     * @param DoliDB $db         Database handler
+     * @param string $typeSource Source element type
+     * @param string $typeTarget Target element type
+     * @param int    $elementId  Identifier of the element we start from
+     *
+     * @return int|null
+     */
+    private static function findLinkedIdBidirectional(DoliDB $db, $typeSource, $typeTarget, $elementId)
+    {
+        $sql = 'SELECT ee.fk_target FROM '.MAIN_DB_PREFIX."element_element AS ee ";
+        $sql .= "WHERE ee.sourcetype='".$db->escape($typeSource)."' ";
+        $sql .= "AND ee.targettype='".$db->escape($typeTarget)."' ";
+        $sql .= 'AND ee.fk_source='.(int) $elementId.' ORDER BY ee.rowid ASC LIMIT 1';
+
+        $resql = $db->query($sql);
+        if ($resql) {
+            $obj = $db->fetch_object($resql);
+            $db->free($resql);
+            if ($obj && !empty($obj->fk_target)) {
+                return (int) $obj->fk_target;
+            }
+        } else {
+            dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+            return null;
+        }
+
+        $sql = 'SELECT ee.fk_source FROM '.MAIN_DB_PREFIX."element_element AS ee ";
+        $sql .= "WHERE ee.sourcetype='".$db->escape($typeTarget)."' ";
+        $sql .= "AND ee.targettype='".$db->escape($typeSource)."' ";
+        $sql .= 'AND ee.fk_target='.(int) $elementId.' ORDER BY ee.rowid ASC LIMIT 1';
+
+        $resql = $db->query($sql);
+        if ($resql) {
+            $obj = $db->fetch_object($resql);
+            $db->free($resql);
+            if ($obj && !empty($obj->fk_source)) {
+                return (int) $obj->fk_source;
+            }
+        } else {
+            dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch minimal information about a technical product.
+     *
+     * @param DoliDB $db  Database handler
+     * @param int    $id  Technical product identifier
+     *
+     * @return object|null
+     */
+    private static function fetchTechnicalProductInfo(DoliDB $db, $id)
+    {
+        $sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX.'safra_produtostecnicos WHERE rowid='.(int) $id.' LIMIT 1';
+        $resql = $db->query($sql);
+        if (!$resql) {
+            dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+            return null;
+        }
+
+        $obj = $db->fetch_object($resql);
+        $db->free($resql);
+
+        if (!$obj) {
+            return null;
+        }
+
+        return (object) array(
+            'id' => (int) $obj->rowid,
+            'ref' => $obj->ref,
+            'label' => $obj->label,
+        );
+    }
+
+    /**
+     * Fetch minimal information about a Dolibarr standard product.
+     *
+     * @param DoliDB $db Database handler
+     * @param int    $id Dolibarr product identifier
+     *
+     * @return object|null
+     */
+    private static function fetchDolibarrProductInfo(DoliDB $db, $id)
+    {
+        $entities = getEntity('product');
+        $sql = 'SELECT rowid, ref, label, stock FROM '.MAIN_DB_PREFIX.'product WHERE rowid='.(int) $id;
+        $sql .= ' AND entity IN ('.$entities.') LIMIT 1';
+
+        $resql = $db->query($sql);
+        if (!$resql) {
+            dol_syslog(__METHOD__.' '.$db->lasterror(), LOG_ERR);
+            return null;
+        }
+
+        $obj = $db->fetch_object($resql);
+        $db->free($resql);
+
+        if (!$obj) {
+            return null;
+        }
+
+        return (object) array(
+            'id' => (int) $obj->rowid,
+            'ref' => $obj->ref,
+            'label' => $obj->label,
+            'stock' => isset($obj->stock) ? (float) $obj->stock : null,
+        );
+    }
+
+    /**
      * Return status label.
      *
      * @param int $mode Output mode

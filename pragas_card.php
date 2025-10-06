@@ -86,6 +86,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/safra/class/pragas.class.php');
 dol_include_once('/safra/lib/safra_pragas.lib.php');
+dol_include_once('/safra/class/safra_produto_formulado.class.php');
 
 /**
  * @var Conf $conf
@@ -471,13 +472,89 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
 
-	print '</table>';
-	print '</div>';
-	print '</div>';
+        print '</table>';
+        print '</div>';
+        print '</div>';
 
-	print '<div class="clearboth"></div>';
+        $linkedProducts = SafraProdutoFormulado::fetchForPraga($db, $object->id);
+        print '<div class="fichecenter">';
+        print '<div class="underbanner clearboth"></div>';
+        print '<h3>'.$langs->trans('RecommendedProducts').'</h3>';
+        if (empty($linkedProducts)) {
+                print '<div class="opacitymedium">'.$langs->trans('NoProductsForPraga').'</div>';
+        } else {
+                print '<div class="div-table-responsive">';
+                print '<table class="noborder centpercent">';
+                print '<tr class="liste_titre">';
+                print '<th>'.$langs->trans('ProdutoFormuladoCardTitle').'</th>';
+                print '<th>'.$langs->trans('TechnicalProduct').'</th>';
+                print '<th>'.$langs->trans('Product').'</th>';
+                print '<th class="right">'.$langs->trans('Stock').'</th>';
+                print '</tr>';
+                foreach ($linkedProducts as $productFormulado) {
+                        $pfLabel = $productFormulado->ref;
+                        if (!empty($productFormulado->label)) {
+                                $pfLabel .= ' - '.$productFormulado->label;
+                        }
+                        $pfDisplay = dol_escape_htmltag($pfLabel);
+                        if (!empty($user->rights->safra->produtoformulado->read)) {
+                                $pfUrl = dol_buildpath('/safra/produto_formulado/card.php', 1).'?id='.(int) $productFormulado->id;
+                                $pfDisplay = '<a href="'.$pfUrl.'">'.$pfDisplay.'</a>';
+                        }
 
-	print dol_get_fiche_end();
+                        if (!empty($productFormulado->technical)) {
+                                $techLabel = $productFormulado->technical->ref;
+                                if (!empty($productFormulado->technical->label)) {
+                                        $techLabel .= ' - '.$productFormulado->technical->label;
+                                }
+                                $techDisplay = dol_escape_htmltag($techLabel);
+                                if (!empty($user->rights->safra->produtostecnicos->read)) {
+                                        $techUrl = dol_buildpath('/safra/produtostecnicos_card.php', 1).'?id='.(int) $productFormulado->technical->id;
+                                        $techDisplay = '<a href="'.$techUrl.'">'.$techDisplay.'</a>';
+                                }
+                        } else {
+                                $techDisplay = '<span class="opacitymedium">'.$langs->trans('NoLinkedTechnicalProduct').'</span>';
+                        }
+
+                        if (!empty($productFormulado->product)) {
+                                $productLabel = $productFormulado->product->ref;
+                                if (!empty($productFormulado->product->label)) {
+                                        $productLabel .= ' - '.$productFormulado->product->label;
+                                }
+                                $productDisplay = dol_escape_htmltag($productLabel);
+                                if (!empty($user->rights->produit->lire)) {
+                                        $productUrl = DOL_URL_ROOT.'/product/card.php?id='.(int) $productFormulado->product->id;
+                                        $productDisplay = '<a href="'.$productUrl.'">'.$productDisplay.'</a>';
+                                }
+
+                                if ($productFormulado->product->stock !== null) {
+                                        $stockValue = (float) $productFormulado->product->stock;
+                                        $stockFormatted = price($stockValue, 0, '', 1, 0, -1, $langs, 0, 0, 'quantity');
+                                        $badgeClass = $stockValue > 0 ? 'badge-status4' : 'badge-status1';
+                                        $stockDisplay = dolGetBadge($stockFormatted, $badgeClass);
+                                } else {
+                                        $stockDisplay = '<span class="opacitymedium">'.$langs->trans('StockUnavailable').'</span>';
+                                }
+                        } else {
+                                $productDisplay = '<span class="opacitymedium">'.$langs->trans('NoLinkedStandardProduct').'</span>';
+                                $stockDisplay = '<span class="opacitymedium">'.$langs->trans('StockUnavailable').'</span>';
+                        }
+
+                        print '<tr class="oddeven">';
+                        print '<td>'.$pfDisplay.'</td>';
+                        print '<td>'.$techDisplay.'</td>';
+                        print '<td>'.$productDisplay.'</td>';
+                        print '<td class="right">'.$stockDisplay.'</td>';
+                        print '</tr>';
+                }
+                print '</table>';
+                print '</div>';
+        }
+        print '</div>';
+
+        print '<div class="clearboth"></div>';
+
+        print dol_get_fiche_end();
 
 
 	/*
