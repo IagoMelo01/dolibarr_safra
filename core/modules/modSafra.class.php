@@ -655,22 +655,37 @@ class modSafra extends DolibarrModules
 			'user' => 2,
 			'object' => 'Pragas'
 		);
-		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
-			'type' => 'left',
-			'titre' => 'New Pragas',
-			'mainmenu' => 'safra',
-			'leftmenu' => 'safra_pragas_new',
-			'url' => '/safra/pragas_card.php?action=create',
-			'langs' => 'safra@safra',
-			'position' => 1000 + $r,
-			'enabled' => 'isModEnabled("safra")',
-			'perms' => '$user->hasRight("safra", "pragas", "write")',
-			'target' => '',
-			'user' => 2,
-			'object' => 'Pragas'
-		);
-		/* END MODULEBUILDER LEFTMENU PRAGAS */
+                $this->menu[$r++] = array(
+                        'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
+                        'type' => 'left',
+                        'titre' => 'New Pragas',
+                        'mainmenu' => 'safra',
+                        'leftmenu' => 'safra_pragas_new',
+                        'url' => '/safra/pragas_card.php?action=create',
+                        'langs' => 'safra@safra',
+                        'position' => 1000 + $r,
+                        'enabled' => 'isModEnabled("safra")',
+                        'perms' => '$user->hasRight("safra", "pragas", "write")',
+                        'target' => '',
+                        'user' => 2,
+                        'object' => 'Pragas'
+                );
+                $this->menu[$r++] = array(
+                        'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
+                        'type' => 'left',
+                        'titre' => 'SafraMenuPragaProductSearch',
+                        'mainmenu' => 'safra',
+                        'leftmenu' => 'safra_pragas_produtos',
+                        'url' => '/safra/pragas_produtos.php',
+                        'langs' => 'safra@safra',
+                        'position' => 1000 + $r,
+                        'enabled' => 'isModEnabled("safra")',
+                        'perms' => '$user->hasRight("safra", "pragas", "read") && $user->hasRight("safra", "produtoformulado", "read") && $user->hasRight("produit", "lire")',
+                        'target' => '',
+                        'user' => 2,
+                        'object' => 'SafraPragaProductSearch'
+                );
+                /* END MODULEBUILDER LEFTMENU PRAGAS */
 		/* BEGIN MODULEBUILDER LEFTMENU MYOBJECT */
 		/* LEFTMENU CULTURA */
 		$this->menu[$r++]=array(
