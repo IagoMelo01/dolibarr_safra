@@ -658,6 +658,21 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++] = array(
 			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
 			'type' => 'left',
+			'titre' => 'MenuPragasProductFinder',
+			'mainmenu' => 'safra',
+			'leftmenu' => 'safra_pragas_finder',
+			'url' => '/safra/pragas_produtos.php',
+			'langs' => 'safra@safra',
+			'position' => 1000 + $r,
+			'enabled' => 'isModEnabled("safra")',
+			'perms' => '$user->hasRight("safra", "pragas", "read")',
+			'target' => '',
+			'user' => 2,
+			'object' => 'Pragas'
+		);
+		$this->menu[$r++] = array(
+			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=pragas',
+			'type' => 'left',
 			'titre' => 'New Pragas',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_pragas_new',
