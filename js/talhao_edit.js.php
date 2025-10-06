@@ -17,20 +17,26 @@ const CIRCLE_STEPS = 128;
 
 var map = L.map('mapCRUD').setView(MAP_INITIAL_CENTER, MAP_INITIAL_ZOOM);
 
+var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        maxZoom: 20
+});
+
 var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; OpenStreetMap contributors'
 });
 
-var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+var googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
 });
 
-osmLayer.addTo(map);
+satelliteLayer.addTo(map);
 
 var baseLayers = {
-        'OpenStreetMap': osmLayer,
-        'Satélite (Google)': googleHybrid
+        'Imagem de satélite (Esri)': satelliteLayer,
+        'Satélite (Google)': googleHybrid,
+        'Mapa de ruas (OSM)': osmLayer
 };
 
 L.control.layers(baseLayers, null, {position: 'topright'}).addTo(map);

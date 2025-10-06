@@ -568,8 +568,16 @@ $varpage = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
 $selectedfields = ($mode != 'kanban' ? $form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage, getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN', '')) : ''); // This also change content of $arrayfields
 $selectedfields .= (count($arrayofmassactions) ? $form->showCheckAddButtons('checkforselect', 1) : '');
 
-print '<div class="div-table-responsive">'; // You can use div-table-responsive-no-min if you dont need reserved height for your table
-print '<table class="tagtable nobottomiftotal liste'.($moreforfilter ? " listwithfilterbefore" : "").'">'."\n";
+print '<div class="talhao-list-lead" role="note">';
+print '        <span class="talhao-list-lead__icon"><i class="fa fa-map-marker"></i></span>';
+print '        <div class="talhao-list-lead__content">';
+print '                <strong>Organize seus talhões com mais clareza.</strong>';
+print '                <p>Combine a busca geral com os filtros de cada coluna para localizar rapidamente qualquer área. Clique no código do talhão para abrir sua ficha completa.</p>';
+print '        </div>';
+print '</div>';
+
+print '<div class="div-table-responsive talhao-list-container">'; // You can use div-table-responsive-no-min if you dont need reserved height for your table
+print '<table class="tagtable nobottomiftotal liste'.($moreforfilter ? " listwithfilterbefore" : "").' talhao-list-table">'."\n";
 
 // Fields title search
 // --------------------------------------------------------------------
@@ -787,13 +795,16 @@ while ($i < $imaxinloop) {
 					print ' title="'.dol_escape_htmltag($object->$key).'"';
 				}
 				print '>';
-				if ($key == 'status') {
-					print $object->getLibStatut(5);
-				} elseif ($key == 'rowid') {
-					print $object->showOutputField($val, $key, $object->id, '');
-				} else {
-					print $object->showOutputField($val, $key, $object->$key, '');
-				}
+                                if ($key == 'status') {
+                                        print '<span class="talhao-status-chip">'.$object->getLibStatut(5).'</span>';
+                                } elseif ($key == 'rowid') {
+                                        print $object->showOutputField($val, $key, $object->id, '');
+                                } elseif ($key == 'ref') {
+                                        $refValue = $object->showOutputField($val, $key, $object->$key, '');
+                                        print '<strong class="talhao-list-ref">'.$refValue.'</strong>';
+                                } else {
+                                        print $object->showOutputField($val, $key, $object->$key, '');
+                                }
 				print '</td>';
 				if (!$i) {
 					$totalarray['nbfield']++;
@@ -896,8 +907,116 @@ if (in_array('builddoc', array_keys($arrayofmassactions)) && ($nbtotalofrecords 
 
 ?>
 
+<style>
+.talhao-list-lead {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        background: #edf6ff;
+        border: 1px solid #b8dcff;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin: 1rem 0 1.2rem;
+        color: #0b3b66;
+}
+
+.talhao-list-lead__icon {
+        font-size: 1.5rem;
+        color: #0b6fa4;
+        line-height: 1;
+        margin-top: 0.15rem;
+}
+
+.talhao-list-lead__content p {
+        margin: 0.35rem 0 0;
+        font-size: 0.95rem;
+        line-height: 1.5;
+}
+
+.talhao-list-container {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+        padding: 0;
+        overflow: hidden;
+}
+
+.talhao-list-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+}
+
+.talhao-list-table tr.liste_titre {
+        background: linear-gradient(90deg, #0b6fa4 0%, #1098c2 100%);
+        color: #fff;
+}
+
+.talhao-list-table tr.liste_titre th {
+        color: inherit;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+        border-bottom: none;
+}
+
+.talhao-list-table tr.liste_titre_filter td {
+        background: #f8fafc;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dbe5f2;
+}
+
+.talhao-list-table tr.liste_titre_filter input.flat,
+.talhao-list-table tr.liste_titre_filter select.flat,
+.talhao-list-table tr.liste_titre_filter .maxwidth100,
+.talhao-list-table tr.liste_titre_filter .maxwidth250 {
+        width: 100%;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        padding: 0.35rem 0.5rem;
+        font-size: 0.9rem;
+}
+
+.talhao-list-table tr.oddeven td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #edf2f9;
+        transition: background 0.2s ease;
+}
+
+.talhao-list-table tr.oddeven:hover td {
+        background: #f1f7ff;
+}
+
+.talhao-list-ref {
+        color: #0b6fa4;
+        font-weight: 600;
+}
+
+.talhao-status-chip {
+        display: inline-flex;
+        align-items: center;
+}
+
+.talhao-status-chip .badge {
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+}
+
+@media (max-width: 992px) {
+        .talhao-list-lead {
+                flex-direction: column;
+        }
+
+        .talhao-list-table tr.liste_titre_filter td,
+        .talhao-list-table tr.liste_titre th,
+        .talhao-list-table tr.oddeven td {
+                padding: 0.65rem;
+        }
+}
+</style>
+
 <script>
-	let json_pol = <?php echo json_encode($json_pol); ?>
+        let json_pol = <?php echo json_encode($json_pol); ?>
 </script>
 
 <?php

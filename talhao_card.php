@@ -265,7 +265,7 @@ if ($action == 'create') {
         print '<div class="talhao-layout">';
 
         // debut div item 1 / map
-        print '<div class="item map-column">';
+print '<div class="item map-column">';
         print '        <div class="map-panel">';
         print '                <div class="map-panel__header">';
         print '                        <h3>Desenho do talhão</h3>';
@@ -275,7 +275,7 @@ if ($action == 'create') {
         print '                        <button type="button" class="map-panel__btn" id="fit-drawing">Recentralizar desenho</button>';
         print '                        <button type="button" class="map-panel__btn map-panel__btn--secondary" id="clear-drawing">Limpar desenho</button>';
         print '                </div>';
-        print '                <div class="map-panel__map" id="mapCRUD"></div>';
+print '                <div class="map-panel__map" id="mapCRUD"></div>';
         print '                <div class="map-panel__tips">';
         print '                        <strong>Dicas rápidas</strong>';
         print '                        <ul>';
@@ -729,23 +729,22 @@ $db->close();
 
 <style>
 .talhao-layout {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr);
         gap: 1.5rem;
         align-items: flex-start;
 }
 
 .talhao-layout .item {
-        flex: 1 1 420px;
-        min-width: 320px;
+        min-width: 0;
 }
 
 .talhao-layout .map-column {
-        flex: 1 1 500px;
+        width: 100%;
 }
 
 .talhao-layout .form-column {
-        flex: 1 1 460px;
+        width: 100%;
 }
 
 .map-panel {
@@ -806,9 +805,17 @@ $db->close();
 }
 
 .map-panel__map {
-        height: 480px;
+        width: 100%;
+        height: 520px;
+        min-height: 520px;
         border-radius: 10px;
         overflow: hidden;
+        position: relative;
+}
+
+.map-panel__map .leaflet-container {
+        width: 100% !important;
+        height: 100% !important;
 }
 
 .map-panel__tips {
@@ -826,20 +833,20 @@ $db->close();
         margin-top: 0.35rem;
 }
 
+@media (max-width: 1280px) {
+        .talhao-layout {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+}
+
 @media (max-width: 992px) {
         .talhao-layout {
-                flex-direction: column;
-        }
-
-        .talhao-layout .item,
-        .talhao-layout .map-column,
-        .talhao-layout .form-column {
-                width: 100%;
-                min-width: 0;
+                grid-template-columns: minmax(0, 1fr);
         }
 
         .map-panel__map {
-                height: 360px;
+                height: 380px;
+                min-height: 380px;
         }
 }
 </style>
