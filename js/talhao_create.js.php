@@ -4,162 +4,324 @@
 <script src="./js/leaflet.js"></script>
 <script src="./js/leaflet.draw.js"></script>
 <script src="./js/wellknown.js"></script>
+<script src="./js/turf.js"></script>
 
 
 
 <script>
-    
-var map = L.map('mapCRUD').setView([-17.047558, -46.824176], 13);
+const MAP_INITIAL_CENTER = [-17.047558, -46.824176];
+const MAP_INITIAL_ZOOM = 13;
+const CIRCLE_STEPS = 128;
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data &copy; OpenStreetMap contributors'
-}).addTo(map);
+var map = L.map('mapCRUD').setView(MAP_INITIAL_CENTER, MAP_INITIAL_ZOOM);
+
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data &copy; OpenStreetMap contributors'
+});
+
+var googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+});
+
+osmLayer.addTo(map);
+
+var baseLayers = {
+        'OpenStreetMap': osmLayer,
+        'Satélite (Google)': googleHybrid
+};
+
+L.control.layers(baseLayers, null, {position: 'topright'}).addTo(map);
+L.control.scale({position: 'bottomright', metric: true, imperial: false}).addTo(map);
 
 var drawnItems = new L.FeatureGroup();
 map.addLayer(drawnItems);
 
-googleHybrid = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-    maxZoom: 20,
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-});
-googleHybrid.addTo(map);
+customizeDrawTexts();
 
 var drawControl = new L.Control.Draw({
-    edit: {
-        featureGroup: drawnItems
-    },
-    draw: {
-        polygon: {
-            allowIntersection: false,
-            showArea: true
+        edit: {
+                featureGroup: drawnItems,
+                remove: true
         },
-        polyline: false,
-        rectangle: {
-            showArea: true
-        },
-        circle: false,
-        marker: false
-    }
+        draw: {
+                polygon: {
+                        allowIntersection: false,
+                        showArea: true,
+                        shapeOptions: defaultShapeOptions()
+                },
+                rectangle: false,
+                polyline: false,
+                marker: false,
+                circlemarker: false,
+                circle: {
+                        showRadius: true,
+                        shapeOptions: defaultShapeOptions()
+                }
+        }
 });
 map.addControl(drawControl);
 
-// Variável para armazenar o polígono desenhado
-var drawnPolygon;
+var drawnPolygon = null;
 
 map.on(L.Draw.Event.CREATED, function (event) {
-    var layer = event.layer;
+        var layer = event.layer;
 
-    // Verifica se um polígono já foi desenhado
-    if (drawnPolygon) {
-        drawnItems.removeLayer(drawnPolygon);
-    }
+        if (event.layerType === 'circle') {
+                layer = convertCircleToPolygon(layer) || layer;
+        }
 
-    // Adiciona o novo polígono e atualiza a variável
-    drawnItems.addLayer(layer);
-    drawnPolygon = layer;
-
-    updateInputs(layer);
+        applySingleLayer(layer);
+        focusOnDrawing();
 });
 
 map.on('draw:edited', function (e) {
-    var layers = e.layers;
-    layers.eachLayer(function (layer) {
-        drawnItems.addLayer(layer);
-        updateInputs(layer);
-        // fetchNDVIData(layer);
-    });
+        e.layers.eachLayer(function (layer) {
+                drawnPolygon = layer;
+                if (layer.setStyle) {
+                        layer.setStyle(defaultShapeOptions());
+                }
+                createAreaTooltip(layer);
+                updateInputs(layer);
+        });
+        focusOnDrawing();
 });
 
-function updateInputs(layer) {
-    var bounds = layer.getBounds();
-    var bbox = bounds.toBBoxString();
-    var geojson = layer.toGeoJSON(); 
-    var wkt = wellknown.stringify(geojson);
-    var encondedWKT = encodeURIComponent(wkt);
-    var input_geojson = document.getElementById("geo_json")
-    input_geojson.value = JSON.stringify(geojson);
-    var input_wkt = document.getElementById("wkt")
-    input_wkt.value = encondedWKT;
-    var input_bbox = document.getElementById("bbox")
-    input_bbox.value = bbox;
+map.on('draw:deleted', function () {
+        resetInputs();
+        drawnPolygon = null;
+        focusOnDrawing();
+});
 
-    createAreaTooltip(layer);
-    var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]); // Get polygon area
-    var areaHa = area / 10000; // Convert area to hectares
-    var input_area = document.getElementById("area")
-    input_area.value = areaHa;
+var fitButton = document.getElementById('fit-drawing');
+if (fitButton) {
+        fitButton.addEventListener('click', function () {
+                focusOnDrawing();
+        });
 }
 
+var clearButton = document.getElementById('clear-drawing');
+if (clearButton) {
+        clearButton.addEventListener('click', function () {
+                handleClearDrawing();
+        });
+}
 
+window.addEventListener('resize', function () {
+        map.invalidateSize();
+});
 
-function fetchNDVIData(layer) {
-    var wkt = wellknown.stringify(layer.toGeoJSON());
-    var encodedWKT = encodeURIComponent(wkt);
-    var url = `https://services.sentinel-hub.com/ogc/wms/3f380032-35a2-468e-83b2-0363da66b000?service=WMS&request=GetMap&layers=NDVI&styles=&format=application/json&transparent=true&RESX=10m&RESY=10m&srs=CRS:84&geometry=${encodedWKT}/`;
-    console.log(url);
+map.whenReady(function () {
+        setTimeout(function () {
+                map.invalidateSize();
+        }, 150);
+});
 
-    // Fetch NDVI data in GeoJSON
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            let counter = 0;
-            var geoJsonLayer = L.geoJSON(data, {
-                onEachFeature: function (feature, layer) {
-                    layer.setStyle({
-                        color: `#${feature.properties.COLOR_HEX}`,
-                        stroke: true,
-                        weight: 1,
-                        fill: true,
-                        fillOpacity: 1,
-                        fillColor: `#${feature.properties.COLOR_HEX}`
-                    });
-                    counter++;
+function customizeDrawTexts() {
+        if (!L.drawLocal || !L.drawLocal.draw) {
+                return;
+        }
+
+        var buttons = L.drawLocal.draw.toolbar.buttons || {};
+        buttons.polygon = 'Desenhar polígono';
+        buttons.circle = 'Desenhar pivô (círculo)';
+        buttons.rectangle = 'Desenhar retângulo';
+        L.drawLocal.draw.toolbar.buttons = buttons;
+
+        if (L.drawLocal.draw.handlers && L.drawLocal.draw.handlers.circle && L.drawLocal.draw.handlers.circle.tooltip) {
+                L.drawLocal.draw.handlers.circle.tooltip.start = 'Clique e arraste para desenhar o pivô circular.';
+        }
+        if (L.drawLocal.draw.handlers && L.drawLocal.draw.handlers.polygon && L.drawLocal.draw.handlers.polygon.tooltip) {
+                L.drawLocal.draw.handlers.polygon.tooltip.start = 'Clique para adicionar vértices ao polígono.';
+        }
+}
+
+function defaultShapeOptions() {
+        return {
+                color: '#0b6fa4',
+                weight: 2,
+                fillColor: '#3ba1d7',
+                fillOpacity: 0.25
+        };
+}
+
+function applySingleLayer(layer) {
+        if (!layer) {
+                return;
+        }
+
+        drawnItems.clearLayers();
+        if (layer.setStyle) {
+                layer.setStyle(defaultShapeOptions());
+        }
+        drawnItems.addLayer(layer);
+        drawnPolygon = layer;
+        createAreaTooltip(layer);
+        updateInputs(layer);
+        return layer;
+}
+
+function handleClearDrawing() {
+        drawnItems.clearLayers();
+        resetInputs();
+        drawnPolygon = null;
+        map.setView(MAP_INITIAL_CENTER, MAP_INITIAL_ZOOM);
+}
+
+function focusOnDrawing() {
+        if (drawnPolygon) {
+                map.fitBounds(drawnPolygon.getBounds(), {padding: [40, 40]});
+        } else {
+                map.setView(MAP_INITIAL_CENTER, MAP_INITIAL_ZOOM);
+        }
+}
+
+function convertCircleToPolygon(circleLayer) {
+        var center = circleLayer.getLatLng();
+        var polygonGeo = turf.circle([center.lng, center.lat], circleLayer.getRadius() / 1000, {
+                steps: CIRCLE_STEPS,
+                units: 'kilometers'
+        });
+
+        var polygonLayers = L.geoJSON(polygonGeo).getLayers();
+        if (polygonLayers.length) {
+                var polygonLayer = polygonLayers[0];
+                if (circleLayer.options && polygonLayer.setStyle) {
+                        polygonLayer.setStyle(circleLayer.options);
+                } else if (polygonLayer.setStyle) {
+                        polygonLayer.setStyle(defaultShapeOptions());
                 }
-            }).addTo(map);
-            map.fitBounds(geoJsonLayer.getBounds());
-        })
-        .catch(error => console.error('Error fetching NDVI data:', error));
+                return polygonLayer;
+        }
+
+        return null;
 }
 
+function getPrimaryLatLngs(layer) {
+        if (!layer || typeof layer.getLatLngs !== 'function') {
+                return [];
+        }
+
+        return extractFirstRing(layer.getLatLngs());
+}
+
+function extractFirstRing(latLngs) {
+        if (!Array.isArray(latLngs)) {
+                return [];
+        }
+        if (!latLngs.length) {
+                return [];
+        }
+        if (Array.isArray(latLngs[0])) {
+                return extractFirstRing(latLngs[0]);
+        }
+        return latLngs;
+}
+
+function updateInputs(layer) {
+        if (!layer) {
+                return;
+        }
+
+        var bounds = layer.getBounds();
+        if (bounds && typeof bounds.isValid === 'function' && !bounds.isValid()) {
+                return;
+        }
+
+        var bbox = bounds.toBBoxString();
+        var geojson = layer.toGeoJSON();
+        var wkt = wellknown.stringify(geojson);
+        var encodedWKT = encodeURIComponent(wkt);
+
+        var inputGeoJson = document.getElementById('geo_json');
+        if (inputGeoJson) {
+                inputGeoJson.value = JSON.stringify(geojson);
+        }
+
+        var inputWkt = document.getElementById('wkt');
+        if (inputWkt) {
+                inputWkt.value = encodedWKT;
+        }
+
+        var inputBbox = document.getElementById('bbox');
+        if (inputBbox) {
+                inputBbox.value = bbox;
+        }
+
+        var latLngs = getPrimaryLatLngs(layer);
+        if (latLngs.length && L.GeometryUtil && L.GeometryUtil.geodesicArea) {
+                var area = L.GeometryUtil.geodesicArea(latLngs);
+                var inputArea = document.getElementById('area');
+                if (inputArea) {
+                        inputArea.value = area / 10000;
+                }
+        }
+
+        updateAreaTooltip(layer);
+}
+
+function resetInputs() {
+        ['geo_json', 'wkt', 'bbox', 'area'].forEach(function (fieldId) {
+                var input = document.getElementById(fieldId);
+                if (input) {
+                        input.value = '';
+                }
+        });
+}
 
 function createAreaTooltip(layer) {
-            if (layer.areaTooltip) {
+        if (!layer || typeof layer.getLatLngs !== 'function') {
+                return;
+        }
+
+        if (layer.areaTooltip) {
                 updateAreaTooltip(layer);
                 return;
-            }
+        }
 
-            layer.areaTooltip = L.tooltip({
+        layer.areaTooltip = L.tooltip({
                 permanent: true,
                 direction: 'center',
                 className: 'area-tooltip'
-            });
+        });
 
-            layer.on('remove', function(event) {
-                layer.areaTooltip.remove();
-            });
+        layer.on('remove', function () {
+                if (layer.areaTooltip) {
+                        layer.areaTooltip.remove();
+                }
+        });
 
-            layer.on('add', function(event) {
+        layer.on('add', function () {
+                updateAreaTooltip(layer);
+                if (layer.areaTooltip) {
+                        layer.areaTooltip.addTo(map);
+                }
+        });
+
+        if (map.hasLayer(layer) && layer.areaTooltip) {
                 updateAreaTooltip(layer);
                 layer.areaTooltip.addTo(map);
-            });
+        }
+}
 
-            if (map.hasLayer(layer)) {
-                updateAreaTooltip(layer);
-                layer.areaTooltip.addTo(map);
-            }
+function updateAreaTooltip(layer) {
+        if (!layer || !layer.areaTooltip) {
+                return;
         }
 
-        function updateAreaTooltip(layer) {
-            var area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
-            var readableArea = L.GeometryUtil.readableArea(area, true);
-            var latlng = layer.getCenter();
+        var latLngs = getPrimaryLatLngs(layer);
+        if (!latLngs.length || !L.GeometryUtil || !L.GeometryUtil.geodesicArea) {
+                return;
+        }
 
-            layer.areaTooltip
+        var area = L.GeometryUtil.geodesicArea(latLngs);
+        var readableArea = L.GeometryUtil.readableArea(area, true);
+        var center = layer.getBounds().getCenter();
+
+        layer.areaTooltip
                 .setContent(readableArea)
-                .setLatLng(latlng);
-        }
-
-
+                .setLatLng(center);
+}
 </script>
 
 
