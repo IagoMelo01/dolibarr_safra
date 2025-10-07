@@ -730,7 +730,7 @@ $db->close();
 <style>
 .talhao-layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.85fr);
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.85fr);
         gap: 1.5rem;
         align-items: flex-start;
 }
@@ -816,6 +816,7 @@ $db->close();
 .map-panel__map .leaflet-container {
         width: 100% !important;
         height: 100% !important;
+		display: flex;
 }
 
 .map-panel__tips {
