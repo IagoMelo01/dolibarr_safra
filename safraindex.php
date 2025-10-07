@@ -59,6 +59,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
 include_once './class/ndvi.class.php';
+dol_include_once('/safra/class/safra_satellite_statistics.class.php');
 include_once './class/municipio.class.php';
 
 if (!function_exists('safra_format_number')) {
@@ -286,6 +287,79 @@ if (!is_array($ndviEntries)) {
         $ndviEntries = array();
 }
 
+$dashboardWeeklySeries = array('points' => array());
+$dashboardWeeklyMessageKey = '';
+$dashboardTalhaoLabel = '';
+$dashboardTalhaoId = 0;
+if (!empty($ndviEntries)) {
+        $latestEntry = reset($ndviEntries);
+        if ($latestEntry && !empty($latestEntry->talhao)) {
+                $dashboardTalhaoId = (int) $latestEntry->talhao;
+                if ($dashboardTalhaoId > 0) {
+                        if (isset($talhaoCache[$dashboardTalhaoId]['label'])) {
+                                $dashboardTalhaoLabel = $talhaoCache[$dashboardTalhaoId]['label'];
+                        }
+                        $dashboardWeeklySeries = SafraSatelliteStatistics::getWeeklySeries($db, $dashboardTalhaoId, 'ndvi', 8);
+                        if (!empty($dashboardWeeklySeries['message'])) {
+                                $dashboardWeeklyMessageKey = $dashboardWeeklySeries['message'];
+                        }
+                }
+        }
+}
+
+$dashboardWeeklyMessage = '';
+switch ($dashboardWeeklyMessageKey) {
+        case 'missing_credentials':
+                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
+                break;
+        case 'missing_geometry':
+                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
+                break;
+        case 'no_data':
+        case 'talhao_not_found':
+                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageNoData');
+                break;
+}
+
+if (!isset($dashboardWeeklySeries['points']) || !is_array($dashboardWeeklySeries['points'])) {
+        $dashboardWeeklySeries['points'] = array();
+}
+$dashboardWeeklySeries['message'] = $dashboardWeeklyMessage;
+$hasDashboardSeries = !empty($dashboardWeeklySeries['points']);
+$dashboardChartConfig = null;
+if ($hasDashboardSeries) {
+        $dashboardChartConfig = array(
+                'canvasId' => 'dashboardWeeklyChart',
+                'emptyId' => null,
+                'metaId' => 'dashboardWeeklyMeta',
+                'data' => array(
+                        'points' => array_values($dashboardWeeklySeries['points']),
+                        'generatedAt' => isset($dashboardWeeklySeries['generatedAt']) ? $dashboardWeeklySeries['generatedAt'] : null,
+                        'validUntil' => isset($dashboardWeeklySeries['validUntil']) ? $dashboardWeeklySeries['validUntil'] : null,
+                        'message' => '',
+                ),
+                'options' => array(
+                        'label' => $langs->trans('SafraIndexNDVIShort'),
+                        'color' => '#2563eb',
+                        'gradient' => array('rgba(37, 99, 235, 0.32)', 'rgba(37, 99, 235, 0.06)'),
+                        'decimals' => 3,
+                        'emptyMessage' => $langs->trans('SafraSatelliteWeeklyEmpty'),
+                        'tooltipLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
+                        'tooltipMeanLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
+                        'tooltipMinLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
+                        'tooltipMaxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
+                        'minLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
+                        'maxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
+                        'rangeFillColor' => 'rgba(37, 99, 235, 0.16)',
+                        'rangeLineColor' => 'rgba(37, 99, 235, 0.32)',
+                        'updatedLabel' => $langs->trans('SafraSatelliteWeeklyUpdated'),
+                        'nextLabel' => $langs->trans('SafraSatelliteWeeklyNextUpdate'),
+                        'valueUnit' => '',
+                        'range' => array('min' => -0.2, 'max' => 1),
+                ),
+        );
+}
+
 $areaByMunicipioData = array();
 foreach ($areaByMunicipio as $label => $area) {
         $areaByMunicipioData[] = array('label' => $label, 'area' => $area);
@@ -372,6 +446,21 @@ if (!empty($areaByMunicipioData)) {
 }
 print '</section>';
 
+$dashboardEmptyText = $dashboardWeeklyMessage ?: $langs->trans('SafraSatelliteWeeklyDashboardEmpty');
+print '<section class="safra-card safra-card--chart">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraSatelliteWeeklyDashboardTitle').'</h2>';
+if (!empty($dashboardTalhaoLabel)) {
+        print '<span class="safra-chip">'.dol_escape_htmltag($dashboardTalhaoLabel).'</span>';
+}
+print '</div>';
+if ($hasDashboardSeries) {
+        print '<div class="safra-chart-container"><canvas id="dashboardWeeklyChart" class="safra-chart"></canvas></div>';
+        print '<p class="safra-chart__meta" id="dashboardWeeklyMeta"></p>';
+} else {
+        print '<p class="safra-empty">'.dol_escape_htmltag($dashboardEmptyText).'</p>';
+}
+print '</section>';
+
 print '<section class="safra-card safra-card--insights">';
 print '<div class="safra-card__header"><h2>'.$langs->trans('SafraHighlights').'</h2></div>';
 print '<ul class="safra-insights">';
@@ -428,6 +517,10 @@ print '<script>';
 print 'window.safraTalhoes = '.json_encode(array_values($talhaoData), $jsOptions).';';
 print 'window.safraAreaByMunicipio = '.json_encode($areaByMunicipioData, $jsOptions).';';
 print 'window.safraWeatherConfig = '.json_encode(array('latitude' => $weatherLatitude, 'longitude' => $weatherLongitude, 'location' => $weatherLocation), $jsOptions).';';
+if ($hasDashboardSeries && $dashboardChartConfig) {
+        print 'window.satelliteChartInstances = window.satelliteChartInstances || [];';
+        print 'window.satelliteChartInstances.push('.json_encode($dashboardChartConfig, $jsOptions).');';
+}
 print 'window.safraLabels = '.json_encode(array(
         'areaUnit' => $langs->transnoentities('SafraUnitHectareShort'),
         'noTalhaoData' => $langs->transnoentities('SafraNoTalhaoData'),
@@ -447,6 +540,7 @@ print 'window.safraLabels = '.json_encode(array(
 ), $jsOptions).';';
 print '</script>';
 // include do script
+include_once './js/satellite_chart.js.php';
 include_once "./js/talhao_index.js.php";
 
 // End of page

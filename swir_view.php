@@ -62,6 +62,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
 include_once './class/swir.class.php';
+dol_include_once('/safra/class/safra_satellite_statistics.class.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
@@ -135,6 +136,18 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
                     <span>Atualize os filtros para carregar uma nova cena</span>
                 </div>
             </div>
+            <div class="satellite-card satellite-card--chart">
+                <div class="satellite-card__header">
+                    <span class="satellite-card__eyebrow"><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteWeeklyEyebrow')); ?></span>
+                    <h3 class="satellite-card__title"><?php echo dol_escape_htmltag($weeklyChartTitle); ?></h3>
+                    <p class="satellite-card__subtitle"><?php echo dol_escape_htmltag($weeklyChartSubtitle); ?></p>
+                </div>
+                <div class="satellite-chart">
+                    <canvas id="satelliteSeriesChart" class="satellite-chart__canvas"></canvas>
+                    <p class="satellite-chart__empty" id="satelliteChartEmpty"><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteWeeklyEmpty')); ?></p>
+                </div>
+                <p class="satellite-chart__meta" id="satelliteChartMeta"></p>
+            </div>
         </section>
         <aside class="satellite-column satellite-column--sidebar">
             <div class="satellite-card satellite-card--controls">
@@ -156,15 +169,18 @@ $json_data = [];
 $area_array = [];
 $name_array = [];
 $id_array = [];
+$talhaoMap = [];
 foreach ($list_talhao as $key => $talhao) {
-    if ($talhao->label) {
-        $name_array[] = $talhao->label;
-    } else {
-        $name_array[] = $talhao->ref;
-    }
+    $label = $talhao->label ? $talhao->label : $talhao->ref;
+    $name_array[] = $label;
     $json_data[] = $talhao->geo_json;
     $area_array[] = $talhao->area;
-    $id_array[] = (int) $talhao->id;
+    $id = (int) $talhao->id;
+    $id_array[] = $id;
+    $talhaoMap[$id] = array(
+        'label' => $label,
+        'area' => $talhao->area,
+    );
     // print $talhao->getKanbanView();
 }
 
@@ -185,6 +201,49 @@ if ($consulta != '') {
     }
     // echo $filename;
 }
+
+$selectedTalhaoId = (int) GETPOST('talhao_list', 'int');
+if (!$selectedTalhaoId && !empty($consulta)) {
+    $parts = explode('_', $consulta);
+    if (isset($parts[2])) {
+        $selectedTalhaoId = (int) $parts[2];
+    }
+}
+
+$selectedTalhaoLabel = '';
+if ($selectedTalhaoId > 0 && isset($talhaoMap[$selectedTalhaoId]['label'])) {
+    $selectedTalhaoLabel = $talhaoMap[$selectedTalhaoId]['label'];
+}
+
+$weeklySeries = array('points' => array());
+$weeklyMessageKey = '';
+if ($selectedTalhaoId > 0) {
+    $weeklySeries = SafraSatelliteStatistics::getWeeklySeries($db, $selectedTalhaoId, 'swir', 8);
+    if (!empty($weeklySeries['message'])) {
+        $weeklyMessageKey = $weeklySeries['message'];
+    }
+} else {
+    $weeklySeries = array('points' => array());
+}
+
+$weeklyMessageText = '';
+switch ($weeklyMessageKey) {
+    case 'missing_credentials':
+        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
+        break;
+    case 'missing_geometry':
+        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
+        break;
+    case 'no_data':
+    case 'talhao_not_found':
+        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageNoData');
+        break;
+}
+
+$weeklySeries['message'] = $weeklyMessageText;
+$weeklyIndexLabel = $langs->trans('SafraIndexSWIRShort');
+$weeklyChartTitle = sprintf($langs->trans('SafraSatelliteWeeklyTitle'), $weeklyIndexLabel);
+$weeklyChartSubtitle = $langs->trans('SafraSatelliteWeeklySubtitle');
 
 ?>
 
@@ -270,18 +329,54 @@ if ($consulta != '') {
 
 print '</div>';
 
+$chartConfig = array(
+    'canvasId' => 'satelliteSeriesChart',
+    'emptyId' => 'satelliteChartEmpty',
+    'metaId' => 'satelliteChartMeta',
+    'data' => array(
+        'points' => isset($weeklySeries['points']) && is_array($weeklySeries['points']) ? array_values($weeklySeries['points']) : array(),
+        'generatedAt' => isset($weeklySeries['generatedAt']) ? $weeklySeries['generatedAt'] : null,
+        'validUntil' => isset($weeklySeries['validUntil']) ? $weeklySeries['validUntil'] : null,
+        'message' => isset($weeklySeries['message']) ? $weeklySeries['message'] : '',
+    ),
+    'options' => array(
+        'label' => $weeklyIndexLabel,
+        'color' => '#f97316',
+        'gradient' => array('rgba(249, 115, 22, 0.28)', 'rgba(249, 115, 22, 0.05)'),
+        'decimals' => 3,
+        'emptyMessage' => $langs->trans('SafraSatelliteWeeklyEmpty'),
+        'tooltipLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
+        'tooltipMeanLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
+        'tooltipMinLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
+        'tooltipMaxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
+        'minLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
+        'maxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
+        'rangeFillColor' => 'rgba(249, 115, 22, 0.16)',
+        'rangeLineColor' => 'rgba(249, 115, 22, 0.35)',
+        'updatedLabel' => $langs->trans('SafraSatelliteWeeklyUpdated'),
+        'nextLabel' => $langs->trans('SafraSatelliteWeeklyNextUpdate'),
+        'valueUnit' => '',
+        'range' => array('min' => -0.4, 'max' => 0.6),
+    ),
+);
+$jsOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+
 ?>
 <script>
     const talhao_array = <?php echo json_encode($name_array, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     const talhao_ids = <?php echo json_encode($id_array); ?>;
-    const talhao_selected = <?php echo isset($_POST['talhao_list']) ? (int) $_POST['talhao_list'] : 'null'; ?>;
+    const talhao_selected = <?php echo $selectedTalhaoId > 0 ? $selectedTalhaoId : 'null'; ?>;
     const json = <?php echo json_encode($json_data); ?>;
     const area_array = <?php echo json_encode($area_array); ?>;
     const arquivo_post = <?php echo json_encode($consulta ? $consulta : ''); ?>;
+    window.satelliteChartInstances = window.satelliteChartInstances || [];
+    window.satelliteChartInstances.push(<?php echo json_encode($chartConfig, $jsOptions); ?>);
 </script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <?php
+include_once './js/satellite_chart.js.php';
 // include do script
-include_once "./js/swir_view.js.php";
+include_once './js/swir_view.js.php';
 
 // End of page
 llxFooter();
