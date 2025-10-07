@@ -41,6 +41,23 @@
             return template.replace('%s', value);
         }
 
+        function parseValue(value) {
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return value;
+            }
+            if (typeof value === 'string') {
+                const parsed = parseFloat(value);
+                if (Number.isFinite(parsed)) {
+                    return parsed;
+                }
+            }
+            return null;
+        }
+
+        function hasNumericValue(values) {
+            return Array.isArray(values) && values.some(value => value !== null && Number.isFinite(value));
+        }
+
         function showEmpty(entry, data) {
             const canvas = document.getElementById(entry.canvasId);
             const emptyElement = entry.emptyId ? document.getElementById(entry.emptyId) : null;
@@ -98,17 +115,69 @@
 
             const labels = points.map(point => formatRange(point.from, point.to));
             const decimals = typeof entry.options.decimals === 'number' ? entry.options.decimals : 2;
-            const values = points.map(point => {
-                if (typeof point.mean === 'number') {
-                    return point.mean;
-                }
-                const parsed = parseFloat(point.mean);
-                return Number.isFinite(parsed) ? parsed : null;
-            });
+            const values = points.map(point => parseValue(point.mean));
+            const minValues = points.map(point => parseValue(point.min));
+            const maxValues = points.map(point => parseValue(point.max));
+            const hasRange = hasNumericValue(minValues) && hasNumericValue(maxValues);
 
             const ctx = canvas.getContext('2d');
             const datasetColor = entry.options.color || '#2563eb';
             const background = createGradient(ctx, entry.options.gradient);
+            const datasets = [];
+
+            if (hasRange) {
+                const rangeFillColor = entry.options.rangeFillColor || 'rgba(37, 99, 235, 0.12)';
+                const rangeLineColor = entry.options.rangeLineColor || 'rgba(148, 163, 184, 0.55)';
+                const minLabel = entry.options.minLabel || '';
+                const maxLabel = entry.options.maxLabel || '';
+
+                datasets.push({
+                    label: minLabel,
+                    data: minValues,
+                    borderColor: rangeLineColor,
+                    borderWidth: 1,
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.35,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    hitRadius: 10,
+                    spanGaps: true,
+                    tooltipLabel: entry.options.tooltipMinLabel || minLabel,
+                });
+
+                datasets.push({
+                    label: maxLabel,
+                    data: maxValues,
+                    borderColor: rangeLineColor,
+                    borderWidth: 1,
+                    backgroundColor: rangeFillColor,
+                    fill: '-1',
+                    tension: 0.35,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    hitRadius: 10,
+                    spanGaps: true,
+                    tooltipLabel: entry.options.tooltipMaxLabel || maxLabel,
+                });
+            }
+
+            datasets.push({
+                label: entry.options.label || '',
+                data: values,
+                borderColor: datasetColor,
+                borderWidth: 2,
+                backgroundColor: background,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 4,
+                pointHoverRadius: 5,
+                pointBackgroundColor: datasetColor,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                spanGaps: true,
+                tooltipLabel: entry.options.tooltipMeanLabel || entry.options.tooltipLabel || entry.options.label || '',
+            });
 
             if (charts[entry.canvasId]) {
                 charts[entry.canvasId].destroy();
@@ -118,20 +187,7 @@
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: entry.options.label || '',
-                        data: values,
-                        borderColor: datasetColor,
-                        borderWidth: 2,
-                        backgroundColor: background,
-                        fill: true,
-                        tension: 0.35,
-                        pointRadius: 4,
-                        pointHoverRadius: 5,
-                        pointBackgroundColor: datasetColor,
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                    }],
+                    datasets: datasets,
                 },
                 options: {
                     responsive: true,
@@ -156,7 +212,8 @@
                         tooltip: {
                             callbacks: {
                                 label: context => {
-                                    const prefix = entry.options.tooltipLabel || '';
+                                    const dataset = context.dataset || {};
+                                    const prefix = dataset.tooltipLabel || entry.options.tooltipLabel || '';
                                     const unit = entry.options.valueUnit ? ` ${entry.options.valueUnit}` : '';
                                     const value = Number(context.parsed.y).toFixed(decimals);
                                     return prefix ? `${prefix}: ${value}${unit}` : `${value}${unit}`;

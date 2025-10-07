@@ -182,9 +182,9 @@ class SafraSatelliteStatistics
                 'from' => $item['interval']['from'] ?? '',
                 'to' => $item['interval']['to'] ?? '',
                 'mean' => round($mean, $config['decimals']),
-                'min' => isset($stats['min']) ? (float) $stats['min'] : null,
-                'max' => isset($stats['max']) ? (float) $stats['max'] : null,
-                'stDev' => isset($stats['stDev']) ? (float) $stats['stDev'] : null,
+                'min' => isset($stats['min']) && is_finite((float) $stats['min']) ? round((float) $stats['min'], $config['decimals']) : null,
+                'max' => isset($stats['max']) && is_finite((float) $stats['max']) ? round((float) $stats['max'], $config['decimals']) : null,
+                'stDev' => isset($stats['stDev']) && is_finite((float) $stats['stDev']) ? round((float) $stats['stDev'], $config['decimals']) : null,
                 'sampleCount' => (int) $stats['sampleCount'],
             );
         }
