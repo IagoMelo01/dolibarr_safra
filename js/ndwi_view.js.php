@@ -16,6 +16,10 @@
     const weekPickerElement = document.getElementById('weekPicker');
     const yearPickerElement = document.getElementById('yearPicker');
     const btnConsulta = document.getElementById('btnConsulta');
+    const dateRangeDisplay = document.getElementById('dateRangeDisplay');
+    const selectedFieldName = document.getElementById('selectedFieldName');
+    const selectedFieldArea = document.getElementById('selectedFieldArea');
+    const selectedPeriod = document.getElementById('selectedPeriod');
 
     let consultado = arquivoElement.value.split("_");
     console.log(consultado);
@@ -33,6 +37,71 @@
         let month = (date.getMonth() + 1).toString().padStart(2, '0');
         let year = date.getFullYear();
         return `${day}/${month}/${year}`;
+    }
+
+    function formatDateDisplay(date) {
+        return date.toLocaleDateString('pt-BR');
+    }
+
+    function formatDisplayRange(startISO, endISO) {
+        const startDate = new Date(startISO);
+        const endDate = new Date(endISO);
+
+        if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+            return startISO.replace('/', ' a ');
+        }
+
+        return `${formatDateDisplay(startDate)} a ${formatDateDisplay(endDate)}`;
+    }
+
+    function formatAreaValue(value) {
+        const number = Number(value);
+        if (!Number.isFinite(number)) {
+            return '--';
+        }
+
+        return `${number.toLocaleString('pt-BR', { maximumFractionDigits: 2 })} ha`;
+    }
+
+    function updateDateRangeDisplay(dateRange) {
+        if (!dateRangeDisplay) {
+            return;
+        }
+
+        if (!dateRange) {
+            dateRangeDisplay.textContent = 'Selecione uma semana para ver as datas.';
+            if (selectedPeriod) {
+                selectedPeriod.textContent = '--';
+            }
+            return;
+        }
+
+        const [start, end] = dateRange.split('/');
+        const readable = formatDisplayRange(start, end || start);
+        dateRangeDisplay.textContent = readable;
+        if (selectedPeriod) {
+            selectedPeriod.textContent = readable;
+        }
+    }
+
+    function updateSelectedFieldSummary() {
+        if (!selectedFieldName || !talhaoElement) {
+            return;
+        }
+
+        const option = talhaoElement.options[talhaoElement.selectedIndex];
+        if (!option) {
+            selectedFieldName.textContent = 'Selecione um talhão';
+            if (selectedFieldArea) {
+                selectedFieldArea.textContent = '--';
+            }
+            return;
+        }
+
+        selectedFieldName.textContent = option.textContent || 'Selecione um talhão';
+        if (selectedFieldArea) {
+            selectedFieldArea.textContent = formatAreaValue(option.dataset.area);
+        }
     }
 
     function getCurrentWeekNumber() {
@@ -96,6 +165,7 @@
 
     function getWeekDates(dateRange) {
         document.getElementById('dateRange').value = dateRange || "Selecione uma semana para ver as datas.";
+        updateDateRangeDisplay(dateRange);
         rangeSelected = dateRange;
         // consultaElement.value = dateRange + '_' + talhaoElement.value;
         if (consultaElement.value != arquivoElement.value) {
@@ -115,6 +185,7 @@
             // getWeekDates(weekSelected);
             document.getElementById('weekPicker').selectedIndex = currentWeekNumber;
             document.getElementById('weekPicker').onchange();
+            updateSelectedFieldSummary();
             consulta();
         } else {
             // weekPickerElement.value = consultado[0];
@@ -134,6 +205,8 @@
 
             }
 
+            updateSelectedFieldSummary();
+            updateDateRangeDisplay(weekPickerElement.value);
             carregarDadosMapa();
         }
     };
@@ -146,6 +219,7 @@
             const optionElement = document.createElement('option');
             optionElement.value = talhao_ids[i];
             optionElement.textContent = opcao;
+            optionElement.dataset.area = Array.isArray(area_array) ? area_array[i] : '';
             select.appendChild(optionElement);
             i++;
         });
@@ -153,6 +227,7 @@
 
     // Adiciona as opções ao <select>
     adicionarOpcoes(talhaoElement, talhao_array);
+    updateSelectedFieldSummary();
 
 
 
@@ -160,6 +235,7 @@
         const opcaoSelecionada = event.target.value;
         // mensagemElement.textContent = `Você selecionou: ${opcaoSelecionada}`;
         // consultaElement.value = str_replace('/', '_', weekPickerElement.value) + '_' + talhaoElement.value;
+        updateSelectedFieldSummary();
         consulta();
         // if(consultaElement.value != arquivoElement.value){
         //     submitForm()
