@@ -162,12 +162,31 @@ $culturaDao = new Cultura($db);
 $culturas = $culturaDao->fetchAll('ASC', 'label');
 
 $cultivarDao = new Cultivar($db);
-$cultivares = $cultivarDao->fetchAll('ASC', 'label');
+$cultivares = array();
+if ($idCultura > 0) {
+    $cultivarFilter = array('t.cultura' => (int) $idCultura);
+    $cultivares = $cultivarDao->fetchAll('ASC', 'label', 200, 0, $cultivarFilter);
+}
 
 $municipioDao = new Municipio($db);
-$municipios = $municipioDao->fetchAll('ASC', 'label');
-
 $defaultMunicipio = getDolGlobalString('SAFRA_MUNICIPIO');
+
+if (empty($codigoIBGE) && !empty($defaultMunicipio)) {
+    $codigoIBGE = (int) $defaultMunicipio;
+}
+
+$selectedMunicipioLabel = '';
+if (!empty($codigoIBGE)) {
+    $municipioFilter = array('t.cod_ibge' => (string) $codigoIBGE);
+    $selectedMunicipios = $municipioDao->fetchAll('ASC', 'label', 1, 0, $municipioFilter);
+    if (is_array($selectedMunicipios) && !empty($selectedMunicipios)) {
+        $municipio = reset($selectedMunicipios);
+        $code = isset($municipio->cod_ibge) ? trim((string) $municipio->cod_ibge) : '';
+        if ($code !== '') {
+            $selectedMunicipioLabel = trim(($municipio->label ?: $municipio->ref) . (empty($municipio->uf) ? '' : ' / ' . $municipio->uf) . ' - ' . $code);
+        }
+    }
+}
 
 llxHeader('', $langs->trans('ProdutividadePageTitle'), '', '', 0, 0, '', '', '', 'mod-safra page-produtividade');
 
@@ -210,33 +229,31 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
                     </div>
                     <div class="productivity-form__row">
                         <label class="productivity-form__label" for="idCultivar"><?php echo dol_escape_htmltag($langs->trans('Cultivar')); ?></label>
-                        <select id="idCultivar" name="idCultivar" class="productivity-form__control" required>
-                            <option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
+                        <select id="idCultivar" name="idCultivar" class="productivity-form__control" required data-default="<?php echo (int) $idCultivar; ?>" data-fetch-url="<?php echo dol_escape_htmltag(dol_buildpath('/safra/ajax/produtividade.php', 1)); ?>">
+                            <?php if ($idCultura <= 0) { ?>
+                                <option value="" selected><?php echo dol_escape_htmltag($langs->trans('ProdutividadeCultivarPrompt')); ?></option>
+                            <?php } else { ?>
+                                <option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
+                                <?php
+                                if (is_array($cultivares) && !empty($cultivares)) {
+                                    foreach ($cultivares as $cultivar) {
+                                        $label = $cultivar->label ?: $cultivar->ref;
+                                        $selected = ($idCultivar > 0 && (int) $cultivar->id === (int) $idCultivar) ? ' selected' : '';
+                                        echo '<option value="' . (int) $cultivar->id . '" data-cultura="' . (int) $cultivar->cultura . '"' . $selected . '>' . dol_escape_htmltag($label) . '</option>';
+                                    }
+                                } else {
+                                    echo '<option value="" disabled selected>' . dol_escape_htmltag($langs->trans('ProdutividadeCultivarEmpty')) . '</option>';
+                                }
+                                ?>
+                            <?php } ?>
                         </select>
                     </div>
                     <div class="productivity-form__row">
-                        <label class="productivity-form__label" for="codigoIBGE"><?php echo dol_escape_htmltag($langs->trans('Municipio')); ?></label>
-                        <select id="codigoIBGE" name="codigoIBGE" class="productivity-form__control" required>
-                            <option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
-                            <?php
-                            if (is_array($municipios)) {
-                                foreach ($municipios as $municipio) {
-                                    $label = $municipio->label ?: $municipio->ref;
-                                    $value = (int) $municipio->cod_ibge;
-                                    if ($value <= 0) {
-                                        continue;
-                                    }
-                                    $selected = '';
-                                    if ($codigoIBGE > 0 && $value === (int) $codigoIBGE) {
-                                        $selected = ' selected';
-                                    } elseif (!$codigoIBGE && !empty($defaultMunicipio) && (int) $defaultMunicipio === $value) {
-                                        $selected = ' selected';
-                                    }
-                                    echo '<option value="' . $value . '"' . $selected . '>' . dol_escape_htmltag($label) . ' - ' . dol_escape_htmltag($value) . '</option>';
-                                }
-                            }
-                            ?>
-                        </select>
+                        <label class="productivity-form__label" for="municipioSearch"><?php echo dol_escape_htmltag($langs->trans('Municipio')); ?></label>
+                        <input type="hidden" name="codigoIBGE" id="codigoIBGE" value="<?php echo $codigoIBGE ? (int) $codigoIBGE : ''; ?>">
+                        <input type="text" id="municipioSearch" class="productivity-form__control" placeholder="<?php echo dol_escape_htmltag($langs->trans('ProdutividadeMunicipioPlaceholder')); ?>" value="<?php echo dol_escape_htmltag($selectedMunicipioLabel); ?>" autocomplete="off" list="municipioSuggestions" data-fetch-url="<?php echo dol_escape_htmltag(dol_buildpath('/safra/ajax/produtividade.php', 1)); ?>">
+                        <datalist id="municipioSuggestions"></datalist>
+                        <small class="productivity-form__help"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeMunicipioHelp')); ?></small>
                     </div>
                     <div class="productivity-form__row">
                         <label class="productivity-form__label" for="cad"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeSoilWaterCapacity')); ?></label>
@@ -349,74 +366,26 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
     </div>
 </div>
 <?php
-$cultivarOptions = array();
-if (is_array($cultivares)) {
-    foreach ($cultivares as $cultivar) {
-        if (empty($cultivar->id)) {
-            continue;
-        }
-        $cultivarOptions[] = array(
-            'id' => (int) $cultivar->id,
-            'label' => $cultivar->label ?: $cultivar->ref,
-            'cultura' => (int) $cultivar->cultura,
-            'embrapa' => $cultivar->embrapa_id
-        );
-    }
-}
-?>
-<script>
-    (function () {
-        const cultivarSelect = document.getElementById('idCultivar');
-        const culturaSelect = document.getElementById('idCultura');
-        if (!cultivarSelect || !culturaSelect) {
-            return;
-        }
-        const options = <?php echo json_encode($cultivarOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
-        let selectedCultivar = <?php echo $idCultivar > 0 ? (int) $idCultivar : 'null'; ?>;
+$produtividadeConfig = array(
+    'endpoint' => dol_buildpath('/safra/ajax/produtividade.php', 1),
+    'selected' => array(
+        'cultura' => $idCultura > 0 ? (int) $idCultura : null,
+        'cultivar' => $idCultivar > 0 ? (int) $idCultivar : null,
+        'municipio' => array(
+            'code' => $codigoIBGE ? (int) $codigoIBGE : null,
+            'label' => $selectedMunicipioLabel
+        )
+    ),
+    'labels' => array(
+        'select' => $langs->trans('Select'),
+        'loading' => $langs->trans('ProdutividadeLoading'),
+        'empty' => $langs->trans('ProdutividadeCultivarEmpty'),
+        'placeholder' => $langs->trans('ProdutividadeCultivarPrompt')
+    )
+);
 
-        function populateCultivares() {
-            const culturaId = parseInt(culturaSelect.value, 10);
-            const fragment = document.createDocumentFragment();
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = '<?php echo dol_escape_js($langs->trans('Select')); ?>';
-            fragment.appendChild(defaultOption);
-
-            options
-                .filter(function (item) {
-                    return !culturaId || item.cultura === culturaId;
-                })
-                .sort(function (a, b) {
-                    return a.label.localeCompare(b.label, undefined, {sensitivity: 'base'});
-                })
-                .forEach(function (item) {
-                    const option = document.createElement('option');
-                    option.value = item.id;
-                    option.textContent = item.label;
-                    option.dataset.cultura = item.cultura;
-                    option.dataset.embrapa = item.embrapa || '';
-                    if (selectedCultivar && item.id === selectedCultivar) {
-                        option.selected = true;
-                    }
-                    fragment.appendChild(option);
-                });
-
-            cultivarSelect.innerHTML = '';
-            cultivarSelect.appendChild(fragment);
-        }
-
-        populateCultivares();
-        culturaSelect.addEventListener('change', function () {
-            selectedCultivar = null;
-            populateCultivares();
-        });
-
-        cultivarSelect.addEventListener('change', function () {
-            selectedCultivar = parseInt(this.value, 10) || null;
-        });
-    })();
-</script>
-<?php
+print '<script>window.safraProdutividadeConfig = ' . json_encode($produtividadeConfig, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . ';</script>';
+print '<script src="' . dol_buildpath('/safra/js/produtividade.js', 1) . '?v=1"></script>';
 
 llxFooter();
 $db->close();

@@ -219,6 +219,11 @@ ProdutividadeCoordinatesRequired = Provide both latitude and longitude to use sp
 ProdutividadeSuccess = Productivity estimation generated successfully.
 ProdutividadeUnknownError = Could not retrieve the productivity estimation.
 ProdutividadeMissingCredentials = Configure the Embrapa API credentials in the module settings.
+ProdutividadeCultivarPrompt = Select a crop first to load cultivars.
+ProdutividadeCultivarEmpty = No cultivars were found for the chosen crop.
+ProdutividadeMunicipioPlaceholder = Search by municipality name or IBGE code.
+ProdutividadeMunicipioHelp = Type at least three characters or the IBGE code to locate the municipality.
+ProdutividadeLoading = Loading...
 
 # Produto formulado
 ProdutoFormuladoListTitle = Formulated products

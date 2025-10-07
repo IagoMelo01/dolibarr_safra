@@ -221,6 +221,11 @@ ProdutividadeCoordinatesRequired = Informe latitude e longitude para usar coorde
 ProdutividadeSuccess = Estimativa calculada com sucesso.
 ProdutividadeUnknownError = Não foi possível obter a estimativa de produtividade.
 ProdutividadeMissingCredentials = Configure as credenciais da API da Embrapa nas definições do módulo.
+ProdutividadeCultivarPrompt = Selecione uma cultura para carregar as cultivares.
+ProdutividadeCultivarEmpty = Nenhuma cultivar encontrada para a cultura escolhida.
+ProdutividadeMunicipioPlaceholder = Busque pelo município ou código IBGE.
+ProdutividadeMunicipioHelp = Digite ao menos três caracteres ou o código IBGE para localizar o município.
+ProdutividadeLoading = Carregando...
 
 # Produto formulado
 ProdutoFormuladoListTitle = Produtos formulados
