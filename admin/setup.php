@@ -106,6 +106,7 @@ $item = $formSetup->newItem('SAFRA_API_SENTINELHUB')->setAsString();
 
 $formSetup->newItem('SAFRA_API_EMBRAPA_PUBLIC')->setAsString();
 $formSetup->newItem('SAFRA_API_EMBRAPA_PRIVATE')->setAsString();
+$formSetup->newItem('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL')->setAsString();
 
 
 $formSetup->newItem('SAFRA_API_SENTINELHUB_CLIENT_ID')->setAsString();

@@ -1,0 +1,422 @@
+<?php
+/* Copyright (C) 2001-2005 Rodolphe Quiedeville <rodolphe@quiedeville.org>
+ * Copyright (C) 2004-2015 Laurent Destailleur  <eldy@users.sourceforge.net>
+ * Copyright (C) 2005-2012 Regis Houssin        <regis.houssin@inodbox.com>
+ * Copyright (C) 2024 SuperAdmin
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ *      \file       safra/produtividade_view.php
+ *      \ingroup    safra
+ *      \brief      Embrapa productivity estimation page.
+ */
+
+// Load Dolibarr environment
+$res = 0;
+if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
+    $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'] . "/main.inc.php";
+}
+$tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME'];
+$tmp2 = realpath(__FILE__);
+$i = strlen($tmp) - 1;
+$j = strlen($tmp2) - 1;
+while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
+    $i--;
+    $j--;
+}
+if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1)) . "/main.inc.php")) {
+    $res = @include substr($tmp, 0, ($i + 1)) . "/main.inc.php";
+}
+if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))) . "/main.inc.php")) {
+    $res = @include dirname(substr($tmp, 0, ($i + 1))) . "/main.inc.php";
+}
+if (!$res && file_exists("../main.inc.php")) {
+    $res = @include "../main.inc.php";
+}
+if (!$res && file_exists("../../main.inc.php")) {
+    $res = @include "../../main.inc.php";
+}
+if (!$res && file_exists("../../../main.inc.php")) {
+    $res = @include "../../../main.inc.php";
+}
+if (!$res) {
+    die("Include of main fails");
+}
+
+dol_include_once('/safra/class/cultura.class.php');
+dol_include_once('/safra/class/cultivar.class.php');
+dol_include_once('/safra/class/municipio.class.php');
+dol_include_once('/safra/class/embrapaapi.class.php');
+
+// Load translation files required by the page
+$langs->loadLangs(array('safra@safra', 'other')); // 'other' to leverage generic messages
+
+$action = GETPOST('action', 'aZ09');
+
+// Security check
+if (!$user->hasRight('safra', 'produtividade', 'read')) {
+    accessforbidden();
+}
+
+$parameters = array();
+$errors = array();
+$resultData = null;
+$rawResponse = '';
+
+$idCultura = GETPOST('idCultura', 'int');
+$idCultivar = GETPOST('idCultivar', 'int');
+$codigoIBGE = GETPOST('codigoIBGE', 'int');
+$cad = GETPOST('cad', 'int');
+$dataPlantio = trim(GETPOST('dataPlantio', 'alphanohtml'));
+$expectativaInput = GETPOST('expectativaProdutividade', 'alphanohtml');
+$latitudeInput = trim(GETPOST('latitude', 'alphanohtml'));
+$longitudeInput = trim(GETPOST('longitude', 'alphanohtml'));
+
+$expectativaProdutividade = $expectativaInput !== '' ? price2num($expectativaInput, '2') : '';
+$latitude = $latitudeInput !== '' ? price2num($latitudeInput, '8') : '';
+$longitude = $longitudeInput !== '' ? price2num($longitudeInput, '8') : '';
+
+if ($action === 'calculate' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $requiredFields = array(
+        'idCultura' => $langs->trans('Cultura'),
+        'idCultivar' => $langs->trans('Cultivar'),
+        'codigoIBGE' => $langs->trans('Municipio'),
+        'cad' => $langs->trans('ProdutividadeSoilWaterCapacity'),
+        'dataPlantio' => $langs->trans('ProdutividadePlantingDate'),
+        'expectativaProdutividade' => $langs->trans('ProdutividadeYieldExpectation')
+    );
+
+    if ($idCultura <= 0) {
+        $errors[] = $langs->trans('ProdutividadeMissingField', $requiredFields['idCultura']);
+    }
+    if ($idCultivar <= 0) {
+        $errors[] = $langs->trans('ProdutividadeMissingField', $requiredFields['idCultivar']);
+    }
+    if ($codigoIBGE <= 0) {
+        $errors[] = $langs->trans('ProdutividadeMissingField', $requiredFields['codigoIBGE']);
+    }
+    if ($cad <= 0) {
+        $errors[] = $langs->trans('ProdutividadeMissingField', $requiredFields['cad']);
+    }
+    if (empty($dataPlantio) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dataPlantio)) {
+        $errors[] = $langs->trans('ProdutividadeInvalidDate');
+    }
+    if ($expectativaProdutividade === '') {
+        $errors[] = $langs->trans('ProdutividadeMissingField', $requiredFields['expectativaProdutividade']);
+    }
+
+    if (($latitude === '' && $longitude !== '') || ($latitude !== '' && $longitude === '')) {
+        $errors[] = $langs->trans('ProdutividadeCoordinatesRequired');
+    }
+
+    if (empty($errors)) {
+        $parameters = array(
+            'idCultura' => (int) $idCultura,
+            'idCultivar' => (int) $idCultivar,
+            'codigoIBGE' => (int) $codigoIBGE,
+            'cad' => (int) $cad,
+            'dataPlantio' => $dataPlantio,
+            'expectativaProdutividade' => (float) $expectativaProdutividade
+        );
+
+        if ($latitude !== '' && $longitude !== '') {
+            $parameters['latitude'] = (float) $latitude;
+            $parameters['longitude'] = (float) $longitude;
+        }
+
+        $api = new EmbrapaApi($db);
+        $apiError = '';
+        $resultData = $api->fetchProdutividade($parameters, $apiError);
+
+        if (is_array($resultData)) {
+            $rawResponse = json_encode($resultData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            setEventMessages($langs->trans('ProdutividadeSuccess'), null, 'mesgs');
+        } else {
+            if (empty($apiError)) {
+                $apiError = $langs->trans('ProdutividadeUnknownError');
+            } elseif ($apiError === 'Missing Embrapa API credentials.') {
+                $apiError = $langs->trans('ProdutividadeMissingCredentials');
+            }
+            setEventMessages($apiError, null, 'errors');
+        }
+    } else {
+        setEventMessages(null, $errors, 'errors');
+    }
+}
+
+// Load lists for selects
+$culturaDao = new Cultura($db);
+$culturas = $culturaDao->fetchAll('ASC', 'label');
+
+$cultivarDao = new Cultivar($db);
+$cultivares = $cultivarDao->fetchAll('ASC', 'label');
+
+$municipioDao = new Municipio($db);
+$municipios = $municipioDao->fetchAll('ASC', 'label');
+
+$defaultMunicipio = getDolGlobalString('SAFRA_MUNICIPIO');
+
+llxHeader('', $langs->trans('ProdutividadePageTitle'), '', '', 0, 0, '', '', '', 'mod-safra page-produtividade');
+
+print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/produtividade.css', 1) . '?v=1">';
+
+print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@safra');
+
+?>
+<div class="productivity-page">
+    <header class="productivity-header">
+        <span class="productivity-header__eyebrow"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeHeaderEyebrow')); ?></span>
+        <h2 class="productivity-header__title"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeHeaderTitle')); ?></h2>
+        <p class="productivity-header__subtitle"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeHeaderSubtitle')); ?></p>
+    </header>
+    <div class="productivity-layout">
+        <section class="productivity-card">
+            <div class="productivity-card__header">
+                <span class="productivity-card__eyebrow"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeFormEyebrow')); ?></span>
+                <h3 class="productivity-card__title"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeFormTitle')); ?></h3>
+                <p class="productivity-card__subtitle"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeFormSubtitle')); ?></p>
+            </div>
+            <div class="productivity-card__body">
+                <form action="<?php echo dol_escape_htmltag($_SERVER['PHP_SELF']); ?>" method="post" class="productivity-form">
+                    <input type="hidden" name="token" value="<?php echo newToken(); ?>">
+                    <input type="hidden" name="action" value="calculate">
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label" for="idCultura"><?php echo dol_escape_htmltag($langs->trans('Cultura')); ?></label>
+                        <select id="idCultura" name="idCultura" class="productivity-form__control" required>
+                            <option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
+                            <?php
+                            if (is_array($culturas)) {
+                                foreach ($culturas as $cultura) {
+                                    $label = $cultura->label ?: $cultura->ref;
+                                    $selected = ($idCultura > 0 && (int) $cultura->id === (int) $idCultura) ? ' selected' : '';
+                                    echo '<option value="' . (int) $cultura->id . '" data-embrapa="' . dol_escape_htmltag($cultura->embrapa_id) . '"' . $selected . '>' . dol_escape_htmltag($label) . '</option>';
+                                }
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label" for="idCultivar"><?php echo dol_escape_htmltag($langs->trans('Cultivar')); ?></label>
+                        <select id="idCultivar" name="idCultivar" class="productivity-form__control" required>
+                            <option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
+                        </select>
+                    </div>
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label" for="codigoIBGE"><?php echo dol_escape_htmltag($langs->trans('Municipio')); ?></label>
+                        <select id="codigoIBGE" name="codigoIBGE" class="productivity-form__control" required>
+                            <option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
+                            <?php
+                            if (is_array($municipios)) {
+                                foreach ($municipios as $municipio) {
+                                    $label = $municipio->label ?: $municipio->ref;
+                                    $value = (int) $municipio->cod_ibge;
+                                    if ($value <= 0) {
+                                        continue;
+                                    }
+                                    $selected = '';
+                                    if ($codigoIBGE > 0 && $value === (int) $codigoIBGE) {
+                                        $selected = ' selected';
+                                    } elseif (!$codigoIBGE && !empty($defaultMunicipio) && (int) $defaultMunicipio === $value) {
+                                        $selected = ' selected';
+                                    }
+                                    echo '<option value="' . $value . '"' . $selected . '>' . dol_escape_htmltag($label) . ' - ' . dol_escape_htmltag($value) . '</option>';
+                                }
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label" for="cad"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeSoilWaterCapacity')); ?></label>
+                        <input type="number" name="cad" id="cad" class="productivity-form__control" value="<?php echo $cad > 0 ? dol_escape_htmltag($cad) : ''; ?>" min="0" step="1" required>
+                        <span class="productivity-form__help"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeSoilWaterCapacityHelp')); ?></span>
+                    </div>
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label" for="dataPlantio"><?php echo dol_escape_htmltag($langs->trans('ProdutividadePlantingDate')); ?></label>
+                        <input type="date" name="dataPlantio" id="dataPlantio" class="productivity-form__control" value="<?php echo dol_escape_htmltag($dataPlantio); ?>" required>
+                    </div>
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label" for="expectativaProdutividade"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeYieldExpectation')); ?></label>
+                        <input type="number" name="expectativaProdutividade" id="expectativaProdutividade" class="productivity-form__control" value="<?php echo $expectativaProdutividade !== '' ? dol_escape_htmltag($expectativaProdutividade) : ''; ?>" step="0.01" min="0" required>
+                        <span class="productivity-form__help"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeYieldExpectationHelp')); ?></span>
+                    </div>
+                    <div class="productivity-form__row">
+                        <label class="productivity-form__label"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeOptionalCoordinates')); ?></label>
+                        <div class="productivity-form__row" style="gap:0.6rem;">
+                            <input type="number" name="latitude" id="latitude" class="productivity-form__control" value="<?php echo $latitude !== '' ? dol_escape_htmltag($latitude) : ''; ?>" step="0.000001" placeholder="<?php echo dol_escape_htmltag($langs->trans('Latitude')); ?>">
+                            <input type="number" name="longitude" id="longitude" class="productivity-form__control" value="<?php echo $longitude !== '' ? dol_escape_htmltag($longitude) : ''; ?>" step="0.000001" placeholder="<?php echo dol_escape_htmltag($langs->trans('Longitude')); ?>">
+                        </div>
+                        <span class="productivity-form__help"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeOptionalCoordinatesHelp')); ?></span>
+                    </div>
+                    <div class="productivity-form__actions">
+                        <button type="submit" class="productivity-form__submit"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeSubmit')); ?></button>
+                    </div>
+                </form>
+            </div>
+        </section>
+        <aside class="productivity-card">
+            <div class="productivity-card__header">
+                <span class="productivity-card__eyebrow"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeResultsEyebrow')); ?></span>
+                <h3 class="productivity-card__title"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeResultsTitle')); ?></h3>
+                <p class="productivity-card__subtitle"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeResultsSubtitle')); ?></p>
+            </div>
+            <div class="productivity-card__body">
+                <?php if (is_array($resultData)) { ?>
+                    <div class="productivity-results">
+                        <?php
+                        $kpis = array();
+                        if (!empty($resultData)) {
+                            foreach ($resultData as $key => $value) {
+                                if (is_scalar($value) && $value !== '') {
+                                    $kpis[$key] = $value;
+                                }
+                                if (is_array($value)) {
+                                    foreach ($value as $subKey => $subValue) {
+                                        if (is_scalar($subValue) && $subValue !== '' && (stripos($subKey, 'produt') !== false || stripos($subKey, 'estim') !== false)) {
+                                            $compoundKey = $key . ' ' . $subKey;
+                                            $kpis[$compoundKey] = $subValue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        ?>
+                        <?php if (!empty($kpis)) { ?>
+                            <div class="productivity-kpis">
+                                <?php foreach ($kpis as $label => $value) { ?>
+                                    <div class="productivity-kpi">
+                                        <div class="productivity-kpi__label"><?php echo dol_escape_htmltag(dol_trunc(ucwords(str_replace('_', ' ', $label)), 60)); ?></div>
+                                        <div class="productivity-kpi__value"><?php echo dol_escape_htmltag(is_numeric($value) ? price($value) : $value); ?></div>
+                                    </div>
+                                <?php } ?>
+                            </div>
+                        <?php } ?>
+                        <?php if (!empty($resultData)) { ?>
+                            <div class="productivity-details">
+                                <h4 class="productivity-details__title"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeDetailedBreakdown')); ?></h4>
+                                <div class="productivity-details__grid">
+                                    <?php
+                                    $maxItems = 20;
+                                    $countItems = 0;
+                                    foreach ($resultData as $key => $value) {
+                                        if (is_scalar($value) || empty($value)) {
+                                            continue;
+                                        }
+                                        if ($countItems >= $maxItems) {
+                                            break;
+                                        }
+                                        if (is_array($value)) {
+                                            foreach ($value as $subKey => $subValue) {
+                                                if ($countItems >= $maxItems) {
+                                                    break;
+                                                }
+                                                if (is_array($subValue)) {
+                                                    continue;
+                                                }
+                                                $countItems++;
+                                                echo '<dl class="productivity-details__item">';
+                                                echo '<dt>' . dol_escape_htmltag(ucwords(str_replace('_', ' ', $key . ' ' . $subKey))) . '</dt>';
+                                                echo '<dd>' . dol_escape_htmltag(is_numeric($subValue) ? price($subValue) : $subValue) . '</dd>';
+                                                echo '</dl>';
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                        <?php } ?>
+                        <?php if (!empty($rawResponse)) { ?>
+                            <div class="productivity-raw"><pre><?php echo dol_escape_htmltag($rawResponse); ?></pre></div>
+                        <?php } ?>
+                    </div>
+                <?php } else { ?>
+                    <p><?php echo dol_escape_htmltag($langs->trans('ProdutividadePlaceholder')); ?></p>
+                <?php } ?>
+            </div>
+        </aside>
+    </div>
+</div>
+<?php
+$cultivarOptions = array();
+if (is_array($cultivares)) {
+    foreach ($cultivares as $cultivar) {
+        if (empty($cultivar->id)) {
+            continue;
+        }
+        $cultivarOptions[] = array(
+            'id' => (int) $cultivar->id,
+            'label' => $cultivar->label ?: $cultivar->ref,
+            'cultura' => (int) $cultivar->cultura,
+            'embrapa' => $cultivar->embrapa_id
+        );
+    }
+}
+?>
+<script>
+    (function () {
+        const cultivarSelect = document.getElementById('idCultivar');
+        const culturaSelect = document.getElementById('idCultura');
+        if (!cultivarSelect || !culturaSelect) {
+            return;
+        }
+        const options = <?php echo json_encode($cultivarOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        let selectedCultivar = <?php echo $idCultivar > 0 ? (int) $idCultivar : 'null'; ?>;
+
+        function populateCultivares() {
+            const culturaId = parseInt(culturaSelect.value, 10);
+            const fragment = document.createDocumentFragment();
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '<?php echo dol_escape_js($langs->trans('Select')); ?>';
+            fragment.appendChild(defaultOption);
+
+            options
+                .filter(function (item) {
+                    return !culturaId || item.cultura === culturaId;
+                })
+                .sort(function (a, b) {
+                    return a.label.localeCompare(b.label, undefined, {sensitivity: 'base'});
+                })
+                .forEach(function (item) {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.label;
+                    option.dataset.cultura = item.cultura;
+                    option.dataset.embrapa = item.embrapa || '';
+                    if (selectedCultivar && item.id === selectedCultivar) {
+                        option.selected = true;
+                    }
+                    fragment.appendChild(option);
+                });
+
+            cultivarSelect.innerHTML = '';
+            cultivarSelect.appendChild(fragment);
+        }
+
+        populateCultivares();
+        culturaSelect.addEventListener('change', function () {
+            selectedCultivar = null;
+            populateCultivares();
+        });
+
+        cultivarSelect.addEventListener('change', function () {
+            selectedCultivar = parseInt(this.value, 10) || null;
+        });
+    })();
+</script>
+<?php
+
+llxFooter();
+$db->close();
