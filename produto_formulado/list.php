@@ -185,7 +185,7 @@ $help_url = '';
 $title = $langs->trans('ProdutoFormuladoListTitle');
 llxHeader('', $title, $help_url);
 
-print '<div style="max-width:78%;margin-bottom:5px;overflow-x:auto;text-align:center;">';
+print '<div style="margin-bottom:5px;overflow-x:auto;text-align:center;">';
 
 print '<div class="tabsAction">';
 if ($user->rights->safra->produtoformulado->write) {
@@ -286,6 +286,15 @@ print '<button type="submit" name="button_search" value="1" class="button reposi
 print '<button type="submit" name="button_removefilter" value="1" class="button">'.$langs->trans('Reset').'</button>';
 print '</td>';
 print '</tr>';
+
+?>
+<style>
+    .tabsAction{
+        text-align: left !important;
+    }
+</style>
+
+<?php
 
 if ($safra_produto_schema_ok && $resql) {
     $i = 0;

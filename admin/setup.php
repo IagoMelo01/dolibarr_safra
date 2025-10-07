@@ -107,6 +107,10 @@ $item = $formSetup->newItem('SAFRA_API_SENTINELHUB')->setAsString();
 $formSetup->newItem('SAFRA_API_EMBRAPA_PUBLIC')->setAsString();
 $formSetup->newItem('SAFRA_API_EMBRAPA_PRIVATE')->setAsString();
 
+
+$formSetup->newItem('SAFRA_API_SENTINELHUB_CLIENT_ID')->setAsString();
+$formSetup->newItem('SAFRA_API_SENTINELHUB_CLIENT_SECRET')->setAsString();
+
 require_once DOL_DOCUMENT_ROOT.'/custom/safra/class/municipio.class.php';
 
 $obj_municipio = new Municipio($db);

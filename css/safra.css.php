@@ -553,4 +553,13 @@ div.mainmenu.safra {
         }
 }
 
+#id-container{
+        overflow: auto;
+}
+
+.listform{
+        overflow: scroll;
+}
+
+
 </style> 
