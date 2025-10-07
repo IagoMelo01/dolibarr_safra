@@ -213,6 +213,29 @@ SafraWeatherDesc95 = Trovoada fraca ou moderada
 SafraWeatherDesc96 = Trovoada com granizo fraco
 SafraWeatherDesc99 = Trovoada com granizo forte
 
+# Talhão - importação/exportação
+TalhaoImportButton = Importar KML/KMZ
+TalhaoExportKml = Exportar KML
+TalhaoExportKmz = Exportar KMZ
+TalhaoImportTitle = Importar talhões via KML/KMZ
+TalhaoImportHelp = Envie um arquivo KML ou KMZ com polígonos para criar novos talhões. Cada polígono será convertido automaticamente em um registro com área e limites calculados.
+TalhaoImportFile = Arquivo KML/KMZ
+TalhaoImportMunicipio = Município padrão
+TalhaoImportStatus = Status inicial
+TalhaoImportSubmit = Importar talhões
+TalhaoImportErrorMunicipioRequired = Selecione um município para os talhões importados.
+TalhaoImportErrorFileRequired = Escolha um arquivo KML ou KMZ para importar.
+TalhaoImportErrorUpload = Falha ao enviar o arquivo (código %s).
+TalhaoImportErrorReadFile = Não foi possível ler o arquivo informado.
+TalhaoImportErrorNoFeatures = Nenhum polígono foi encontrado no arquivo.
+TalhaoImportDefaultName = Talhão %s
+TalhaoImportErrorRef = Não foi possível gerar uma referência única para %s.
+TalhaoImportErrorCreate = Erro ao criar o talhão %s: %s
+TalhaoImportSuccess = %s talhão(ões) importado(s) com sucesso de um total de %s.
+TalhaoExportEmpty = Nenhum talhão encontrado para exportação.
+TalhaoExportEmptyGeometry = Os talhões filtrados não possuem geometria para exportar.
+TalhaoExportKmzUnavailable = O formato KMZ não está disponível neste servidor.
+
 # Produto formulado
 ProdutoFormuladoListTitle = Produtos formulados
 NewProdutoFormulado = Novo produto formulado
