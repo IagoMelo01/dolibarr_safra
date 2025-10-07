@@ -75,6 +75,7 @@ $parameters = array();
 $errors = array();
 $resultData = null;
 $rawResponse = '';
+$chartPayload = array();
 
 $idCultura = GETPOST('idCultura', 'int');
 $idCultivar = GETPOST('idCultivar', 'int');
@@ -167,6 +168,97 @@ if ($action === 'calculate' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (is_array($resultData)) {
             $rawResponse = json_encode($resultData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             setEventMessages($langs->trans('ProdutividadeSuccess'), null, 'mesgs');
+            if (isset($resultData['data']) && is_array($resultData['data'])) {
+                $seriesSource = $resultData['data'];
+                $chartDefinitions = array(
+                    'yield' => array(
+                        'title' => $langs->trans('ProdutividadeChartYieldTitle'),
+                        'unit' => $langs->trans('ProdutividadeChartYieldUnit'),
+                        'series' => array(
+                            'produtividadeAlmejada' => $langs->trans('ProdutividadeChartDesiredYield'),
+                            'produtividadeMediaMunicipio' => $langs->trans('ProdutividadeChartMunicipalAverage')
+                        )
+                    ),
+                    'temperature' => array(
+                        'title' => $langs->trans('ProdutividadeChartTemperatureTitle'),
+                        'unit' => $langs->trans('ProdutividadeChartTemperatureUnit'),
+                        'series' => array(
+                            'temperaturaMinima' => $langs->trans('ProdutividadeChartMinTemperature'),
+                            'temperaturaMaxima' => $langs->trans('ProdutividadeChartMaxTemperature')
+                        )
+                    ),
+                    'rain' => array(
+                        'title' => $langs->trans('ProdutividadeChartRainTitle'),
+                        'unit' => $langs->trans('ProdutividadeChartRainUnit'),
+                        'series' => array(
+                            'precipitacao' => $langs->trans('ProdutividadeChartRainfall')
+                        )
+                    ),
+                    'water' => array(
+                        'title' => $langs->trans('ProdutividadeChartWaterTitle'),
+                        'unit' => $langs->trans('ProdutividadeChartWaterUnit'),
+                        'series' => array(
+                            'balancoHidrico' => $langs->trans('ProdutividadeChartWaterBalance'),
+                            'deficienciaHidrica' => $langs->trans('ProdutividadeChartWaterDeficit'),
+                            'excedenteHidrico' => $langs->trans('ProdutividadeChartWaterSurplus')
+                        )
+                    ),
+                    'thermal' => array(
+                        'title' => $langs->trans('ProdutividadeChartThermalTitle'),
+                        'unit' => $langs->trans('ProdutividadeChartThermalUnit'),
+                        'series' => array(
+                            'grausDia' => $langs->trans('ProdutividadeChartDegreeDays'),
+                            'isna' => $langs->trans('ProdutividadeChartISNA')
+                        )
+                    )
+                );
+
+                foreach ($chartDefinitions as $chartId => $definition) {
+                    $chartSeries = array();
+                    $maxPoints = 0;
+                    foreach ($definition['series'] as $sourceKey => $seriesLabel) {
+                        if (!isset($seriesSource[$sourceKey]) || !is_array($seriesSource[$sourceKey])) {
+                            continue;
+                        }
+                        $values = array();
+                        $hasValue = false;
+                        foreach ($seriesSource[$sourceKey] as $value) {
+                            if ($value === null || $value === '' || (!is_numeric($value) && !is_bool($value))) {
+                                $values[] = null;
+                                continue;
+                            }
+                            $floatValue = (float) $value;
+                            $values[] = $floatValue;
+                            if (!$hasValue) {
+                                $hasValue = true;
+                            }
+                        }
+                        if (!$hasValue) {
+                            continue;
+                        }
+                        $maxPoints = max($maxPoints, count($values));
+                        $chartSeries[] = array(
+                            'key' => $sourceKey,
+                            'name' => $seriesLabel,
+                            'values' => $values
+                        );
+                    }
+                    if ($maxPoints === 0 || empty($chartSeries)) {
+                        continue;
+                    }
+                    $categories = array();
+                    for ($iIndex = 0; $iIndex < $maxPoints; $iIndex++) {
+                        $categories[] = $langs->trans('ProdutividadeChartPeriodLabel', $iIndex + 1);
+                    }
+                    $chartPayload[] = array(
+                        'id' => $chartId,
+                        'title' => $definition['title'],
+                        'unit' => $definition['unit'],
+                        'categories' => $categories,
+                        'series' => $chartSeries
+                    );
+                }
+            }
         } else {
             if (empty($apiError)) {
                 $apiError = $langs->trans('ProdutividadeUnknownError');
@@ -344,6 +436,27 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
                                 <?php } ?>
                             </div>
                         <?php } ?>
+                        <?php if (!empty($chartPayload)) { ?>
+                            <div class="productivity-visuals">
+                                <h4 class="productivity-visuals__title"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeVisualHighlights')); ?></h4>
+                                <div class="productivity-visuals__grid">
+                                    <?php foreach ($chartPayload as $chartData) { ?>
+                                        <section class="productivity-chart" data-chart-id="<?php echo dol_escape_htmltag($chartData['id']); ?>" data-chart="<?php echo dol_escape_htmltag(json_encode($chartData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)); ?>">
+                                            <header class="productivity-chart__header">
+                                                <h5 class="productivity-chart__title"><?php echo dol_escape_htmltag($chartData['title']); ?></h5>
+                                                <?php if (!empty($chartData['unit'])) { ?>
+                                                    <span class="productivity-chart__unit"><?php echo dol_escape_htmltag($chartData['unit']); ?></span>
+                                                <?php } ?>
+                                            </header>
+                                            <div class="productivity-chart__canvas-wrapper">
+                                                <canvas class="productivity-chart__canvas" width="480" height="240"></canvas>
+                                            </div>
+                                            <ul class="productivity-chart__legend"></ul>
+                                        </section>
+                                    <?php } ?>
+                                </div>
+                            </div>
+                        <?php } ?>
                         <?php if (!empty($resultData)) { ?>
                             <div class="productivity-details">
                                 <h4 class="productivity-details__title"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeDetailedBreakdown')); ?></h4>
@@ -379,7 +492,10 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
                             </div>
                         <?php } ?>
                         <?php if (!empty($rawResponse)) { ?>
-                            <div class="productivity-raw"><pre><?php echo dol_escape_htmltag($rawResponse); ?></pre></div>
+                            <details class="productivity-raw">
+                                <summary><?php echo dol_escape_htmltag($langs->trans('ProdutividadeRawToggle')); ?></summary>
+                                <pre><?php echo dol_escape_htmltag($rawResponse); ?></pre>
+                            </details>
                         <?php } ?>
                     </div>
                 <?php } else { ?>
@@ -409,6 +525,7 @@ $produtividadeConfig = array(
 );
 
 print '<script>window.safraProdutividadeConfig = ' . json_encode($produtividadeConfig, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . ';</script>';
+print '<script>window.safraProdutividadeCharts = ' . json_encode($chartPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) . ';</script>';
 print '<script src="' . dol_buildpath('/safra/js/produtividade.js', 1) . '?v=1"></script>';
 
 llxFooter();
