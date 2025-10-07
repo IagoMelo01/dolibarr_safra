@@ -508,6 +508,7 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
 <?php
 $produtividadeConfig = array(
     'endpoint' => dol_buildpath('/safra/ajax/produtividade.php', 1),
+    'cultivarPageSize' => 250,
     'selected' => array(
         'cultura' => $idCultura > 0 ? (int) $idCultura : null,
         'cultivar' => $idCultivar > 0 ? (int) $idCultivar : null,
@@ -520,7 +521,8 @@ $produtividadeConfig = array(
         'select' => $langs->trans('Select'),
         'loading' => $langs->trans('ProdutividadeLoading'),
         'empty' => $langs->trans('ProdutividadeCultivarEmpty'),
-        'placeholder' => $langs->trans('ProdutividadeCultivarPrompt')
+        'placeholder' => $langs->trans('ProdutividadeCultivarPrompt'),
+        'loadingMore' => $langs->trans('ProdutividadeLoadingMore')
     )
 );
 
