@@ -230,6 +230,7 @@ ProdutividadeCultivarEmpty = Nenhuma cultivar encontrada para a cultura escolhid
 ProdutividadeMunicipioPlaceholder = Busque pelo município ou código IBGE.
 ProdutividadeMunicipioHelp = Digite ao menos três caracteres ou o código IBGE para localizar o município.
 ProdutividadeLoading = Carregando...
+ProdutividadeLoadingMore = Carregando mais cultivares...
 ProdutividadeVisualHighlights = Visualize os indicadores graficamente
 ProdutividadeChartYieldTitle = Evolução da produtividade
 ProdutividadeChartYieldUnit = t/ha

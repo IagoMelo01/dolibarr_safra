@@ -12,6 +12,26 @@
     const municipioHidden = document.getElementById('codigoIBGE');
     const municipioDatalist = document.getElementById('municipioSuggestions');
     const chartContainers = document.querySelectorAll('.productivity-chart');
+    const cultivarPageSize = (function () {
+        const raw = parseInt(config.cultivarPageSize, 10);
+        if (!Number.isFinite(raw) || raw <= 0) {
+            return 250;
+        }
+        if (raw > 500) {
+            return 500;
+        }
+        return Math.max(raw, 25);
+    })();
+
+    const cultivarState = {
+        culturaId: null,
+        items: [],
+        map: new Map(),
+        loading: false,
+        hasMore: false,
+        nextOffset: 0,
+        controller: null
+    };
 
     function buildUrl(params) {
         if (!endpoint) {
@@ -26,24 +46,35 @@
         return url.toString();
     }
 
-    function setCultivarOptions(options) {
+    function setCultivarOptions(options, state) {
         if (!cultivarSelect) {
             return;
         }
+        const currentValue = cultivarSelect.value;
+        const desiredValue = selected.cultivar ? String(selected.cultivar) : (currentValue || '');
+
         cultivarSelect.innerHTML = '';
 
         const placeholder = document.createElement('option');
         placeholder.value = '';
         placeholder.textContent = labels.select || '---';
+        placeholder.disabled = false;
+        if (!desiredValue) {
+            placeholder.selected = true;
+        }
         cultivarSelect.appendChild(placeholder);
 
-        if (!options || !options.length) {
-            const message = selected.cultura ? (labels.empty || '') : (labels.placeholder || labels.empty || '');
+        const hasOptions = Array.isArray(options) && options.length > 0;
+        if (!hasOptions) {
+            const isLoading = state && state.loading;
+            const message = isLoading ? (labels.loading || '...') : (selected.cultura ? (labels.empty || '') : (labels.placeholder || labels.empty || ''));
             const emptyOption = document.createElement('option');
             emptyOption.value = '';
             emptyOption.textContent = message;
             emptyOption.disabled = true;
-            emptyOption.selected = true;
+            if (!desiredValue) {
+                emptyOption.selected = true;
+            }
             cultivarSelect.appendChild(emptyOption);
             cultivarSelect.disabled = true;
             return;
@@ -60,54 +91,174 @@
             cultivarSelect.appendChild(option);
         });
 
+        if (state && state.hasMore) {
+            const loadingMore = document.createElement('option');
+            loadingMore.value = '';
+            loadingMore.textContent = labels.loadingMore || labels.loading || '...';
+            loadingMore.disabled = true;
+            loadingMore.dataset.loading = '1';
+            cultivarSelect.appendChild(loadingMore);
+        }
+
         cultivarSelect.disabled = false;
 
-        if (selected.cultivar) {
-            cultivarSelect.value = String(selected.cultivar);
+        if (desiredValue) {
+            cultivarSelect.value = desiredValue;
+            if (cultivarSelect.value !== desiredValue && currentValue && currentValue !== desiredValue) {
+                cultivarSelect.value = currentValue;
+            }
+            if (cultivarSelect.value !== desiredValue && cultivarSelect.value !== currentValue) {
+                cultivarSelect.value = '';
+            }
+        } else {
+            cultivarSelect.value = '';
         }
     }
 
-    function showCultivarLoading() {
-        if (!cultivarSelect) {
-            return;
-        }
-        cultivarSelect.innerHTML = '';
-        const loadingOption = document.createElement('option');
-        loadingOption.value = '';
-        loadingOption.textContent = labels.loading || '...';
-        loadingOption.disabled = true;
-        loadingOption.selected = true;
-        cultivarSelect.appendChild(loadingOption);
-        cultivarSelect.disabled = true;
-    }
-
-    async function fetchCultivares(culturaId) {
+    function fetchCultivares(culturaId) {
         if (!culturaId) {
+            resetCultivarState();
             setCultivarOptions(null);
             return;
         }
-        showCultivarLoading();
-        try {
-            const url = buildUrl(new Map([
-                ['action', 'cultivares'],
-                ['idCultura', culturaId],
-                ['limit', 0]
-            ]));
-            if (!url) {
-                setCultivarOptions(null);
-                return;
+
+        resetCultivarState();
+        cultivarState.culturaId = culturaId;
+        cultivarState.loading = true;
+        setCultivarOptions([], {loading: true});
+        requestCultivarBatch();
+    }
+
+    function abortCultivarRequest() {
+        if (cultivarState.controller && typeof cultivarState.controller.abort === 'function') {
+            try {
+                cultivarState.controller.abort();
+            } catch (error) {
+                // Ignore abort issues
             }
-            const response = await fetch(url, {credentials: 'same-origin'});
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
-            const payload = await response.json();
-            selected.cultura = culturaId;
-            setCultivarOptions(payload && payload.items ? payload.items : []);
-        } catch (error) {
-            console.error('Unable to load cultivares', error);
-            setCultivarOptions(null);
         }
+        cultivarState.controller = null;
+    }
+
+    function resetCultivarState() {
+        abortCultivarRequest();
+        cultivarState.culturaId = null;
+        cultivarState.items = [];
+        cultivarState.map = new Map();
+        cultivarState.loading = false;
+        cultivarState.hasMore = false;
+        cultivarState.nextOffset = 0;
+    }
+
+    function requestCultivarBatch() {
+        const culturaId = cultivarState.culturaId;
+        if (!culturaId) {
+            return;
+        }
+        if (!endpoint) {
+            setCultivarOptions(null);
+            return;
+        }
+
+        const requestOffset = cultivarState.nextOffset || 0;
+        const params = new Map([
+            ['action', 'cultivares'],
+            ['idCultura', culturaId],
+            ['limit', cultivarPageSize],
+            ['offset', requestOffset]
+        ]);
+        const url = buildUrl(params);
+        if (!url) {
+            setCultivarOptions(null);
+            return;
+        }
+
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        cultivarState.controller = controller;
+        cultivarState.loading = true;
+        if (cultivarState.items.length) {
+            setCultivarOptions(cultivarState.items, {loading: true, hasMore: true});
+        }
+
+        const fetchOptions = {credentials: 'same-origin'};
+        if (controller) {
+            fetchOptions.signal = controller.signal;
+        }
+
+        fetch(url, fetchOptions)
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                if (cultivarState.culturaId !== culturaId) {
+                    return;
+                }
+
+                cultivarState.controller = null;
+                const received = payload && Array.isArray(payload.items) ? payload.items : [];
+                if (received.length) {
+                    received.forEach(function (item) {
+                        const key = String(item.id);
+                        const existing = cultivarState.map.get(key);
+                        if (existing) {
+                            existing.label = item.label;
+                            existing.cultura = item.cultura;
+                            existing.embrapa = item.embrapa;
+                        } else {
+                            cultivarState.map.set(key, item);
+                            cultivarState.items.push(item);
+                        }
+                    });
+                }
+
+                let hasMore = Boolean(payload && payload.hasMore);
+                let nextOffset = typeof payload.nextOffset === 'number' && payload.nextOffset >= 0 ? payload.nextOffset : requestOffset + received.length;
+                if (nextOffset <= requestOffset) {
+                    nextOffset = requestOffset + received.length;
+                }
+                if (nextOffset <= requestOffset) {
+                    hasMore = false;
+                }
+
+                cultivarState.nextOffset = nextOffset;
+                cultivarState.hasMore = hasMore;
+                cultivarState.loading = hasMore;
+
+                if (!cultivarState.items.length && !hasMore) {
+                    setCultivarOptions(null);
+                    return;
+                }
+
+                setCultivarOptions(cultivarState.items, {
+                    loading: hasMore,
+                    hasMore: hasMore
+                });
+
+                if (hasMore) {
+                    setTimeout(function () {
+                        if (cultivarState.culturaId === culturaId) {
+                            requestCultivarBatch();
+                        }
+                    }, 0);
+                }
+            })
+            .catch(function (error) {
+                if (controller && error && error.name === 'AbortError') {
+                    return;
+                }
+                console.error('Unable to load cultivares', error);
+                if (!cultivarState.items.length) {
+                    setCultivarOptions(null);
+                } else {
+                    setCultivarOptions(cultivarState.items, {loading: false, hasMore: false});
+                }
+                cultivarState.controller = null;
+                cultivarState.loading = false;
+                cultivarState.hasMore = false;
+            });
     }
 
     function formatMunicipioOption(item) {
@@ -208,6 +359,15 @@
             }
             selected.cultura = culturaId;
             fetchCultivares(culturaId);
+        });
+
+        cultivarSelect.addEventListener('change', function () {
+            if (!this.value) {
+                selected.cultivar = null;
+                return;
+            }
+            const value = parseInt(this.value, 10);
+            selected.cultivar = Number.isFinite(value) ? value : null;
         });
 
         if (selected.cultura) {

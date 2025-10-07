@@ -228,6 +228,7 @@ ProdutividadeCultivarEmpty = No cultivars were found for the chosen crop.
 ProdutividadeMunicipioPlaceholder = Search by municipality name or IBGE code.
 ProdutividadeMunicipioHelp = Type at least three characters or the IBGE code to locate the municipality.
 ProdutividadeLoading = Loading...
+ProdutividadeLoadingMore = Loading more cultivars...
 ProdutividadeVisualHighlights = Visualize the indicators graphically
 ProdutividadeChartYieldTitle = Yield trend
 ProdutividadeChartYieldUnit = t/ha

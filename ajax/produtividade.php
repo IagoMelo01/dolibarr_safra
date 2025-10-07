@@ -55,6 +55,7 @@ if (!$user->hasRight('safra', 'produtividade', 'read')) {
 $action = GETPOST('action', 'aZ09');
 $term = trim(GETPOST('term', 'alphanohtml'));
 $limit = GETPOST('limit', 'int');
+$offset = GETPOST('offset', 'int');
 if (!GETPOSTISSET('limit')) {
     $limit = 25;
 } elseif ($limit < 0) {
@@ -63,7 +64,13 @@ if (!GETPOSTISSET('limit')) {
     $limit = 500;
 }
 
+if (!GETPOSTISSET('offset') || $offset < 0) {
+    $offset = 0;
+}
+
 $items = array();
+$hasMore = false;
+$nextOffset = $offset;
 
 switch ($action) {
     case 'cultivares':
@@ -80,8 +87,13 @@ switch ($action) {
             $filters['customsql'] = "(t.label LIKE '%" . $escapedTerm . "%' OR t.ref LIKE '%" . $escapedTerm . "%')";
         }
 
-        $records = $cultivar->fetchAll('ASC', 'label', $limit, 0, $filters);
+        $pageSize = $limit > 0 ? $limit : 250;
+        $records = $cultivar->fetchAll('ASC', 'label', $pageSize + 1, $offset, $filters);
         if (is_array($records)) {
+            if (count($records) > $pageSize) {
+                $hasMore = true;
+                $records = array_slice($records, 0, $pageSize, true);
+            }
             foreach ($records as $record) {
                 if (empty($record->id)) {
                     continue;
@@ -93,6 +105,7 @@ switch ($action) {
                     'embrapa' => $record->embrapa_id,
                 );
             }
+            $nextOffset = $offset + count($records);
         }
         break;
 
@@ -125,6 +138,10 @@ switch ($action) {
 
 top_httphead('application/json');
 
-print json_encode(array('items' => $items));
+print json_encode(array(
+    'items' => $items,
+    'hasMore' => $hasMore,
+    'nextOffset' => $nextOffset,
+));
 
 $db->close();
