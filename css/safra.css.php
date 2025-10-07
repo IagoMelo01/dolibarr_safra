@@ -384,6 +384,12 @@ div.mainmenu.safra {
         height: 100% !important;
 }
 
+.safra-chart__meta {
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #64748b;
+}
+
 .safra-empty {
         margin: 6px 0 0;
         color: #64748b;
