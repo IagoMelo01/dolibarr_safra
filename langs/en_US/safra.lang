@@ -190,6 +190,29 @@ SafraWeatherDesc95 = Thunderstorm, slight or moderate
 SafraWeatherDesc96 = Thunderstorm with light hail
 SafraWeatherDesc99 = Thunderstorm with heavy hail
 
+# Talhão - import/export
+TalhaoImportButton = Import KML/KMZ
+TalhaoExportKml = Export KML
+TalhaoExportKmz = Export KMZ
+TalhaoImportTitle = Import fields from KML/KMZ
+TalhaoImportHelp = Upload a KML or KMZ file with polygons to create new fields. Each polygon will be converted into a record with calculated area and bounds.
+TalhaoImportFile = KML/KMZ file
+TalhaoImportMunicipio = Default municipality
+TalhaoImportStatus = Initial status
+TalhaoImportSubmit = Import fields
+TalhaoImportErrorMunicipioRequired = Please select a municipality for the imported fields.
+TalhaoImportErrorFileRequired = Choose a KML or KMZ file to import.
+TalhaoImportErrorUpload = Unable to upload the file (code %s).
+TalhaoImportErrorReadFile = The provided file could not be read.
+TalhaoImportErrorNoFeatures = No polygon was found in the uploaded file.
+TalhaoImportDefaultName = Field %s
+TalhaoImportErrorRef = Unable to generate a unique reference for %s.
+TalhaoImportErrorCreate = Failed to create field %s: %s
+TalhaoImportSuccess = %s field(s) imported successfully from %s feature(s).
+TalhaoExportEmpty = No fields found to export.
+TalhaoExportEmptyGeometry = Filtered fields do not contain a geometry to export.
+TalhaoExportKmzUnavailable = KMZ export is not available on this server.
+
 # Produto formulado
 ProdutoFormuladoListTitle = Formulated products
 NewProdutoFormulado = New formulated product
