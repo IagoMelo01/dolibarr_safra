@@ -578,11 +578,11 @@ if ($exportRequested) {
                         }
                         if (!empty($municipioIds)) {
                                 $municipioIdList = array_map('intval', array_keys($municipioIds));
-                                $sqlMunicipio = 'SELECT rowid, label FROM '.MAIN_DB_PREFIX."safra_municipio WHERE rowid IN (".implode(',', $municipioIdList).')';
+                                $sqlMunicipio = 'SELECT rowid, ref FROM '.MAIN_DB_PREFIX."safra_municipio WHERE rowid IN (".implode(',', $municipioIdList).')';
                                 $resMunicipio = $db->query($sqlMunicipio);
                                 if ($resMunicipio) {
                                         while ($objMunicipio = $db->fetch_object($resMunicipio)) {
-                                                $municipioLabels[$objMunicipio->rowid] = $objMunicipio->label;
+                                                $municipioLabels[$objMunicipio->rowid] = $objMunicipio->ref;
                                         }
                                         $db->free($resMunicipio);
                                 }
@@ -793,11 +793,11 @@ if ($displayImportForm) {
         }
 
         $municipioChoices = array();
-        $sqlMunicipios = 'SELECT rowid, label FROM '.MAIN_DB_PREFIX."safra_municipio ORDER BY label";
+        $sqlMunicipios = 'SELECT rowid, ref FROM '.MAIN_DB_PREFIX."safra_municipio ORDER BY ref";
         $resMunicipios = $db->query($sqlMunicipios);
         if ($resMunicipios) {
                 while ($objMunicipio = $db->fetch_object($resMunicipios)) {
-                        $municipioChoices[$objMunicipio->rowid] = $objMunicipio->label;
+                        $municipioChoices[$objMunicipio->rowid] = $objMunicipio->ref;
                 }
                 $db->free($resMunicipios);
         }
