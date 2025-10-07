@@ -65,7 +65,7 @@ class EmbrapaApi
 
         $this->clientId = getDolGlobalString('SAFRA_API_EMBRAPA_PUBLIC');
         $this->clientSecret = getDolGlobalString('SAFRA_API_EMBRAPA_PRIVATE');
-        $baseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL', 'https://api.cnptia.embrapa.br/agritec/v1/produtividade');
+        $baseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL', 'https://api.cnptia.embrapa.br/agritec/v2/produtividade');
         $this->produtividadeUrl = rtrim($baseUrl, '/');
     }
 
@@ -91,6 +91,8 @@ class EmbrapaApi
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 45);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Authorization: Bearer ' . $accessToken,
             'Accept: application/json'
@@ -146,6 +148,8 @@ class EmbrapaApi
         curl_setopt($ch, CURLOPT_POSTFIELDS, 'grant_type=client_credentials');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
             'Authorization: Basic ' . $credentials,
             'Content-Type: application/x-www-form-urlencoded'
