@@ -262,12 +262,32 @@ if ($action == 'create') {
 		accessforbidden('NotEnoughPermissions', 0, 1);
 	}
 
-	print '<div class="container">';
+        print '<div class="talhao-layout">';
 
-	// debut div item 1 / map
-	print '<div class="item" id="mapCRUD"></div>';
-	
-	print '<div class="item">'; 
+        // debut div item 1 / map
+print '<div class="item map-column">';
+        print '        <div class="map-panel">';
+        print '                <div class="map-panel__header">';
+        print '                        <h3>Desenho do talhão</h3>';
+        print '                        <p>Escolha uma das ferramentas para desenhar o perímetro. Para pivôs centrais utilize o círculo: o desenho será convertido automaticamente em um polígono compatível com o Sentinel Hub ao salvar.</p>';
+        print '                </div>';
+        print '                <div class="map-panel__toolbar">';
+        print '                        <button type="button" class="map-panel__btn" id="fit-drawing">Recentralizar desenho</button>';
+        print '                        <button type="button" class="map-panel__btn map-panel__btn--secondary" id="clear-drawing">Limpar desenho</button>';
+        print '                </div>';
+print '                <div class="map-panel__map" id="mapCRUD"></div>';
+        print '                <div class="map-panel__tips">';
+        print '                        <strong>Dicas rápidas</strong>';
+        print '                        <ul>';
+        print '                                <li>Utilize o ícone de polígono para áreas irregulares.</li>';
+        print '                                <li>Para pivôs centrais, selecione o ícone de círculo: ele será convertido em polígono ao enviar.</li>';
+        print '                                <li>Use a lixeira do menu ou o botão limpar para começar novamente.</li>';
+        print '                        </ul>';
+        print '                </div>';
+        print '        </div>';
+        print '</div>';
+
+        print '<div class="item form-column">';
 
 	print load_fiche_titre($title, '', 'object_'.$object->picto);
 
@@ -309,9 +329,9 @@ if ($action == 'create') {
 	print '</form>';
 
 	// fin div item 2
-	print '</div>';
-	// fin div container
-	print '</div>';
+        print '</div>';
+        // fin div container
+        print '</div>';
 	
 	include_once './js/talhao_create.js.php';
 	// echo 'testers';
@@ -322,12 +342,32 @@ if ($action == 'create') {
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
 
-	print '<div class="container">';
+        print '<div class="talhao-layout">';
 
-	// debut div item 1 / map
-	print '<div class="item" id="mapCRUD"></div>';
-	
-	print '<div class="item">'; 
+        // debut div item 1 / map
+        print '<div class="item map-column">';
+        print '        <div class="map-panel">';
+        print '                <div class="map-panel__header">';
+        print '                        <h3>Desenho do talhão</h3>';
+        print '                        <p>Edite o perímetro utilizando as ferramentas de polígono ou círculo. Desenhos circulares são convertidos automaticamente para polígonos antes de salvar.</p>';
+        print '                </div>';
+        print '                <div class="map-panel__toolbar">';
+        print '                        <button type="button" class="map-panel__btn" id="fit-drawing">Recentralizar desenho</button>';
+        print '                        <button type="button" class="map-panel__btn map-panel__btn--secondary" id="clear-drawing">Limpar desenho</button>';
+        print '                </div>';
+        print '                <div class="map-panel__map" id="mapCRUD"></div>';
+        print '                <div class="map-panel__tips">';
+        print '                        <strong>Dicas rápidas</strong>';
+        print '                        <ul>';
+        print '                                <li>Atualize o contorno arrastando os vértices do polígono.</li>';
+        print '                                <li>Para pivôs, redesenhe com o círculo e o sistema gerará um polígono automaticamente.</li>';
+        print '                                <li>Use os botões acima para recentralizar ou limpar o desenho atual.</li>';
+        print '                        </ul>';
+        print '                </div>';
+        print '        </div>';
+        print '</div>';
+
+        print '<div class="item form-column">';
 
 	print load_fiche_titre($langs->trans("Talhao"), '', 'object_'.$object->picto);
 
@@ -688,14 +728,126 @@ $db->close();
 ?>
 
 <style>
-	
+.talhao-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.85fr);
+        gap: 1.5rem;
+        align-items: flex-start;
+}
 
-    .container{
-        flex-wrap: nowrap;
-    }
+.talhao-layout .item {
+        min-width: 0;
+}
 
-    .item{
-        max-width: 45%;
-    }
+.talhao-layout .map-column {
+        width: 100%;
+}
 
+.talhao-layout .form-column {
+        width: 100%;
+}
+
+.map-panel {
+        background: #fff;
+        border: 1px solid #d7d7d7;
+        border-radius: 10px;
+        padding: 1.25rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+}
+
+.map-panel__header h3 {
+        margin: 0 0 0.35rem;
+        font-size: 1.2rem;
+        color: #0b6fa4;
+}
+
+.map-panel__header p {
+        margin: 0;
+        color: #4b5563;
+        line-height: 1.5;
+        font-size: 0.95rem;
+}
+
+.map-panel__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+}
+
+.map-panel__btn {
+        background: #0b6fa4;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 0.5rem 0.9rem;
+        transition: background 0.2s ease;
+}
+
+.map-panel__btn:hover,
+.map-panel__btn:focus {
+        background: #094f75;
+}
+
+.map-panel__btn--secondary {
+        background: #f3f4f6;
+        color: #1f2937;
+        border: 1px solid #d1d5db;
+}
+
+.map-panel__btn--secondary:hover,
+.map-panel__btn--secondary:focus {
+        background: #e5e7eb;
+}
+
+.map-panel__map {
+        width: 100%;
+        height: 520px;
+        min-height: 520px;
+        border-radius: 10px;
+        overflow: hidden;
+        position: relative;
+}
+
+.map-panel__map .leaflet-container {
+        width: 100% !important;
+        height: 100% !important;
+		display: flex;
+}
+
+.map-panel__tips {
+        font-size: 0.9rem;
+        color: #374151;
+        line-height: 1.45;
+}
+
+.map-panel__tips ul {
+        margin: 0.5rem 0 0;
+        padding-left: 1.2rem;
+}
+
+.map-panel__tips li + li {
+        margin-top: 0.35rem;
+}
+
+@media (max-width: 1280px) {
+        .talhao-layout {
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+}
+
+@media (max-width: 992px) {
+        .talhao-layout {
+                grid-template-columns: minmax(0, 1fr);
+        }
+
+        .map-panel__map {
+                height: 380px;
+                min-height: 380px;
+        }
+}
 </style>

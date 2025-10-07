@@ -152,7 +152,7 @@ div.mainmenu.safra {
 
 	#mapList {
 		z-index: 0;
-		width: 95%;
+		width: 100%;
 		height: 300px;
 	}
 	#mapCRUD {
@@ -180,25 +180,24 @@ div.mainmenu.safra {
 	.container {
 		display: flex;
 		flex-wrap: nowrap;
-		flex-direction: row;
+		flex-direction: column;
 		justify-content: start;
 		align-items: auto;
 		align-content: start;
 	}
 	.item {
 		flex: 0 0 auto;
+                width: 100%;
 		margin: 10px 0 0 10px;
 		/* max-width: 45%; */
 	}
 	#mapList {
 		z-index: 0;
-		width: 29rem;
-		height: 40rem;
+		width: 100%;
+		height: 15rem;
 	}
 	#mapCRUD {
 		z-index: 0;
-		width: 40rem;
-		max-width: 50%;
 		height: 40rem;
 	}
 	#mapShow {
