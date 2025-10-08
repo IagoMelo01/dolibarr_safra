@@ -47,6 +47,11 @@ class EmbrapaApi
     /**
      * @var string
      */
+    private $zoneamentoUrl;
+
+    /**
+     * @var string
+     */
     private $clientId;
 
     /**
@@ -65,8 +70,11 @@ class EmbrapaApi
 
         $this->clientId = getDolGlobalString('SAFRA_API_EMBRAPA_PUBLIC');
         $this->clientSecret = getDolGlobalString('SAFRA_API_EMBRAPA_PRIVATE');
-        $baseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL', 'https://api.cnptia.embrapa.br/agritec/v2/produtividade');
-        $this->produtividadeUrl = rtrim($baseUrl, '/');
+        $produtividadeBaseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL', 'https://api.cnptia.embrapa.br/agritec/v2/produtividade');
+        $this->produtividadeUrl = rtrim($produtividadeBaseUrl, '/');
+
+        $zoneamentoBaseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_ZONEAMENTO_URL', 'https://api.cnptia.embrapa.br/agritec/v2/zoneamento');
+        $this->zoneamentoUrl = rtrim($zoneamentoBaseUrl, '/');
     }
 
     /**
@@ -87,6 +95,64 @@ class EmbrapaApi
         $queryString = http_build_query($parameters);
         $separator = strpos($this->produtividadeUrl, '?') === false ? '?' : '&';
         $url = $this->produtividadeUrl . $separator . $queryString;
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 45);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: Bearer ' . $accessToken,
+            'Accept: application/json'
+        ));
+
+        $response = curl_exec($ch);
+        if ($response === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return null;
+        }
+
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $decoded = json_decode($response, true);
+
+        if ($status >= 200 && $status < 300 && is_array($decoded)) {
+            return $decoded;
+        }
+
+        if (!empty($decoded)) {
+            if (isset($decoded['error'])) {
+                $error = $this->formatErrorObject($decoded['error']);
+            } else {
+                $error = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+            }
+        } else {
+            $error = $this->translateHttpError($status, $response);
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch planting window (zoneamento) data from Embrapa API.
+     *
+     * @param array  $parameters Query string parameters
+     * @param string $error      Error message on failure
+     *
+     * @return array|null
+     */
+    public function fetchZoneamento(array $parameters, &$error = '')
+    {
+        $accessToken = $this->fetchToken($error);
+        if (empty($accessToken)) {
+            return null;
+        }
+
+        $queryString = http_build_query($parameters);
+        $separator = strpos($this->zoneamentoUrl, '?') === false ? '?' : '&';
+        $url = $this->zoneamentoUrl . $separator . $queryString;
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
