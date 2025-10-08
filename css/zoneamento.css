@@ -1,0 +1,410 @@
+.zoneamento-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    border-radius: 20px;
+    padding: 32px 36px;
+    color: #e2e8f0;
+    box-shadow: 0 25px 45px rgba(15, 23, 42, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.zoneamento-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.18), transparent 55%), radial-gradient(circle at 80% 0%, rgba(59, 130, 246, 0.25), transparent 60%);
+    pointer-events: none;
+}
+
+.zoneamento-hero__content {
+    position: relative;
+    z-index: 1;
+}
+
+.zoneamento-hero__title {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.zoneamento-hero__subtitle {
+    max-width: 760px;
+    margin: 0;
+    line-height: 1.6;
+    font-size: 1rem;
+    color: rgba(226, 232, 240, 0.85);
+}
+
+.zoneamento-hero__legend {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+}
+
+.zoneamento-legend__intro {
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.8);
+    margin-right: 12px;
+}
+
+.zoneamento-legend__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    backdrop-filter: blur(6px);
+    font-size: 0.9rem;
+}
+
+.zoneamento-legend__dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+}
+
+.zoneamento-legend__dot--risk20 {
+    background: #22c55e;
+}
+
+.zoneamento-legend__dot--risk30 {
+    background: #f59e0b;
+}
+
+.zoneamento-legend__dot--risk40 {
+    background: #ef4444;
+}
+
+.zoneamento-form {
+    margin-top: 28px;
+    margin-bottom: 32px;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px 28px;
+    box-shadow: 0 22px 38px rgba(15, 23, 42, 0.14);
+}
+
+.zoneamento-form__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.zoneamento-form__label {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.zoneamento-form__input,
+.zoneamento-form__select,
+.zoneamento-form__multiselect {
+    background: #f8fafc;
+    border: 1px solid #cbd5f5;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    color: #0f172a;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.zoneamento-form__multiselect {
+    min-height: 220px;
+}
+
+.zoneamento-form__input:focus,
+.zoneamento-form__select:focus,
+.zoneamento-form__multiselect:focus {
+    outline: none;
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.zoneamento-form__help {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.zoneamento-form__actions {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+}
+
+.zoneamento-form__submit {
+    font-size: 0.95rem;
+    padding: 12px 26px;
+    border-radius: 10px;
+}
+
+.zoneamento-dashboard {
+    background: linear-gradient(145deg, #0b1120 0%, #0f172a 65%, #0f172a 100%);
+    border-radius: 24px;
+    padding: 28px 30px 36px;
+    box-shadow: 0 32px 55px rgba(15, 23, 42, 0.55);
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.zoneamento-dashboard__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.zoneamento-dashboard__title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.zoneamento-dashboard__meta {
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.7);
+}
+
+.zoneamento-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    padding: 22px 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.zoneamento-row:last-child {
+    border-bottom: none;
+}
+
+.zoneamento-row__label {
+    flex: 0 0 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.zoneamento-row__label h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.zoneamento-row__ranges {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.zoneamento-range {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.zoneamento-range__badge {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.zoneamento-range__badge--risk20 {
+    background: #22c55e;
+}
+
+.zoneamento-range__badge--risk30 {
+    background: #f59e0b;
+}
+
+.zoneamento-range__badge--risk40 {
+    background: #ef4444;
+}
+
+.zoneamento-range__label {
+    font-weight: 600;
+    color: rgba(241, 245, 249, 0.9);
+}
+
+.zoneamento-range__text {
+    color: rgba(203, 213, 225, 0.88);
+    line-height: 1.5;
+}
+
+.zoneamento-row__details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: rgba(148, 163, 184, 0.8);
+}
+
+.zoneamento-detail__label {
+    color: #f8fafc;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.zoneamento-detail__separator {
+    color: rgba(148, 163, 184, 0.45);
+}
+
+.zoneamento-row__chart {
+    flex: 1;
+    min-width: 320px;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.zoneamento-month {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.zoneamento-month__label {
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.zoneamento-month__body {
+    position: relative;
+    background: rgba(148, 163, 184, 0.12);
+    border-radius: 12px;
+    height: 42px;
+    overflow: hidden;
+}
+
+.zoneamento-bar {
+    position: absolute;
+    left: calc(var(--start) * 1%);
+    width: calc(var(--width) * 1%);
+    border-radius: 999px;
+    height: 10px;
+    opacity: 0.45;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.zoneamento-bar--risk20 {
+    top: 4px;
+    background: #22c55e;
+}
+
+.zoneamento-bar--risk30 {
+    top: 16px;
+    background: #f59e0b;
+}
+
+.zoneamento-bar--risk40 {
+    top: 28px;
+    background: #ef4444;
+}
+
+.zoneamento-dashboard[data-highlight="20"] .zoneamento-bar--risk20,
+.zoneamento-dashboard[data-highlight="30"] .zoneamento-bar--risk30,
+.zoneamento-dashboard[data-highlight="40"] .zoneamento-bar--risk40 {
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.35);
+}
+
+.zoneamento-dashboard[data-highlight="20"] .zoneamento-bar--risk30,
+.zoneamento-dashboard[data-highlight="20"] .zoneamento-bar--risk40,
+.zoneamento-dashboard[data-highlight="30"] .zoneamento-bar--risk20,
+.zoneamento-dashboard[data-highlight="30"] .zoneamento-bar--risk40,
+.zoneamento-dashboard[data-highlight="40"] .zoneamento-bar--risk20,
+.zoneamento-dashboard[data-highlight="40"] .zoneamento-bar--risk30 {
+    opacity: 0.22;
+}
+
+.zoneamento-row--error,
+.zoneamento-row--empty {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 16px;
+    padding: 18px 22px;
+    color: #fecaca;
+}
+
+.zoneamento-row--empty {
+    background: rgba(14, 165, 233, 0.1);
+    border-color: rgba(56, 189, 248, 0.35);
+    color: #bae6fd;
+}
+
+.zoneamento-row--error h4,
+.zoneamento-row--empty h4 {
+    margin: 0 0 8px;
+    color: inherit;
+}
+
+.zoneamento-disclaimer {
+    background: rgba(148, 163, 184, 0.08);
+    border-radius: 16px;
+    padding: 18px 22px;
+    font-size: 0.85rem;
+    color: rgba(203, 213, 225, 0.9);
+    line-height: 1.6;
+}
+
+.zoneamento-disclaimer strong {
+    color: #f8fafc;
+}
+
+.zoneamento-empty {
+    margin-top: 16px;
+    padding: 18px;
+    border-radius: 12px;
+    background: rgba(14, 165, 233, 0.12);
+    color: #0f172a;
+}
+
+@media (max-width: 960px) {
+    .zoneamento-row__label {
+        flex: 1 1 100%;
+    }
+
+    .zoneamento-row__chart {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 720px) {
+    .zoneamento-form {
+        grid-template-columns: 1fr;
+    }
+
+    .zoneamento-row__chart {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .zoneamento-row__chart {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .zoneamento-hero__title {
+        font-size: 1.65rem;
+    }
+}
