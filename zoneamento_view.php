@@ -58,6 +58,7 @@ if (!$res) {
 
 dol_include_once('/safra/class/embrapaapi.class.php');
 dol_include_once('/safra/class/cultura.class.php');
+dol_include_once('/safra/class/municipio.class.php');
 
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 
@@ -76,9 +77,13 @@ if (!in_array($highlightRisk, array('20', '30', '40'), true)) {
     $highlightRisk = '20';
 }
 
-$codigoIBGEInput = trim(GETPOST('codigoIBGE', 'alphanohtml'));
+$municipioSelection = trim(GETPOST('municipio', 'alphanohtml'));
+$codigoIBGEInput = $municipioSelection !== '' ? $municipioSelection : trim(GETPOST('codigoIBGE', 'alphanohtml'));
 $culturesInput = GETPOST('culturas', 'array');
 $maxCultures = 12;
+
+$municipioOptions = safra_zoneamento_fetch_municipio_options($db);
+$selectedMunicipioInfo = $codigoIBGEInput !== '' ? safra_zoneamento_lookup_municipio($municipioOptions, $codigoIBGEInput) : null;
 
 $cultureOptions = safra_zoneamento_fetch_culture_options($db, 180);
 $tooManySelected = false;
@@ -98,8 +103,8 @@ if ($action === 'consult') {
     if (empty($selectedCultures)) {
         $errors[] = $langs->trans('ZoneamentoNoSelection');
     }
-    if ($codigoIBGEInput === '' || !preg_match('/^\d{7}$/', $codigoIBGEInput)) {
-        $errors[] = $langs->trans('ZoneamentoInvalidCodigoIBGE');
+    if ($codigoIBGEInput === '' || !preg_match('/^\d{7}$/', $codigoIBGEInput) || $selectedMunicipioInfo === null) {
+        $errors[] = $langs->trans('ZoneamentoInvalidMunicipio');
     }
 
     if (!empty($errors)) {
@@ -151,6 +156,15 @@ if ($action === 'consult') {
         if ($hasSuccess) {
             setEventMessages($langs->trans('ZoneamentoSuccess'), null, 'mesgs');
         }
+
+        if ($selectedMunicipioInfo !== null) {
+            if (empty($municipioResult) && !empty($selectedMunicipioInfo['ref'])) {
+                $municipioResult = $selectedMunicipioInfo['ref'];
+            }
+            if (empty($ufResult) && !empty($selectedMunicipioInfo['uf'])) {
+                $ufResult = $selectedMunicipioInfo['uf'];
+            }
+        }
     }
 }
 
@@ -183,9 +197,18 @@ print '</div>';
 
 print '<form method="post" class="zoneamento-form">';
 print '<input type="hidden" name="action" value="consult">';
-print '<div class="zoneamento-form__field">';
-print '<label for="codigoIBGE" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMunicipio')) . '</label>';
-print '<input type="text" id="codigoIBGE" name="codigoIBGE" value="' . dol_escape_htmltag($codigoIBGEInput) . '" placeholder="' . dol_escape_htmltag($langs->trans('ZoneamentoPlaceholderCodigoIBGE')) . '" class="zoneamento-form__input">';
+print '<div class="zoneamento-form__field zoneamento-form__field--municipio">';
+print '<label for="municipio" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMunicipio')) . '</label>';
+$municipioPlaceholder = $langs->trans('ZoneamentoMunicipioPlaceholder');
+print '<select id="municipio" name="municipio" class="zoneamento-form__select zoneamento-form__select--search" data-placeholder="' . dol_escape_htmltag($municipioPlaceholder) . '">';
+print '<option value=""></option>';
+foreach ($municipioOptions as $codigo => $info) {
+    $isSelectedMunicipio = ($codigoIBGEInput !== '' && (string) $codigo === (string) $codigoIBGEInput) ? ' selected' : '';
+    $label = isset($info['label']) ? $info['label'] : $codigo;
+    print '<option value="' . dol_escape_htmltag($codigo) . '"' . $isSelectedMunicipio . '>' . dol_escape_htmltag($label) . '</option>';
+}
+print '</select>';
+print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoMunicipioHelp')) . '</div>';
 print '</div>';
 
 print '<div class="zoneamento-form__field">';
@@ -198,7 +221,7 @@ foreach (array('20', '30', '40') as $riskValue) {
 print '</select>';
 print '</div>';
 
-print '<div class="zoneamento-form__field zoneamento-form__field--multiselect">';
+print '<div class="zoneamento-form__field zoneamento-form__field--full zoneamento-form__field--multiselect">';
 print '<label for="culturas" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterCultures')) . '</label>';
 print '<select name="culturas[]" id="culturas" multiple size="12" class="zoneamento-form__multiselect">';
 foreach ($cultureOptions as $embrapaId => $label) {
@@ -206,10 +229,10 @@ foreach ($cultureOptions as $embrapaId => $label) {
     print '<option value="' . (int) $embrapaId . '"' . $isSelected . '>' . dol_escape_htmltag(safra_zoneamento_clean_label($label)) . '</option>';
 }
 print '</select>';
-print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoSelectedCount', count($selectedCultures))) . '</div>';
+print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoSelectedCount', count($selectedCultures), $maxCultures)) . '</div>';
 print '</div>';
 
-print '<div class="zoneamento-form__actions">';
+print '<div class="zoneamento-form__actions zoneamento-form__field--full">';
 print '<button type="submit" class="zoneamento-form__submit butAction">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterSubmit')) . '</button>';
 print '</div>';
 print '</form>';
@@ -221,75 +244,66 @@ if (!empty($results)) {
     print '<header class="zoneamento-dashboard__header">';
     if ($municipioResult && $ufResult) {
         print '<h3 class="zoneamento-dashboard__title">' . dol_escape_htmltag(sprintf($langs->trans('ZoneamentoResultsFor'), safra_zoneamento_format_location($municipioResult), $ufResult)) . '</h3>';
+        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag(sprintf($langs->trans('ZoneamentoMunicipioSummary'), safra_zoneamento_format_location($municipioResult), $ufResult)) . '</div>';
     } else {
         print '<h3 class="zoneamento-dashboard__title">' . dol_escape_htmltag($langs->trans('ZoneamentoLegendTitle')) . '</h3>';
-    }
-
-    if ($municipioResult && $ufResult) {
-        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag(sprintf($langs->trans('ZoneamentoMunicipioSummary'), safra_zoneamento_format_location($municipioResult), $ufResult)) . '</div>';
+        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag($langs->trans('ZoneamentoLegendIntro')) . '</div>';
     }
     print '</header>';
 
+    print '<div class="zoneamento-dashboard__grid">';
     foreach ($results as $item) {
+        $cleanLabel = isset($item['label']) ? $item['label'] : '';
         if (isset($item['status']) && $item['status'] !== 'ok' && empty($item['timeline'])) {
-            $cssClass = $item['status'] === 'empty' ? 'zoneamento-row zoneamento-row--empty' : 'zoneamento-row zoneamento-row--error';
-            print '<div class="' . $cssClass . '">';
-            print '<div class="zoneamento-row__label">';
-            print '<h4>' . dol_escape_htmltag($item['label']) . '</h4>';
+            $statusClass = $item['status'] === 'empty' ? 'zoneamento-card zoneamento-card--empty' : 'zoneamento-card zoneamento-card--error';
+            print '<article class="' . $statusClass . '">';
+            print '<div class="zoneamento-card__body">';
+            print '<h4 class="zoneamento-card__title">' . dol_escape_htmltag($cleanLabel) . '</h4>';
             if ($item['status'] === 'empty') {
-                print '<p>' . dol_escape_htmltag($langs->trans('ZoneamentoRiskNoData')) . '</p>';
+                print '<p class="zoneamento-card__message">' . dol_escape_htmltag($langs->trans('ZoneamentoRiskNoData')) . '</p>';
             } else {
-                $message = !empty($item['message']) ? $item['message'] : $langs->trans('ZoneamentoErrorFetching', $item['label']);
-                print '<p>' . dol_escape_htmltag($message) . '</p>';
+                $message = !empty($item['message']) ? $item['message'] : $langs->trans('ZoneamentoErrorFetching', $cleanLabel);
+                print '<p class="zoneamento-card__message">' . dol_escape_htmltag($message) . '</p>';
             }
             print '</div>';
-            print '</div>';
+            print '</article>';
             continue;
         }
 
         $timeline = isset($item['timeline']) ? $item['timeline'] : array();
-        print '<div class="zoneamento-row">';
-        print '<div class="zoneamento-row__label">';
-        print '<h4>' . dol_escape_htmltag($item['label']) . '</h4>';
+        print '<article class="zoneamento-card">';
+        print '<header class="zoneamento-card__header">';
+        print '<h4 class="zoneamento-card__title">' . dol_escape_htmltag($cleanLabel) . '</h4>';
+        print '</header>';
 
         if (!empty($item['riskDetails'])) {
-            print '<div class="zoneamento-row__ranges">';
+            print '<div class="zoneamento-card__legend">';
             foreach (array('20', '30', '40') as $riskKey) {
                 $detail = isset($item['riskDetails'][$riskKey]) ? $item['riskDetails'][$riskKey] : null;
                 $rangeText = $detail && !empty($detail['ranges']) ? safra_zoneamento_format_ranges($detail['ranges']) : $langs->trans('ZoneamentoRiskNoData');
-                $extraParts = array();
+                $extraPieces = array();
                 if ($detail && !empty($detail['soils'])) {
-                    $extraParts[] = $langs->trans('ZoneamentoSoilsLabel') . ': ' . implode(', ', array_map('dol_escape_htmltag', $detail['soils']));
+                    $extraPieces[] = $langs->trans('ZoneamentoSoilsLabelShort') . ': ' . implode(', ', $detail['soils']);
                 }
                 if ($detail && !empty($detail['cycles'])) {
-                    $extraParts[] = $langs->trans('ZoneamentoCycleLabel') . ': ' . implode(', ', array_map('dol_escape_htmltag', $detail['cycles']));
+                    $extraPieces[] = $langs->trans('ZoneamentoCycleLabelShort') . ': ' . implode(', ', $detail['cycles']);
                 }
-                if (!empty($extraParts)) {
-                    $rangeText .= ' • ' . implode(' • ', $extraParts);
+                $detailText = $rangeText;
+                if (!empty($extraPieces)) {
+                    $detailText .= ' • ' . implode(' • ', $extraPieces);
                 }
-                print '<div class="zoneamento-range zoneamento-range--risk' . $riskKey . '">';
-                print '<span class="zoneamento-range__badge zoneamento-range__badge--risk' . $riskKey . '"></span>';
-                print '<span class="zoneamento-range__label">' . dol_escape_htmltag($langs->trans('ZoneamentoRiskLabel', $riskKey)) . '</span>';
-                print '<span class="zoneamento-range__text">' . dol_escape_htmltag($rangeText) . '</span>';
+                print '<div class="zoneamento-pill zoneamento-pill--risk' . $riskKey . '">';
+                print '<span class="zoneamento-pill__badge"></span>';
+                print '<div class="zoneamento-pill__text">';
+                print '<strong class="zoneamento-pill__title">' . dol_escape_htmltag($langs->trans('ZoneamentoRiskLabel', $riskKey)) . '</strong>';
+                print '<span class="zoneamento-pill__detail">' . dol_escape_htmltag($detailText) . '</span>';
+                print '</div>';
                 print '</div>';
             }
             print '</div>';
         }
 
-        $metaPieces = array();
-        if (!empty($item['cultivo'])) {
-            $metaPieces[] = '<span class="zoneamento-detail__label">' . dol_escape_htmltag($langs->trans('ZoneamentoCultivoLabel')) . '</span>' . dol_escape_htmltag(implode(', ', $item['cultivo']));
-        }
-        if (!empty($item['portarias'])) {
-            $metaPieces[] = '<span class="zoneamento-detail__label">' . dol_escape_htmltag($langs->trans('ZoneamentoPortariaLabel')) . '</span>' . dol_escape_htmltag(implode(', ', $item['portarias']));
-        }
-        if (!empty($metaPieces)) {
-            print '<div class="zoneamento-row__details">' . implode('<span class="zoneamento-detail__separator">•</span>', $metaPieces) . '</div>';
-        }
-
-        print '</div>';
-
-        print '<div class="zoneamento-row__chart">';
+        print '<div class="zoneamento-card__chart">';
         foreach ($monthLabels as $monthNumber => $monthName) {
             print '<div class="zoneamento-month">';
             print '<div class="zoneamento-month__label">' . dol_escape_htmltag($monthName) . '</div>';
@@ -314,21 +328,128 @@ if (!empty($results)) {
             print '</div>';
         }
         print '</div>';
-        print '</div>';
-    }
 
-    print '<div class="zoneamento-disclaimer">';
+        $metaPieces = array();
+        if (!empty($item['cultivo'])) {
+            $metaPieces[] = '<span class="zoneamento-detail__label">' . dol_escape_htmltag($langs->trans('ZoneamentoCultivoLabel')) . '</span>' . dol_escape_htmltag(implode(', ', $item['cultivo']));
+        }
+        if (!empty($item['portarias'])) {
+            $metaPieces[] = '<span class="zoneamento-detail__label">' . dol_escape_htmltag($langs->trans('ZoneamentoPortariaLabel')) . '</span>' . dol_escape_htmltag(implode(', ', $item['portarias']));
+        }
+        if (!empty($metaPieces)) {
+            print '<footer class="zoneamento-card__footer">' . implode('<span class="zoneamento-detail__separator">•</span>', $metaPieces) . '</footer>';
+        }
+
+        print '</article>';
+    }
+    print '</div>';
+
+    print '<footer class="zoneamento-dashboard__footer">';
     print '<p><strong>' . dol_escape_htmltag($langs->trans('ZoneamentoDataSource')) . '</strong></p>';
     print '<p>' . dol_escape_htmltag($langs->trans('ZoneamentoRiskDisclaimer')) . '</p>';
     print '<p>' . dol_escape_htmltag($langs->trans('ZoneamentoLiabilityDisclaimer')) . '</p>';
-    print '</div>';
+    print '</footer>';
 
     print '</section>';
 } elseif ($action === 'consult' && empty($results)) {
     print '<div class="zoneamento-empty">' . dol_escape_htmltag($langs->trans('ZoneamentoRiskNoData')) . '</div>';
 }
 
+$municipioPlaceholderJs = dol_escape_js($langs->trans('ZoneamentoMunicipioPlaceholder'));
+$municipioNoResultsJs = dol_escape_js($langs->trans('ZoneamentoMunicipioNoResults'));
+print '<script>
+jQuery(function ($) {
+    var $municipio = $("#municipio");
+    if ($municipio.length && $.fn.select2) {
+        $municipio.select2({
+            width: "100%",
+            placeholder: "' . $municipioPlaceholderJs . '",
+            allowClear: true,
+            language: {
+                noResults: function () {
+                    return "' . $municipioNoResultsJs . '";
+                }
+            }
+        });
+    }
+});
+</script>';
+
 llxFooter();
+
+/**
+ * Fetch municipios from local catalog for selection.
+ *
+ * @param DoliDB $db    Database handler
+ * @param int    $limit Optional limit (0 = all)
+ *
+ * @return array<string, array<string, string>>
+ */
+function safra_zoneamento_fetch_municipio_options(DoliDB $db, $limit = 0)
+{
+    $options = array();
+
+    $municipioHandler = new Municipio($db);
+    $records = $municipioHandler->fetchAll('ASC', 't.ref', $limit);
+    if ($records === -1) {
+        dol_syslog(__METHOD__ . ' Unable to fetch municipios: ' . $municipioHandler->error, LOG_ERR);
+        return $options;
+    }
+
+    if (is_array($records)) {
+        foreach ($records as $record) {
+            $code = (string) $record->cod_ibge;
+            $code = preg_replace('/\D+/', '', $code);
+            if ($code === '') {
+                continue;
+            }
+            if (strlen($code) === 6) {
+                $code = '0' . $code;
+            }
+
+            $labelParts = array();
+            if (!empty($record->ref)) {
+                $labelParts[] = trim($record->ref);
+            }
+            if (!empty($record->uf)) {
+                $labelParts[] = strtoupper(trim($record->uf));
+            }
+
+            $label = !empty($labelParts) ? implode(' / ', $labelParts) : $code;
+            $options[$code] = array(
+                'label' => $label,
+                'ref' => !empty($record->ref) ? trim($record->ref) : $label,
+                'uf' => !empty($record->uf) ? strtoupper(trim($record->uf)) : '',
+            );
+        }
+    }
+
+    if (!empty($options)) {
+        uasort($options, function ($a, $b) {
+            return strcasecmp($a['label'], $b['label']);
+        });
+    }
+
+    return $options;
+}
+
+/**
+ * Retrieve municipio info by IBGE code from cached options.
+ *
+ * @param array<string, array<string, string>> $options Municipio options
+ * @param string                               $code    IBGE code
+ *
+ * @return array<string, string>|null
+ */
+function safra_zoneamento_lookup_municipio(array $options, $code)
+{
+    $normalized = preg_replace('/\D+/', '', (string) $code);
+    if ($normalized === '') {
+        return null;
+    }
+
+    return isset($options[$normalized]) ? $options[$normalized] : null;
+}
 
 /**
  * Fetch distinct cultures with Embrapa IDs for selection.

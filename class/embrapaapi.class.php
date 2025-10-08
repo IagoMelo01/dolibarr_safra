@@ -73,7 +73,7 @@ class EmbrapaApi
         $produtividadeBaseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL', 'https://api.cnptia.embrapa.br/agritec/v2/produtividade');
         $this->produtividadeUrl = rtrim($produtividadeBaseUrl, '/');
 
-        $zoneamentoBaseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_ZONEAMENTO_URL', 'https://api.cnptia.embrapa.br/agritec/v1/zoneamento');
+        $zoneamentoBaseUrl = getDolGlobalString('SAFRA_API_EMBRAPA_ZONEAMENTO_URL', 'https://api.cnptia.embrapa.br/agritec/v2/zoneamento');
         $this->zoneamentoUrl = rtrim($zoneamentoBaseUrl, '/');
     }
 
