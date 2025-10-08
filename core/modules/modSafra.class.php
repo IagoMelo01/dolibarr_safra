@@ -408,11 +408,16 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][4] = 'recomendacaoadubo';
 		$this->rights[$r][5] = 'write';
 		$r++;
-		$this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 2 + 1);
-		$this->rights[$r][1] = 'Delete RecomendacaoAdubo object of Safra';
-		$this->rights[$r][4] = 'recomendacaoadubo';
-		$this->rights[$r][5] = 'delete';
-		$r++;
+                $this->rights[$r][0] = $this->numero . sprintf('%02d', (6 * 10) + 2 + 1);
+                $this->rights[$r][1] = 'Delete RecomendacaoAdubo object of Safra';
+                $this->rights[$r][4] = 'recomendacaoadubo';
+                $this->rights[$r][5] = 'delete';
+                $r++;
+                $this->rights[$r][0] = $this->numero . sprintf('%02d', (18 * 10) + 0 + 1);
+                $this->rights[$r][1] = 'Read Produtividade view of Safra';
+                $this->rights[$r][4] = 'produtividade';
+                $this->rights[$r][5] = 'read';
+                $r++;
 		$this->rights[$r][0] = $this->numero . sprintf('%02d', (7 * 10) + 0 + 1);
 		$this->rights[$r][1] = 'Read Aplicacao object of Safra';
 		$this->rights[$r][4] = 'aplicacao';
@@ -1713,6 +1718,21 @@ class modSafra extends DolibarrModules
                                'user' => 2,
                        );
                }
+
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_planejamento',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuProdutividade',
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_produtividade',
+                       'url' => '/safra/produtividade_view.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '$user->hasRight("safra", "produtividade", "read")',
+                       'target' => '',
+                       'user' => 2,
+               );
 
                // Operações
                $this->menu[$r++] = array(
