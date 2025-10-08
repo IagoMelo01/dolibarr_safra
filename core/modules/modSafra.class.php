@@ -128,7 +128,19 @@ class modSafra extends DolibarrModules
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/safra/temp","/safra/subdir");
-		$this->dirs = array("/safra/temp", "/safra/json/ndvi", "/safra/json/ndmi", "/safra/json/evi", "/safra/json/savi");
+                $this->dirs = array(
+                        "/safra/temp",
+                        "/safra/json/ndvi",
+                        "/safra/json/ndmi",
+                        "/safra/json/evi",
+                        "/safra/json/savi",
+                        "/safra/json/cache",
+                        "/safra/json/cache/ndvi",
+                        "/safra/json/cache/ndmi",
+                        "/safra/json/cache/ndwi",
+                        "/safra/json/cache/evi",
+                        "/safra/json/cache/swir",
+                );
 
 		// Config pages. Put here list of php page, stored into safra/admin directory, to use to setup module.
 		$this->config_page_url = array("setup.php@safra");

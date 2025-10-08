@@ -48,6 +48,8 @@ SAFRA_SATVEG_PRE_FILTRO = Pré-filtro
 SAFRA_SATVEG_FILTRO = Filtro
 SAFRA_SATVEG_PARAMETRO_FILTRO = Parâmetro do filtro
 SafraTab = Safra
+SAFRA_API_SENTINELHUB_CLIENT_ID = Client ID do sentinel hub
+SAFRA_API_SENTINELHUB_CLIENT_SECRET = Client SECRET do sentinel hub
 
 
 #
@@ -150,6 +152,25 @@ SafraHighlights = Destaques operacionais
 SafraLatestNdvi = Últimos NDVI processados
 SafraTalhaoShort = Talhão
 SafraNoNdvi = Nenhum NDVI encontrado
+SafraIndexNDVIShort = NDVI
+SafraIndexNDMIShort = NDMI
+SafraIndexNDWIShort = NDWI
+SafraIndexEVIShort = EVI
+SafraIndexSWIRShort = SWIR
+SafraSatelliteWeeklyEyebrow = Série temporal
+SafraSatelliteWeeklyTitle = Evolução do %s nas últimas 8 semanas
+SafraSatelliteWeeklySubtitle = Valores médios semanais calculados automaticamente com dados do Sentinel Hub.
+SafraSatelliteWeeklyEmpty = Selecione um talhão para visualizar a evolução semanal.
+SafraSatelliteWeeklyTooltip = Media semanal
+SafraSatelliteWeeklyMin = Minimo semanal
+SafraSatelliteWeeklyMax = Maximo semanal
+SafraSatelliteWeeklyUpdated = Atualizado em %s
+SafraSatelliteWeeklyNextUpdate = Proxima atualizacao em %s
+SafraSatelliteWeeklyMessageMissingCredentials = Configure as credenciais do Sentinel Hub para visualizar este gráfico.
+SafraSatelliteWeeklyMessageMissingGeometry = O talhão selecionado não possui geometria válida para gerar o gráfico.
+SafraSatelliteWeeklyMessageNoData = Nenhum dado disponível nas últimas 8 semanas para o talhão selecionado.
+SafraSatelliteWeeklyDashboardTitle = Evolução NDVI (últimas 8 semanas)
+SafraSatelliteWeeklyDashboardEmpty = Cadastre um NDVI para visualizar a série semanal.
 SafraUnitHectareShort = ha
 SafraUnknownMunicipio = Município não informado
 SafraWeatherTitle = Condições do tempo
@@ -260,6 +281,28 @@ ProdutividadeChartPeriodLabel = Periodo %s
 ProdutividadeRawToggle = Ver resposta completa (JSON)
 ProdutividadeTooltipCategory = Periodo
 ProdutividadeTooltipValue = Valor
+# Talhão - importação/exportação
+TalhaoImportButton = Importar KML/KMZ
+TalhaoExportKml = Exportar KML
+TalhaoExportKmz = Exportar KMZ
+TalhaoImportTitle = Importar talhões via KML/KMZ
+TalhaoImportHelp = Envie um arquivo KML ou KMZ com polígonos para criar novos talhões. Cada polígono será convertido automaticamente em um registro com área e limites calculados.
+TalhaoImportFile = Arquivo KML/KMZ
+TalhaoImportMunicipio = Município padrão
+TalhaoImportStatus = Status inicial
+TalhaoImportSubmit = Importar talhões
+TalhaoImportErrorMunicipioRequired = Selecione um município para os talhões importados.
+TalhaoImportErrorFileRequired = Escolha um arquivo KML ou KMZ para importar.
+TalhaoImportErrorUpload = Falha ao enviar o arquivo (código %s).
+TalhaoImportErrorReadFile = Não foi possível ler o arquivo informado.
+TalhaoImportErrorNoFeatures = Nenhum polígono foi encontrado no arquivo.
+TalhaoImportDefaultName = Talhão %s
+TalhaoImportErrorRef = Não foi possível gerar uma referência única para %s.
+TalhaoImportErrorCreate = Erro ao criar o talhão %s: %s
+TalhaoImportSuccess = %s talhão(ões) importado(s) com sucesso de um total de %s.
+TalhaoExportEmpty = Nenhum talhão encontrado para exportação.
+TalhaoExportEmptyGeometry = Os talhões filtrados não possuem geometria para exportar.
+TalhaoExportKmzUnavailable = O formato KMZ não está disponível neste servidor.
 
 # Produto formulado
 ProdutoFormuladoListTitle = Produtos formulados
