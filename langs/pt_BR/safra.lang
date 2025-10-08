@@ -227,6 +227,10 @@ ProdutividadeMissingEmbrapaCultura = A cultura selecionada não possui identific
 ProdutividadeMissingEmbrapaCultivar = A cultivar selecionada não possui identificador Embrapa configurado.
 ProdutividadeCultivarPrompt = Selecione uma cultura para carregar as cultivares.
 ProdutividadeCultivarEmpty = Nenhuma cultivar encontrada para a cultura escolhida.
+ProdutividadeCultivarSearchPlaceholder = Digite para buscar cultivares por nome ou código.
+ProdutividadeCultivarSearchHelp = Os resultados são carregados conforme você digita. Escolha uma cultivar da lista.
+ProdutividadeCultivarTypeMore = Digite pelo menos dois caracteres para buscar cultivares.
+ProdutividadeCultivarNoResults = Nenhuma cultivar encontrada para essa busca na cultura selecionada.
 ProdutividadeMunicipioPlaceholder = Busque pelo município ou código IBGE.
 ProdutividadeMunicipioHelp = Digite ao menos três caracteres ou o código IBGE para localizar o município.
 ProdutividadeLoading = Carregando...
@@ -254,6 +258,8 @@ ProdutividadeChartDegreeDays = Graus-dia
 ProdutividadeChartISNA = ISNA
 ProdutividadeChartPeriodLabel = Período %s
 ProdutividadeRawToggle = Ver resposta completa (JSON)
+ProdutividadeTooltipCategory = Período
+ProdutividadeTooltipValue = Valor
 
 # Produto formulado
 ProdutoFormuladoListTitle = Produtos formulados

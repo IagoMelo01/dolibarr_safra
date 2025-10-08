@@ -7,31 +7,40 @@
     const selected = config.selected || {};
 
     const culturaSelect = document.getElementById('idCultura');
-    const cultivarSelect = document.getElementById('idCultivar');
+    const cultivarHidden = document.getElementById('idCultivar');
+    const cultivarInput = document.getElementById('cultivarSearch');
+    const cultivarDatalist = document.getElementById('cultivarSuggestions');
+    const cultivarStatus = document.getElementById('cultivarStatus');
     const municipioInput = document.getElementById('municipioSearch');
     const municipioHidden = document.getElementById('codigoIBGE');
     const municipioDatalist = document.getElementById('municipioSuggestions');
     const chartContainers = document.querySelectorAll('.productivity-chart');
-    const cultivarPageSize = (function () {
-        const raw = parseInt(config.cultivarPageSize, 10);
-        if (!Number.isFinite(raw) || raw <= 0) {
-            return 250;
+
+    const CULTIVAR_MIN_CHARS = 2;
+    const numericPattern = /^[0-9]+$/;
+
+    let initialCulturaId = selected.cultura;
+    if ((!initialCulturaId || initialCulturaId <= 0) && culturaSelect) {
+        const parsed = parseInt(culturaSelect.value, 10);
+        if (Number.isFinite(parsed) && parsed > 0) {
+            initialCulturaId = parsed;
         }
-        if (raw > 500) {
-            return 500;
-        }
-        return Math.max(raw, 25);
-    })();
+    }
+    if (initialCulturaId && (!selected.cultura || selected.cultura !== initialCulturaId)) {
+        selected.cultura = initialCulturaId;
+    }
+
+    const initialCultivarOption = selected.cultivarOption || null;
 
     const cultivarState = {
-        culturaId: null,
-        items: [],
-        map: new Map(),
-        loading: false,
-        hasMore: false,
-        nextOffset: 0,
-        controller: null
+        culturaId: initialCulturaId && initialCulturaId > 0 ? initialCulturaId : null,
+        cache: new Map(),
+        controller: null,
+        token: 0,
+        lastQuery: ''
     };
+
+    let cultivarFetchTimeout = null;
 
     function buildUrl(params) {
         if (!endpoint) {
@@ -46,90 +55,73 @@
         return url.toString();
     }
 
-    function setCultivarOptions(options, state) {
-        if (!cultivarSelect) {
+    function formatCultivarDisplay(item) {
+        if (!item) {
+            return '';
+        }
+        const label = item.label || '';
+        const ref = item.ref && item.ref !== label ? item.ref : '';
+        return ref ? label + ' (' + ref + ')' : label;
+    }
+
+    function clearCultivarSuggestions() {
+        if (cultivarDatalist) {
+            cultivarDatalist.innerHTML = '';
+        }
+    }
+
+    function populateCultivarSuggestions(items) {
+        if (!cultivarDatalist) {
             return;
         }
-        const currentValue = cultivarSelect.value;
-        const desiredValue = selected.cultivar ? String(selected.cultivar) : (currentValue || '');
-
-        cultivarSelect.innerHTML = '';
-
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = labels.select || '---';
-        placeholder.disabled = false;
-        if (!desiredValue) {
-            placeholder.selected = true;
+        clearCultivarSuggestions();
+        if (!Array.isArray(items) || !items.length) {
+            return;
         }
-        cultivarSelect.appendChild(placeholder);
-
-        const hasOptions = Array.isArray(options) && options.length > 0;
-        if (!hasOptions) {
-            const isLoading = state && state.loading;
-            const message = isLoading ? (labels.loading || '...') : (selected.cultura ? (labels.empty || '') : (labels.placeholder || labels.empty || ''));
-            const emptyOption = document.createElement('option');
-            emptyOption.value = '';
-            emptyOption.textContent = message;
-            emptyOption.disabled = true;
-            if (!desiredValue) {
-                emptyOption.selected = true;
+        items.forEach(function (item) {
+            if (!item || !item.id) {
+                return;
             }
-            cultivarSelect.appendChild(emptyOption);
-            cultivarSelect.disabled = true;
-            return;
-        }
-
-        options.forEach(function (item) {
             const option = document.createElement('option');
-            option.value = item.id;
-            option.textContent = item.label;
-            option.dataset.cultura = item.cultura;
+            const display = formatCultivarDisplay(item);
+            option.value = display;
+            option.dataset.id = item.id;
+            if (item.label) {
+                option.dataset.label = item.label;
+            }
+            if (item.ref) {
+                option.dataset.ref = item.ref;
+            }
+            if (item.cultura) {
+                option.dataset.cultura = item.cultura;
+            }
             if (item.embrapa) {
                 option.dataset.embrapa = item.embrapa;
             }
-            cultivarSelect.appendChild(option);
+            cultivarDatalist.appendChild(option);
         });
-
-        if (state && state.hasMore) {
-            const loadingMore = document.createElement('option');
-            loadingMore.value = '';
-            loadingMore.textContent = labels.loadingMore || labels.loading || '...';
-            loadingMore.disabled = true;
-            loadingMore.dataset.loading = '1';
-            cultivarSelect.appendChild(loadingMore);
-        }
-
-        cultivarSelect.disabled = false;
-
-        if (desiredValue) {
-            cultivarSelect.value = desiredValue;
-            if (cultivarSelect.value !== desiredValue && currentValue && currentValue !== desiredValue) {
-                cultivarSelect.value = currentValue;
-            }
-            if (cultivarSelect.value !== desiredValue && cultivarSelect.value !== currentValue) {
-                cultivarSelect.value = '';
-            }
-        } else {
-            cultivarSelect.value = '';
-        }
     }
 
-    function fetchCultivares(culturaId) {
-        if (!culturaId) {
-            resetCultivarState();
-            setCultivarOptions(null);
+    function setCultivarStatus(message) {
+        if (!cultivarStatus) {
             return;
         }
-
-        resetCultivarState();
-        cultivarState.culturaId = culturaId;
-        cultivarState.loading = true;
-        setCultivarOptions([], {loading: true});
-        requestCultivarBatch();
+        if (typeof message === 'string') {
+            cultivarStatus.textContent = message;
+            return;
+        }
+        if (!selected.cultura) {
+            cultivarStatus.textContent = labels.placeholder || '';
+            return;
+        }
+        cultivarStatus.textContent = labels.cultivarSearchHelp || '';
     }
 
-    function abortCultivarRequest() {
+    function cacheKey(culturaId, term) {
+        return String(culturaId) + '::' + term.trim().toLowerCase();
+    }
+
+    function abortCultivarFetch() {
         if (cultivarState.controller && typeof cultivarState.controller.abort === 'function') {
             try {
                 cultivarState.controller.abort();
@@ -138,53 +130,105 @@
             }
         }
         cultivarState.controller = null;
+        if (cultivarInput) {
+            cultivarInput.classList.remove('is-loading');
+        }
     }
 
-    function resetCultivarState() {
-        abortCultivarRequest();
-        cultivarState.culturaId = null;
-        cultivarState.items = [];
-        cultivarState.map = new Map();
-        cultivarState.loading = false;
-        cultivarState.hasMore = false;
-        cultivarState.nextOffset = 0;
+    function commitCultivarSelection(option, updateInput) {
+        const shouldUpdate = updateInput !== false;
+        if (option && option.id) {
+            const numericId = parseInt(option.id, 10);
+            if (cultivarHidden) {
+                cultivarHidden.value = option.id;
+            }
+            selected.cultivar = Number.isFinite(numericId) ? numericId : null;
+            const optionLabel = option.label || option.ref || String(option.id);
+            selected.cultivarOption = {
+                id: option.id,
+                label: optionLabel,
+                ref: option.ref || '',
+                cultura: option.cultura || selected.cultura || null,
+                embrapa: option.embrapa || ''
+            };
+            if (shouldUpdate && cultivarInput) {
+                cultivarInput.value = formatCultivarDisplay(selected.cultivarOption);
+            }
+        } else {
+            if (cultivarHidden) {
+                cultivarHidden.value = '';
+            }
+            selected.cultivar = null;
+            selected.cultivarOption = null;
+        }
     }
 
-    function requestCultivarBatch() {
-        const culturaId = cultivarState.culturaId;
-        if (!culturaId) {
+    function findCultivarOptionByValue(value) {
+        if (!cultivarDatalist || !value) {
+            return null;
+        }
+        const options = Array.prototype.slice.call(cultivarDatalist.options || []);
+        const normalized = value.toLowerCase();
+        for (let index = 0; index < options.length; index++) {
+            const option = options[index];
+            const optionValue = (option.value || '').toLowerCase();
+            if (optionValue === normalized && option.dataset.id) {
+                return {
+                    id: option.dataset.id,
+                    label: option.dataset.label || option.value || value,
+                    ref: option.dataset.ref || '',
+                    cultura: option.dataset.cultura ? parseInt(option.dataset.cultura, 10) : selected.cultura,
+                    embrapa: option.dataset.embrapa || ''
+                };
+            }
+        }
+        return null;
+    }
+
+    function resetCultivarSelection(clearValue) {
+        commitCultivarSelection(null, clearValue);
+        if (clearValue && cultivarInput) {
+            cultivarInput.value = '';
+        }
+        clearCultivarSuggestions();
+    }
+
+    function fetchCultivarSuggestions(query) {
+        const culturaId = selected.cultura;
+        const cleanQuery = (query || '').trim();
+        if (!culturaId || !cleanQuery) {
             return;
         }
+        const normalizedKey = cacheKey(culturaId, cleanQuery);
+        if (cultivarState.lastQuery === normalizedKey) {
+            return;
+        }
+        abortCultivarFetch();
         if (!endpoint) {
-            setCultivarOptions(null);
             return;
         }
-
-        const requestOffset = cultivarState.nextOffset || 0;
         const params = new Map([
             ['action', 'cultivares'],
             ['idCultura', culturaId],
-            ['limit', cultivarPageSize],
-            ['offset', requestOffset]
+            ['term', cleanQuery],
+            ['limit', 30]
         ]);
         const url = buildUrl(params);
         if (!url) {
-            setCultivarOptions(null);
             return;
         }
-
+        cultivarState.lastQuery = normalizedKey;
         const controller = typeof AbortController === 'function' ? new AbortController() : null;
         cultivarState.controller = controller;
-        cultivarState.loading = true;
-        if (cultivarState.items.length) {
-            setCultivarOptions(cultivarState.items, {loading: true, hasMore: true});
+        const token = ++cultivarState.token;
+        if (cultivarInput) {
+            cultivarInput.classList.add('is-loading');
         }
-
+        setCultivarStatus(labels.loading || '...');
         const fetchOptions = {credentials: 'same-origin'};
         if (controller) {
             fetchOptions.signal = controller.signal;
         }
-
         fetch(url, fetchOptions)
             .then(function (response) {
                 if (!response.ok) {
@@ -193,72 +237,106 @@
                 return response.json();
             })
             .then(function (payload) {
-                if (cultivarState.culturaId !== culturaId) {
+                if (cultivarState.token !== token) {
                     return;
                 }
-
                 cultivarState.controller = null;
+                if (cultivarInput) {
+                    cultivarInput.classList.remove('is-loading');
+                }
                 const received = payload && Array.isArray(payload.items) ? payload.items : [];
-                if (received.length) {
-                    received.forEach(function (item) {
-                        const key = String(item.id);
-                        const existing = cultivarState.map.get(key);
-                        if (existing) {
-                            existing.label = item.label;
-                            existing.cultura = item.cultura;
-                            existing.embrapa = item.embrapa;
-                        } else {
-                            cultivarState.map.set(key, item);
-                            cultivarState.items.push(item);
-                        }
-                    });
-                }
-
-                let hasMore = Boolean(payload && payload.hasMore);
-                let nextOffset = typeof payload.nextOffset === 'number' && payload.nextOffset >= 0 ? payload.nextOffset : requestOffset + received.length;
-                if (nextOffset <= requestOffset) {
-                    nextOffset = requestOffset + received.length;
-                }
-                if (nextOffset <= requestOffset) {
-                    hasMore = false;
-                }
-
-                cultivarState.nextOffset = nextOffset;
-                cultivarState.hasMore = hasMore;
-                cultivarState.loading = hasMore;
-
-                if (!cultivarState.items.length && !hasMore) {
-                    setCultivarOptions(null);
+                cultivarState.cache.set(normalizedKey, received);
+                if (!received.length) {
+                    clearCultivarSuggestions();
+                    setCultivarStatus(labels.cultivarNoResults || labels.empty || '');
                     return;
                 }
-
-                setCultivarOptions(cultivarState.items, {
-                    loading: hasMore,
-                    hasMore: hasMore
-                });
-
-                if (hasMore) {
-                    setTimeout(function () {
-                        if (cultivarState.culturaId === culturaId) {
-                            requestCultivarBatch();
-                        }
-                    }, 0);
-                }
+                populateCultivarSuggestions(received);
+                setCultivarStatus();
             })
             .catch(function (error) {
                 if (controller && error && error.name === 'AbortError') {
                     return;
                 }
-                console.error('Unable to load cultivares', error);
-                if (!cultivarState.items.length) {
-                    setCultivarOptions(null);
-                } else {
-                    setCultivarOptions(cultivarState.items, {loading: false, hasMore: false});
+                console.error('Unable to search cultivars', error);
+                if (cultivarState.token === token) {
+                    cultivarState.controller = null;
+                    if (cultivarInput) {
+                        cultivarInput.classList.remove('is-loading');
+                    }
+                    if (cultivarState.lastQuery === normalizedKey) {
+                        cultivarState.lastQuery = '';
+                    }
+                    setCultivarStatus(labels.empty || '');
                 }
-                cultivarState.controller = null;
-                cultivarState.loading = false;
-                cultivarState.hasMore = false;
             });
+    }
+
+    function scheduleCultivarFetch(query) {
+        if (cultivarFetchTimeout) {
+            clearTimeout(cultivarFetchTimeout);
+        }
+        cultivarFetchTimeout = setTimeout(function () {
+            cultivarFetchTimeout = null;
+            fetchCultivarSuggestions(query);
+        }, 220);
+    }
+
+    function handleCultivarInput() {
+        if (!cultivarInput) {
+            return;
+        }
+        const rawValue = cultivarInput.value || '';
+        const value = rawValue.trim();
+        if (!selected.cultura) {
+            resetCultivarSelection(false);
+            setCultivarStatus();
+            return;
+        }
+
+        const match = findCultivarOptionByValue(rawValue);
+        if (match) {
+            commitCultivarSelection(match, false);
+        } else {
+            commitCultivarSelection(null, false);
+        }
+
+        if (!value) {
+            clearCultivarSuggestions();
+            setCultivarStatus();
+            abortCultivarFetch();
+            if (cultivarFetchTimeout) {
+                clearTimeout(cultivarFetchTimeout);
+                cultivarFetchTimeout = null;
+            }
+            return;
+        }
+
+        if (value.length < CULTIVAR_MIN_CHARS && !numericPattern.test(value)) {
+            clearCultivarSuggestions();
+            setCultivarStatus(labels.cultivarTypeMore || labels.cultivarSearchHelp || '');
+            abortCultivarFetch();
+            if (cultivarFetchTimeout) {
+                clearTimeout(cultivarFetchTimeout);
+                cultivarFetchTimeout = null;
+            }
+            return;
+        }
+
+        const key = cacheKey(selected.cultura, value);
+        if (cultivarState.cache.has(key)) {
+            const cached = cultivarState.cache.get(key) || [];
+            if (cached.length) {
+                populateCultivarSuggestions(cached);
+                setCultivarStatus();
+            } else {
+                clearCultivarSuggestions();
+                setCultivarStatus(labels.cultivarNoResults || labels.empty || '');
+            }
+            return;
+        }
+
+        scheduleCultivarFetch(value);
     }
 
     function formatMunicipioOption(item) {
@@ -348,33 +426,75 @@
         }
     }
 
-    if (culturaSelect && cultivarSelect) {
+    if (culturaSelect) {
         culturaSelect.addEventListener('change', function () {
-            selected.cultivar = null;
-            const culturaId = parseInt(this.value, 10) || 0;
-            if (!culturaId) {
-                selected.cultura = null;
-                setCultivarOptions(null);
-                return;
-            }
+            const parsed = parseInt(this.value, 10);
+            const culturaId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
             selected.cultura = culturaId;
-            fetchCultivares(culturaId);
+            cultivarState.culturaId = culturaId;
+            cultivarState.cache.clear();
+            cultivarState.lastQuery = '';
+            if (cultivarFetchTimeout) {
+                clearTimeout(cultivarFetchTimeout);
+                cultivarFetchTimeout = null;
+            }
+            abortCultivarFetch();
+            resetCultivarSelection(true);
+            if (cultivarInput) {
+                cultivarInput.disabled = !culturaId;
+                if (!culturaId) {
+                    setCultivarStatus();
+                } else {
+                    setCultivarStatus(labels.cultivarTypeMore || labels.cultivarSearchHelp || '');
+                    cultivarInput.focus();
+                }
+            } else if (cultivarStatus) {
+                setCultivarStatus();
+            }
         });
+    }
 
-        cultivarSelect.addEventListener('change', function () {
-            if (!this.value) {
-                selected.cultivar = null;
+    if (cultivarInput) {
+        if (selected.cultura) {
+            cultivarInput.disabled = false;
+        }
+        cultivarInput.addEventListener('input', handleCultivarInput);
+        cultivarInput.addEventListener('change', function () {
+            const match = findCultivarOptionByValue(this.value);
+            if (match) {
+                commitCultivarSelection(match, true);
+                setCultivarStatus();
+            } else {
+                commitCultivarSelection(null, false);
+                handleCultivarInput();
+            }
+        });
+        cultivarInput.addEventListener('focus', function () {
+            if (!selected.cultura) {
+                setCultivarStatus();
                 return;
             }
-            const value = parseInt(this.value, 10);
-            selected.cultivar = Number.isFinite(value) ? value : null;
+            if (this.value && this.value.trim().length >= CULTIVAR_MIN_CHARS) {
+                handleCultivarInput();
+            } else {
+                setCultivarStatus(labels.cultivarTypeMore || labels.cultivarSearchHelp || '');
+            }
+        });
+        cultivarInput.addEventListener('blur', function () {
+            const match = findCultivarOptionByValue(this.value);
+            if (match) {
+                commitCultivarSelection(match, true);
+            }
         });
 
-        if (selected.cultura) {
-            fetchCultivares(selected.cultura);
-        } else {
-            setCultivarOptions(null);
+        if (initialCultivarOption && (!initialCultivarOption.cultura || !selected.cultura || initialCultivarOption.cultura === selected.cultura)) {
+            populateCultivarSuggestions([initialCultivarOption]);
+            commitCultivarSelection(initialCultivarOption, true);
         }
+
+        setCultivarStatus();
+    } else if (cultivarStatus) {
+        setCultivarStatus();
     }
 
     if (municipioInput) {
@@ -505,7 +625,7 @@
     function drawChart(canvas, chart, palette) {
         const dimensions = fitCanvas(canvas);
         if (!dimensions) {
-            return;
+            return null;
         }
         const ctx = dimensions.ctx;
         const width = dimensions.width;
@@ -520,6 +640,9 @@
         const valueRange = bounds.max - bounds.min;
         const safeRange = valueRange === 0 ? 1 : valueRange;
         const seriesCount = chart.series.length;
+        const tooltipPoints = categories.map(function () {
+            return [];
+        });
 
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, width, height);
@@ -586,6 +709,7 @@
             ctx.strokeStyle = color;
             ctx.beginPath();
             let started = false;
+            const datasetPoints = [];
             dataset.values.forEach(function (value, idx) {
                 if (value === null || Number.isNaN(value)) {
                     started = false;
@@ -599,23 +723,157 @@
                 } else {
                     ctx.lineTo(x, y);
                 }
+                const pointInfo = {
+                    seriesIndex: index,
+                    pointIndex: idx,
+                    value: value,
+                    x: x,
+                    y: y,
+                    name: dataset.name,
+                    color: color
+                };
+                datasetPoints.push(pointInfo);
+                if (tooltipPoints[idx]) {
+                    tooltipPoints[idx].push(pointInfo);
+                }
             });
             ctx.stroke();
 
-            dataset.values.forEach(function (value, idx) {
-                if (value === null || Number.isNaN(value)) {
-                    return;
-                }
-                const x = pointX(idx);
-                const y = toY(value);
+            datasetPoints.forEach(function (point) {
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
-                ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+                ctx.arc(point.x, point.y, 3.5, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = color;
                 ctx.stroke();
             });
         });
+
+        const threshold = pointCount > 1 ? Math.max(12, Math.min(48, categoryStep / 2)) : plotWidth / 2;
+
+        return {
+            categories: categories,
+            pointsByIndex: tooltipPoints,
+            threshold: threshold,
+            unit: chart.unit || ''
+        };
+    }
+
+    function ensureChartTooltip(container) {
+        if (!container) {
+            return null;
+        }
+        let tooltip = container.querySelector('.productivity-chart__tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.className = 'productivity-chart__tooltip';
+            container.appendChild(tooltip);
+        }
+        return tooltip;
+    }
+
+    function hideChartTooltip(tooltip) {
+        if (!tooltip) {
+            return;
+        }
+        tooltip.classList.remove('is-visible');
+    }
+
+    function buildChartTooltip(tooltip, chartState, index) {
+        if (!tooltip || !chartState || index < 0 || !Array.isArray(chartState.pointsByIndex) || index >= chartState.pointsByIndex.length) {
+            return;
+        }
+        const points = chartState.pointsByIndex[index];
+        tooltip.innerHTML = '';
+        if (!points || !points.length) {
+            return;
+        }
+        const categoryLabel = chartState.categories && chartState.categories[index] ? chartState.categories[index] : '';
+        if (categoryLabel) {
+            const title = document.createElement('div');
+            title.className = 'productivity-chart__tooltip-title';
+            title.textContent = labels.tooltipCategory ? (labels.tooltipCategory + ': ' + categoryLabel) : categoryLabel;
+            tooltip.appendChild(title);
+        }
+        const list = document.createElement('ul');
+        list.className = 'productivity-chart__tooltip-list';
+        points.forEach(function (point) {
+            const item = document.createElement('li');
+            item.className = 'productivity-chart__tooltip-item';
+            const color = document.createElement('span');
+            color.className = 'productivity-chart__tooltip-color';
+            color.style.backgroundColor = point.color;
+            item.appendChild(color);
+            const name = document.createElement('span');
+            name.className = 'productivity-chart__tooltip-name';
+            name.textContent = point.name || '';
+            item.appendChild(name);
+            const value = document.createElement('span');
+            value.className = 'productivity-chart__tooltip-value';
+            let formatted = valueFormatter(point.value);
+            if (chartState.unit) {
+                formatted += ' ' + chartState.unit;
+            }
+            value.textContent = (labels.tooltipValue ? labels.tooltipValue + ': ' : '') + formatted;
+            item.appendChild(value);
+            list.appendChild(item);
+        });
+        tooltip.appendChild(list);
+    }
+
+    function positionChartTooltip(container, canvas, tooltip, anchor) {
+        if (!container || !canvas || !tooltip || !anchor) {
+            return;
+        }
+        const containerRect = container.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        const offsetX = canvasRect.left - containerRect.left;
+        const offsetY = canvasRect.top - containerRect.top;
+        let left = offsetX + anchor.x;
+        let top = offsetY + anchor.y;
+        const tooltipWidth = tooltip.offsetWidth;
+        const tooltipHeight = tooltip.offsetHeight;
+        left -= tooltipWidth / 2;
+        if (left < 8) {
+            left = 8;
+        }
+        const maxLeft = containerRect.width - tooltipWidth - 8;
+        if (left > maxLeft) {
+            left = maxLeft;
+        }
+        top -= tooltipHeight + 12;
+        if (top < 8) {
+            top = offsetY + anchor.y + 12;
+        }
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+        tooltip.classList.add('is-visible');
+    }
+
+    function findNearestCategoryIndex(chartState, relativeX) {
+        if (!chartState || !Array.isArray(chartState.pointsByIndex)) {
+            return -1;
+        }
+        let nearestIndex = -1;
+        let nearestDistance = Infinity;
+        chartState.pointsByIndex.forEach(function (points, index) {
+            if (!points || !points.length) {
+                return;
+            }
+            const anchorX = points[0].x;
+            const distance = Math.abs(anchorX - relativeX);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestIndex = index;
+            }
+        });
+        if (nearestIndex === -1) {
+            return -1;
+        }
+        if (!Number.isFinite(chartState.threshold) || nearestDistance <= chartState.threshold) {
+            return nearestIndex;
+        }
+        return -1;
     }
 
     function initialiseCharts() {
@@ -631,12 +889,51 @@
             const canvas = container.querySelector('canvas');
             const legend = container.querySelector('.productivity-chart__legend');
             renderLegend(legend, chart, palette);
+            const tooltip = ensureChartTooltip(container);
+            let chartState = null;
 
             const draw = function () {
-                drawChart(canvas, chart, palette);
+                chartState = drawChart(canvas, chart, palette);
+                if (!chartState) {
+                    hideChartTooltip(tooltip);
+                }
             };
 
             draw();
+
+            if (canvas) {
+                const handlePointerMove = function (event) {
+                    if (!chartState || !canvas) {
+                        hideChartTooltip(tooltip);
+                        return;
+                    }
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const relativeX = event.clientX - canvasRect.left;
+                    const index = findNearestCategoryIndex(chartState, relativeX);
+                    if (index === -1) {
+                        hideChartTooltip(tooltip);
+                        return;
+                    }
+                    const points = chartState.pointsByIndex[index];
+                    if (!points || !points.length) {
+                        hideChartTooltip(tooltip);
+                        return;
+                    }
+                    buildChartTooltip(tooltip, chartState, index);
+                    const anchorY = Math.min.apply(null, points.map(function (point) { return point.y; }));
+                    positionChartTooltip(container, canvas, tooltip, {x: points[0].x, y: anchorY});
+                };
+
+                const handlePointerLeave = function () {
+                    hideChartTooltip(tooltip);
+                };
+
+                canvas.addEventListener('pointermove', handlePointerMove);
+                canvas.addEventListener('pointerdown', handlePointerMove);
+                canvas.addEventListener('pointerleave', handlePointerLeave);
+                canvas.addEventListener('pointercancel', handlePointerLeave);
+                canvas.addEventListener('pointerup', handlePointerLeave);
+            }
 
             if (window.ResizeObserver) {
                 const observer = new ResizeObserver(function () {

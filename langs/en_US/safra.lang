@@ -225,6 +225,10 @@ ProdutividadeMissingEmbrapaCultura = Selected crop does not have an Embrapa iden
 ProdutividadeMissingEmbrapaCultivar = Selected cultivar does not have an Embrapa identifier configured.
 ProdutividadeCultivarPrompt = Select a crop first to load cultivars.
 ProdutividadeCultivarEmpty = No cultivars were found for the chosen crop.
+ProdutividadeCultivarSearchPlaceholder = Type to search cultivars by name or code.
+ProdutividadeCultivarSearchHelp = Results load as you type. Choose a cultivar from the list.
+ProdutividadeCultivarTypeMore = Type at least two characters to search cultivars.
+ProdutividadeCultivarNoResults = No cultivars match this search for the selected crop.
 ProdutividadeMunicipioPlaceholder = Search by municipality name or IBGE code.
 ProdutividadeMunicipioHelp = Type at least three characters or the IBGE code to locate the municipality.
 ProdutividadeLoading = Loading...
@@ -252,6 +256,8 @@ ProdutividadeChartDegreeDays = Growing degree days
 ProdutividadeChartISNA = ISNA
 ProdutividadeChartPeriodLabel = Period %s
 ProdutividadeRawToggle = View full response (JSON)
+ProdutividadeTooltipCategory = Period
+ProdutividadeTooltipValue = Value
 
 # Produto formulado
 ProdutoFormuladoListTitle = Formulated products

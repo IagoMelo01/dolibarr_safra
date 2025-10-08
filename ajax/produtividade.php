@@ -79,15 +79,17 @@ switch ($action) {
             break;
         }
 
+        if ($term === '' || (dol_strlen($term) < 2 && !ctype_digit($term))) {
+            break;
+        }
+
         $cultivar = new Cultivar($db);
 
         $filters = array('t.cultura' => (int) $culturaId);
-        if ($term !== '') {
-            $escapedTerm = $db->escape($db->escapeforlike($term));
-            $filters['customsql'] = "(t.label LIKE '%" . $escapedTerm . "%' OR t.ref LIKE '%" . $escapedTerm . "%')";
-        }
+        $escapedTerm = $db->escape($db->escapeforlike($term));
+        $filters['customsql'] = "(t.label LIKE '%" . $escapedTerm . "%' OR t.ref LIKE '%" . $escapedTerm . "%')";
 
-        $pageSize = $limit > 0 ? $limit : 250;
+        $pageSize = $limit > 0 ? $limit : 30;
         $records = $cultivar->fetchAll('ASC', 'label', $pageSize + 1, $offset, $filters);
         if (is_array($records)) {
             if (count($records) > $pageSize) {
@@ -101,6 +103,7 @@ switch ($action) {
                 $items[] = array(
                     'id' => (int) $record->id,
                     'label' => $record->label ?: $record->ref,
+                    'ref' => $record->ref,
                     'cultura' => (int) $record->cultura,
                     'embrapa' => $record->embrapa_id,
                 );

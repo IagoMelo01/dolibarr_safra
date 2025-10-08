@@ -277,15 +277,21 @@ $culturaDao = new Cultura($db);
 $culturas = $culturaDao->fetchAll('ASC', 'label');
 
 $selectedCultivarOption = null;
+$selectedCultivarDisplay = '';
 if ($idCultivar > 0) {
     $prefillCultivar = new Cultivar($db);
     if ($prefillCultivar->fetch($idCultivar) > 0) {
         $selectedCultivarOption = array(
             'id' => (int) $prefillCultivar->id,
             'label' => $prefillCultivar->label ?: $prefillCultivar->ref,
+            'ref' => $prefillCultivar->ref,
             'cultura' => (int) $prefillCultivar->cultura,
             'embrapa' => $prefillCultivar->embrapa_id
         );
+        $selectedCultivarDisplay = $selectedCultivarOption['label'];
+        if (!empty($selectedCultivarOption['ref']) && $selectedCultivarOption['ref'] !== $selectedCultivarOption['label']) {
+            $selectedCultivarDisplay .= ' (' . $selectedCultivarOption['ref'] . ')';
+        }
     }
 }
 
@@ -349,21 +355,19 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
                         </select>
                     </div>
                     <div class="productivity-form__row">
-                        <label class="productivity-form__label" for="idCultivar"><?php echo dol_escape_htmltag($langs->trans('Cultivar')); ?></label>
-                        <select id="idCultivar" name="idCultivar" class="productivity-form__control" required data-default="<?php echo (int) $idCultivar; ?>" data-fetch-url="<?php echo dol_escape_htmltag(dol_buildpath('/safra/ajax/produtividade.php', 1)); ?>">
-                            <?php
-                            $hasSelectedCultivar = is_array($selectedCultivarOption) && (!empty($selectedCultivarOption['cultura']) ? ((int) $selectedCultivarOption['cultura'] === (int) $idCultura) : true);
-                            $defaultSelected = $idCultivar <= 0 ? ' selected' : '';
-                            ?>
-                            <option value=""<?php echo $defaultSelected; ?>><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
-                            <?php if ($hasSelectedCultivar) { ?>
-                                <option value="<?php echo (int) $selectedCultivarOption['id']; ?>" data-cultura="<?php echo (int) $selectedCultivarOption['cultura']; ?>"<?php echo !empty($selectedCultivarOption['embrapa']) ? ' data-embrapa="' . dol_escape_htmltag($selectedCultivarOption['embrapa']) . '"' : ''; ?> selected><?php echo dol_escape_htmltag($selectedCultivarOption['label']); ?></option>
-                            <?php } elseif ($idCultura > 0) { ?>
-                                <option value="" disabled><?php echo dol_escape_htmltag($langs->trans('ProdutividadeLoading')); ?></option>
-                            <?php } else { ?>
-                                <option value="" disabled><?php echo dol_escape_htmltag($langs->trans('ProdutividadeCultivarPrompt')); ?></option>
-                            <?php } ?>
-                        </select>
+                        <label class="productivity-form__label" for="cultivarSearch"><?php echo dol_escape_htmltag($langs->trans('Cultivar')); ?></label>
+                        <input type="hidden" name="idCultivar" id="idCultivar" value="<?php echo $idCultivar > 0 ? (int) $idCultivar : ''; ?>">
+                        <input type="text"
+                               id="cultivarSearch"
+                               class="productivity-form__control"
+                               placeholder="<?php echo dol_escape_htmltag($langs->trans('ProdutividadeCultivarSearchPlaceholder')); ?>"
+                               value="<?php echo dol_escape_htmltag($selectedCultivarDisplay); ?>"
+                               autocomplete="off"
+                               list="cultivarSuggestions"
+                               data-fetch-url="<?php echo dol_escape_htmltag(dol_buildpath('/safra/ajax/produtividade.php', 1)); ?>"
+                               <?php echo $idCultura > 0 ? '' : 'disabled'; ?>>
+                        <datalist id="cultivarSuggestions"></datalist>
+                        <small id="cultivarStatus" class="productivity-form__help"><?php echo dol_escape_htmltag($langs->trans('ProdutividadeCultivarSearchHelp')); ?></small>
                     </div>
                     <div class="productivity-form__row">
                         <label class="productivity-form__label" for="municipioSearch"><?php echo dol_escape_htmltag($langs->trans('Municipio')); ?></label>
@@ -509,10 +513,10 @@ print load_fiche_titre($langs->trans('ProdutividadePageTitle'), '', 'safra.png@s
 <?php
 $produtividadeConfig = array(
     'endpoint' => dol_buildpath('/safra/ajax/produtividade.php', 1),
-    'cultivarPageSize' => 250,
     'selected' => array(
         'cultura' => $idCultura > 0 ? (int) $idCultura : null,
         'cultivar' => $idCultivar > 0 ? (int) $idCultivar : null,
+        'cultivarOption' => $selectedCultivarOption,
         'municipio' => array(
             'code' => $codigoIBGE ? (int) $codigoIBGE : null,
             'label' => $selectedMunicipioLabel
@@ -523,7 +527,13 @@ $produtividadeConfig = array(
         'loading' => $langs->trans('ProdutividadeLoading'),
         'empty' => $langs->trans('ProdutividadeCultivarEmpty'),
         'placeholder' => $langs->trans('ProdutividadeCultivarPrompt'),
-        'loadingMore' => $langs->trans('ProdutividadeLoadingMore')
+        'loadingMore' => $langs->trans('ProdutividadeLoadingMore'),
+        'cultivarSearchHelp' => $langs->trans('ProdutividadeCultivarSearchHelp'),
+        'cultivarTypeMore' => $langs->trans('ProdutividadeCultivarTypeMore'),
+        'cultivarNoResults' => $langs->trans('ProdutividadeCultivarNoResults'),
+        'cultivarSearchPlaceholder' => $langs->trans('ProdutividadeCultivarSearchPlaceholder'),
+        'tooltipCategory' => $langs->trans('ProdutividadeTooltipCategory'),
+        'tooltipValue' => $langs->trans('ProdutividadeTooltipValue')
     )
 );
 

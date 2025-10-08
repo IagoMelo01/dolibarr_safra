@@ -175,6 +175,7 @@
     flex-direction: column;
     gap: 0.75rem;
     box-shadow: 0 10px 30px -22px rgba(15, 23, 42, 0.5);
+    position: relative;
 }
 
 .productivity-chart__header {
@@ -237,6 +238,85 @@
 
 .productivity-chart__legend-label {
     line-height: 1.2;
+}
+
+.productivity-chart__tooltip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(15, 23, 42, 0.92);
+    color: #f8fafc;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 14px 30px -18px rgba(15, 23, 42, 0.85);
+    font-size: 0.78rem;
+    line-height: 1.4;
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 5;
+    max-width: 240px;
+}
+
+.productivity-chart__tooltip.is-visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.productivity-chart__tooltip-title {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.productivity-chart__tooltip-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.productivity-chart__tooltip-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.4rem;
+    row-gap: 0.2rem;
+    align-items: center;
+}
+
+.productivity-chart__tooltip-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2563eb;
+}
+
+.productivity-chart__tooltip-name {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.productivity-chart__tooltip-value {
+    grid-column: 1 / span 2;
+    font-size: 0.74rem;
+    color: rgba(241, 245, 249, 0.85);
+}
+
+.productivity-form__control.is-loading {
+    animation: productivity-input-loading 1.2s ease-in-out infinite;
+    background-image: linear-gradient(90deg, rgba(37, 99, 235, 0.18) 0%, rgba(37, 99, 235, 0.06) 45%, rgba(37, 99, 235, 0.18) 100%);
+    background-size: 200% 100%;
+}
+
+@keyframes productivity-input-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 .productivity-kpis {
