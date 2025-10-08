@@ -77,10 +77,13 @@ if (!in_array($highlightRisk, array('20', '30', '40'), true)) {
     $highlightRisk = '20';
 }
 
+$consultationMonthRaw = trim(GETPOST('consultaMes', 'alphanohtml'));
+$consultationMonth = safra_zoneamento_parse_consultation_month($consultationMonthRaw);
+
 $municipioSelection = trim(GETPOST('municipio', 'alphanohtml'));
 $codigoIBGEInput = $municipioSelection !== '' ? $municipioSelection : trim(GETPOST('codigoIBGE', 'alphanohtml'));
 $culturesInput = GETPOST('culturas', 'array');
-$maxCultures = 12;
+$maxCultures = 13;
 
 $municipioOptions = safra_zoneamento_fetch_municipio_options($db);
 $selectedMunicipioInfo = $codigoIBGEInput !== '' ? safra_zoneamento_lookup_municipio($municipioOptions, $codigoIBGEInput) : null;
@@ -170,9 +173,11 @@ if ($action === 'consult') {
 
 llxHeader('', $langs->trans('ZoneamentoViewTitle'), '', '', 0, 0, '', '', '', 'mod-safra zoneamento-page');
 
-print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/zoneamento.css', 1) . '?v=1">';
+print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/zoneamento.css', 1) . '?v=2">';
 
 $monthLabels = safra_zoneamento_get_month_labels($langs);
+$displayWindow = safra_zoneamento_build_month_window($consultationMonth['month'], $consultationMonth['year'], 6, $monthLabels);
+$windowSummaryLabel = safra_zoneamento_format_window_summary($displayWindow);
 
 print '<div class="zoneamento-hero">';
 print '<div class="zoneamento-hero__content">';
@@ -221,6 +226,13 @@ foreach (array('20', '30', '40') as $riskValue) {
 print '</select>';
 print '</div>';
 
+$monthInputValue = safra_zoneamento_format_consultation_value($consultationMonth['month'], $consultationMonth['year']);
+print '<div class="zoneamento-form__field">';
+print '<label for="consultaMes" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMonth')) . '</label>';
+print '<input type="month" class="zoneamento-form__input" id="consultaMes" name="consultaMes" value="' . dol_escape_htmltag($monthInputValue) . '">';
+print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMonthHelp')) . '</div>';
+print '</div>';
+
 print '<div class="zoneamento-form__field zoneamento-form__field--full zoneamento-form__field--multiselect">';
 print '<label for="culturas" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterCultures')) . '</label>';
 print '<select name="culturas[]" id="culturas" multiple size="12" class="zoneamento-form__multiselect">';
@@ -243,11 +255,19 @@ if (!empty($results)) {
 
     print '<header class="zoneamento-dashboard__header">';
     if ($municipioResult && $ufResult) {
+        $metaPieces = array(sprintf($langs->trans('ZoneamentoMunicipioSummary'), safra_zoneamento_format_location($municipioResult), $ufResult));
+        if ($windowSummaryLabel !== '') {
+            $metaPieces[] = sprintf($langs->trans('ZoneamentoWindowRange'), $windowSummaryLabel);
+        }
         print '<h3 class="zoneamento-dashboard__title">' . dol_escape_htmltag(sprintf($langs->trans('ZoneamentoResultsFor'), safra_zoneamento_format_location($municipioResult), $ufResult)) . '</h3>';
-        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag(sprintf($langs->trans('ZoneamentoMunicipioSummary'), safra_zoneamento_format_location($municipioResult), $ufResult)) . '</div>';
+        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag(implode(' • ', $metaPieces)) . '</div>';
     } else {
         print '<h3 class="zoneamento-dashboard__title">' . dol_escape_htmltag($langs->trans('ZoneamentoLegendTitle')) . '</h3>';
-        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag($langs->trans('ZoneamentoLegendIntro')) . '</div>';
+        $legendIntro = $langs->trans('ZoneamentoLegendIntro');
+        if ($windowSummaryLabel !== '') {
+            $legendIntro .= ' • ' . sprintf($langs->trans('ZoneamentoWindowRange'), $windowSummaryLabel);
+        }
+        print '<div class="zoneamento-dashboard__meta">' . dol_escape_htmltag($legendIntro) . '</div>';
     }
     print '</header>';
 
@@ -304,7 +324,9 @@ if (!empty($results)) {
         }
 
         print '<div class="zoneamento-card__chart">';
-        foreach ($monthLabels as $monthNumber => $monthName) {
+        foreach ($displayWindow as $windowMonth) {
+            $monthNumber = (int) $windowMonth['month'];
+            $monthName = $windowMonth['label'];
             print '<div class="zoneamento-month">';
             print '<div class="zoneamento-month__label">' . dol_escape_htmltag($monthName) . '</div>';
             print '<div class="zoneamento-month__body">';
@@ -850,6 +872,137 @@ function safra_zoneamento_get_month_labels(Translate $langs)
         $months[$month] = dol_print_date($timestamp, '%b');
     }
     return $months;
+}
+
+/**
+ * Normalize consultation month selection.
+ *
+ * @param string $raw Raw value from request (YYYY-MM)
+ *
+ * @return array{month:int,year:int}
+ */
+function safra_zoneamento_parse_consultation_month($raw)
+{
+    $now = dol_now();
+    $defaultMonth = (int) dol_print_date($now, '%m');
+    $defaultYear = (int) dol_print_date($now, '%Y');
+
+    $raw = trim((string) $raw);
+    if ($raw !== '' && preg_match('/^(\d{4})-(\d{2})$/', $raw, $matches)) {
+        $year = (int) $matches[1];
+        $month = (int) $matches[2];
+        if ($month >= 1 && $month <= 12) {
+            return array('month' => $month, 'year' => $year);
+        }
+    }
+
+    return array('month' => $defaultMonth, 'year' => $defaultYear);
+}
+
+/**
+ * Format consultation month into HTML5 month input value.
+ *
+ * @param int $month Month number (1-12)
+ * @param int $year  Year number
+ *
+ * @return string
+ */
+function safra_zoneamento_format_consultation_value($month, $year)
+{
+    $month = max(1, min(12, (int) $month));
+    $year = (int) $year;
+    if ($year < 1900 || $year > 2100) {
+        $now = dol_now();
+        $year = (int) dol_print_date($now, '%Y');
+    }
+
+    return sprintf('%04d-%02d', $year, $month);
+}
+
+/**
+ * Build six-month display window labels and metadata.
+ *
+ * @param int   $startMonth   Starting month number
+ * @param int   $startYear    Starting year
+ * @param int   $length       Number of months to include
+ * @param array $monthLabels  Precomputed month labels keyed by month
+ *
+ * @return array<int, array{month:int,year:int,label:string}>
+ */
+function safra_zoneamento_build_month_window($startMonth, $startYear, $length, array $monthLabels)
+{
+    $sequence = array();
+
+    $startMonth = max(1, min(12, (int) $startMonth));
+    $startYear = (int) $startYear;
+    if ($startYear < 1900 || $startYear > 2100) {
+        $now = dol_now();
+        $startYear = (int) dol_print_date($now, '%Y');
+    }
+
+    $length = max(1, (int) $length);
+
+    for ($index = 0; $index < $length; $index++) {
+        $monthIndex = $startMonth - 1 + $index;
+        $monthNumber = (($monthIndex % 12) + 12) % 12 + 1;
+        $yearOffset = (int) floor($monthIndex / 12);
+        $yearValue = $startYear + $yearOffset;
+
+        if (!isset($monthLabels[$monthNumber])) {
+            $timestamp = dol_mktime(12, 0, 0, $monthNumber, 1, 2024);
+            $monthLabel = dol_print_date($timestamp, '%b');
+        } else {
+            $monthLabel = $monthLabels[$monthNumber];
+        }
+
+        $monthLabel = trim($monthLabel);
+        $monthLabel = rtrim($monthLabel, '.');
+        if ($monthLabel !== '') {
+            if (function_exists('mb_convert_case')) {
+                $monthLabel = mb_convert_case($monthLabel, MB_CASE_TITLE, 'UTF-8');
+            } else {
+                $monthLabel = ucwords(strtolower($monthLabel));
+            }
+        }
+
+        $sequence[] = array(
+            'month' => $monthNumber,
+            'year' => $yearValue,
+            'label' => $monthLabel . '/' . sprintf('%02d', $yearValue % 100),
+        );
+    }
+
+    return $sequence;
+}
+
+/**
+ * Format the selected window into a readable summary.
+ *
+ * @param array<int, array{month:int,year:int,label:string}> $window
+ *
+ * @return string
+ */
+function safra_zoneamento_format_window_summary(array $window)
+{
+    if (empty($window)) {
+        return '';
+    }
+
+    $first = reset($window);
+    $last = end($window);
+    if (!is_array($first) || !is_array($last)) {
+        return '';
+    }
+
+    if (!empty($first['label']) && !empty($last['label'])) {
+        if ($first['label'] === $last['label']) {
+            return (string) $first['label'];
+        }
+
+        return $first['label'] . ' – ' . $last['label'];
+    }
+
+    return '';
 }
 
 /**

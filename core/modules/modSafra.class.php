@@ -1670,7 +1670,7 @@ class modSafra extends DolibarrModules
                        'prefix' => img_picto('', 'fa-route', 'class="pictofixedwidth valignmiddle"'),
                        'mainmenu' => 'safra',
                        'leftmenu' => 'safra_planejamento',
-                       'url' => '/safra/janelaplantio_list.php',
+                       'url' => '/safra/zoneamento_view.php',
                        'langs' => 'safra@safra',
                        'position' => 1000 + $r,
                        'enabled' => 'isModEnabled("safra")',
@@ -1680,7 +1680,7 @@ class modSafra extends DolibarrModules
                );
 
                $planejamento = array(
-                       array('JanelasPlantio', 'janelaplantio', '/safra/janelaplantio_list.php', '/safra/janelaplantio_card.php?action=create', '$user->hasRight("safra", "janelaplantio", "read")', '$user->hasRight("safra", "janelaplantio", "write")'),
+                       array('JanelasPlantio', 'janelaplantio', '/safra/zoneamento_view.php', '/safra/janelaplantio_card.php?action=create', '$user->hasRight("safra", "janelaplantio", "read")', '$user->hasRight("safra", "janelaplantio", "write")'),
                        array('Zoneamentos', 'zoneamento', '/safra/zoneamento_list.php', '/safra/zoneamento_card.php?action=create', '$user->hasRight("safra", "zoneamento", "read")', '$user->hasRight("safra", "zoneamento", "write")'),
                        array('Expectativas', 'expectativaprodutividade', '/safra/expectativaprodutividade_list.php', '/safra/expectativaprodutividade_card.php?action=create', '$user->hasRight("safra", "expectativaprodutividade", "read")', '$user->hasRight("safra", "expectativaprodutividade", "write")'),
                        array('Recomendacoes', 'recomendacaoadubo', '/safra/recomendacaoadubo_list.php', '/safra/recomendacaoadubo_card.php?action=create', '$user->hasRight("safra", "recomendacaoadubo", "read")', '$user->hasRight("safra", "recomendacaoadubo", "write")'),
@@ -1703,20 +1703,22 @@ class modSafra extends DolibarrModules
                                'user' => 2,
                        );
 
-                       $this->menu[$r++] = array(
-                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
-                               'type' => 'left',
-                               'titre' => 'SafraMenuNew'.$labelKey,
-                               'mainmenu' => 'safra',
-                               'leftmenu' => 'safra_'.$code.'_new',
-                               'url' => $newUrl,
-                               'langs' => 'safra@safra',
-                               'position' => 1000 + $r,
-                               'enabled' => 'isModEnabled("safra")',
-                               'perms' => $permWrite,
-                               'target' => '',
-                               'user' => 2,
-                       );
+                       if (!in_array($code, array('janelaplantio', 'zoneamento'), true)) {
+                               $this->menu[$r++] = array(
+                                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
+                                       'type' => 'left',
+                                       'titre' => 'SafraMenuNew'.$labelKey,
+                                       'mainmenu' => 'safra',
+                                       'leftmenu' => 'safra_'.$code.'_new',
+                                       'url' => $newUrl,
+                                       'langs' => 'safra@safra',
+                                       'position' => 1000 + $r,
+                                       'enabled' => 'isModEnabled("safra")',
+                                       'perms' => $permWrite,
+                                       'target' => '',
+                                       'user' => 2,
+                               );
+                       }
                }
 
                $this->menu[$r++] = array(
