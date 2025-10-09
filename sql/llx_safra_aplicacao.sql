@@ -32,7 +32,9 @@ CREATE TABLE llx_safra_aplicacao(
 	fk_user_modif integer, 
 	last_main_doc varchar(255), 
 	import_key varchar(14), 
-	model_pdf varchar(255), 
-	status integer NOT NULL
+        model_pdf varchar(255),
+        fk_task integer,
+        stock_processed integer DEFAULT 0,
+        status integer NOT NULL
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

@@ -21,6 +21,7 @@ ALTER TABLE llx_safra_aplicacao ADD INDEX idx_safra_aplicacao_fk_soc (fk_soc);
 ALTER TABLE llx_safra_aplicacao ADD INDEX idx_safra_aplicacao_fk_project (fk_project);
 ALTER TABLE llx_safra_aplicacao ADD CONSTRAINT llx_safra_aplicacao_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES llx_user(rowid);
 ALTER TABLE llx_safra_aplicacao ADD INDEX idx_safra_aplicacao_status (status);
+ALTER TABLE llx_safra_aplicacao ADD INDEX idx_safra_aplicacao_fk_task (fk_task);
 -- END MODULEBUILDER INDEXES
 
 --ALTER TABLE llx_safra_aplicacao ADD UNIQUE INDEX uk_safra_aplicacao_fieldxy(fieldx, fieldy);

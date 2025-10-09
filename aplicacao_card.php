@@ -80,8 +80,14 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formproduct.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/stock/class/mouvementstock.class.php';
+require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
 dol_include_once('/safra/class/aplicacao.class.php');
 dol_include_once('/safra/lib/safra_aplicacao.lib.php');
+dol_include_once('/safra/class/safra_product_link.class.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra", "other"));
@@ -194,11 +200,143 @@ if (empty($reshook)) {
 	// Actions cancel, add, update, update_extras, confirm_validate, confirm_delete, confirm_deleteline, confirm_clone, confirm_close, confirm_setdraft, confirm_reopen
 	include DOL_DOCUMENT_ROOT.'/core/actions_addupdatedelete.inc.php';
 
-	// Actions when linking object each other
-	include DOL_DOCUMENT_ROOT.'/core/actions_dellink.inc.php';
+        // Actions when linking object each other
+        include DOL_DOCUMENT_ROOT.'/core/actions_dellink.inc.php';
 
-	// Actions when printing a doc from card
-	include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
+        // Actions when printing a doc from card
+        include DOL_DOCUMENT_ROOT.'/core/actions_printing.inc.php';
+
+        if ($action === 'addline' && $permissiontoadd && $object->id > 0) {
+                if (!checkToken()) {
+                        accessforbidden('Bad token');
+                }
+
+                $fkProduct = GETPOSTINT('fk_product');
+                $dose = price2num(GETPOST('dose', 'alphanohtml'), 'MU');
+                $doseUnit = GETPOST('dose_unit', 'alpha');
+                $area = price2num(GETPOST('area', 'alphanohtml'), 'MU');
+                $qtyTotal = price2num(GETPOST('qty_total', 'alphanohtml'), 'MU');
+                $warehouseId = GETPOSTINT('fk_warehouse');
+                $productType = GETPOST('product_type', 'alpha');
+                $linkedId = GETPOSTINT('fk_linked');
+                $linkedFormulado = GETPOSTINT('fk_linked_formulado');
+                if ($productType === 'formulado') {
+                        $linkedId = $linkedFormulado;
+                } elseif ($productType !== 'tecnico') {
+                        $productType = 'product';
+                }
+
+                if ($fkProduct <= 0) {
+                        setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentities('Product')), null, 'errors');
+                } else {
+                        require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+                        $prod = new Product($db);
+                        if ($prod->fetch($fkProduct) > 0) {
+                                if ($qtyTotal == 0 && $dose > 0 && $area > 0) {
+                                        $qtyTotal = $dose * $area;
+                                }
+
+                                $line = new AplicacaoLine($db);
+                                $line->fk_aplicacao = $object->id;
+                                $line->fk_product = $fkProduct;
+                                $line->product_type = ($productType ?: 'product');
+                                $line->fk_linked = ($linkedId > 0 ? $linkedId : null);
+                                $line->label = $prod->ref.' - '.$prod->label;
+                                $line->dose = $dose;
+                                $line->dose_unit = ($doseUnit ?: 'l/ha');
+                                $line->area_ha = $area;
+                                $line->qty_total = $qtyTotal;
+                                $line->fk_warehouse = ($warehouseId > 0 ? $warehouseId : null);
+                                if ($line->createCommon($user) > 0) {
+                                        $db->query('UPDATE '.MAIN_DB_PREFIX.'safra_aplicacao SET stock_processed = 0 WHERE rowid = '.$object->id);
+                                        $object->fetch($object->id);
+                                        $object->updateLinkedTask($user);
+                                        setEventMessages($langs->trans('LineAdded'), null, 'mesgs');
+                                        header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+                                        exit;
+                                }
+
+                                setEventMessages($line->error ?: $langs->trans('Error'), $line->errors, 'errors');
+                        }
+                }
+        }
+
+        if ($action === 'delete_aplicacao_line' && $permissiontoadd && $object->id > 0) {
+                if (!checkToken()) {
+                        accessforbidden('Bad token');
+                }
+
+                $lineId = GETPOSTINT('lineid');
+                if ($lineId > 0) {
+                        $line = new AplicacaoLine($db);
+                        if ($line->fetchCommon($lineId) > 0 && (int) $line->fk_aplicacao === (int) $object->id) {
+                                if ($line->deleteCommon($user) > 0) {
+                                        $db->query('UPDATE '.MAIN_DB_PREFIX.'safra_aplicacao SET stock_processed = 0 WHERE rowid = '.$object->id);
+                                        $object->fetch($object->id);
+                                        $object->updateLinkedTask($user);
+                                        setEventMessages($langs->trans('LineDeleted'), null, 'mesgs');
+                                        header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+                                        exit;
+                                }
+
+                                setEventMessages($line->error ?: $langs->trans('Error'), $line->errors, 'errors');
+                        } else {
+                                setEventMessages($langs->trans('ErrorRecordNotFound'), null, 'errors');
+                        }
+                } else {
+                        setEventMessages($langs->trans('ErrorBadParameters'), null, 'errors');
+                }
+        }
+
+        if ($action === 'save_resources' && $permissiontoadd && $object->id > 0) {
+                if (!checkToken()) {
+                        accessforbidden('Bad token');
+                }
+
+                $map = array(
+                        'vehicle' => GETPOST('resources_vehicle', 'array:int'),
+                        'implement' => GETPOST('resources_implement', 'array:int'),
+                        'user' => GETPOST('resources_user', 'array:int'),
+                );
+
+                $map = array_filter($map, function ($item) {
+                        return is_array($item);
+                });
+
+                if ($object->saveResources($user, $map) > 0) {
+                        $object->fetch($object->id);
+                        $object->updateLinkedTask($user);
+                        setEventMessages($langs->trans('Saved'), null, 'mesgs');
+                        header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+                        exit;
+                }
+
+                setEventMessages($object->error, $object->errors, 'errors');
+        }
+
+        if ($action === 'mark_done' && $permissiontoadd && $object->id > 0) {
+                if (!checkToken()) {
+                        accessforbidden('Bad token');
+                }
+
+                if (!empty($object->fk_task)) {
+                        $task = new Task($db);
+                        if ($task->fetch($object->fk_task) > 0 && (int) $task->progress < 100) {
+                                $task->progress = 100;
+                                $task->update($user);
+                        }
+                }
+
+                $object->fetch($object->id);
+                $res = $object->processStockMovements($user);
+                if ($res > 0) {
+                        setEventMessages($langs->trans('StockProcessed'), null, 'mesgs');
+                        header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+                        exit;
+                }
+
+                setEventMessages($object->error ?: $langs->trans('Error'), $object->errors, 'errors');
+        }
 
 	// Action to move up and down lines of object
 	//include DOL_DOCUMENT_ROOT.'/core/actions_lineupdown.inc.php';
@@ -230,6 +368,7 @@ if (empty($reshook)) {
 $form = new Form($db);
 $formfile = new FormFile($db);
 $formproject = new FormProjets($db);
+$formproduct = new FormProduct($db);
 
 $title = $langs->trans("Aplicacao")." - ".$langs->trans('Card');
 //$title = $object->ref." - ".$langs->trans('Card');
@@ -470,54 +609,193 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	 * Lines
 	 */
 
-	if (!empty($object->table_element_line)) {
-		// Show object lines
-		$result = $object->getLinesArray();
+        if (!empty($object->table_element_line)) {
+                $productOptions = array();
+                $sqlProducts = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX."product WHERE entity IN (".getEntity('product').") ORDER BY ref ASC";
+                $resqlProducts = $db->query($sqlProducts);
+                if ($resqlProducts) {
+                        while ($prod = $db->fetch_object($resqlProducts)) {
+                                $productOptions[$prod->rowid] = dol_escape_htmltag($prod->ref.' - '.$prod->label);
+                        }
+                        $db->free($resqlProducts);
+                }
 
-		print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
-		<input type="hidden" name="token" value="' . newToken().'">
-		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
-		<input type="hidden" name="mode" value="">
-		<input type="hidden" name="page_y" value="">
-		<input type="hidden" name="id" value="' . $object->id.'">
-		';
+                $warehouseSelect = $formproduct->selectWarehouses('', 'fk_warehouse', '', 1);
 
-		if (!empty($conf->use_javascript_ajax) && $object->status == 0) {
-			include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
-		}
+                $vehicleOptions = array();
+                $sqlVehicles = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX.'safra_veiculo ORDER BY ref ASC';
+                $resqlVehicles = $db->query($sqlVehicles);
+                if ($resqlVehicles) {
+                        while ($veh = $db->fetch_object($resqlVehicles)) {
+                                $vehicleOptions[$veh->rowid] = dol_escape_htmltag($veh->ref.' - '.$veh->label);
+                        }
+                        $db->free($resqlVehicles);
+                }
 
-		print '<div class="div-table-responsive-no-min">';
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '<table id="tablelines" class="noborder noshadow" width="100%">';
-		}
+                $implementOptions = array();
+                $sqlImplements = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX.'safra_implemento ORDER BY ref ASC';
+                $resqlImplements = $db->query($sqlImplements);
+                if ($resqlImplements) {
+                        while ($imp = $db->fetch_object($resqlImplements)) {
+                                $implementOptions[$imp->rowid] = dol_escape_htmltag($imp->ref.' - '.$imp->label);
+                        }
+                        $db->free($resqlImplements);
+                }
 
-		if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		}
+                $userOptions = array();
+                $sqlUsers = 'SELECT rowid, firstname, lastname, login FROM '.MAIN_DB_PREFIX."user WHERE statut = 1 ORDER BY lastname ASC";
+                $resqlUsers = $db->query($sqlUsers);
+                if ($resqlUsers) {
+                        while ($usr = $db->fetch_object($resqlUsers)) {
+                                $label = trim(($usr->firstname ? $usr->firstname.' ' : '').$usr->lastname);
+                                if (!$label) {
+                                        $label = $usr->login;
+                                }
+                                $userOptions[$usr->rowid] = dol_escape_htmltag($label);
+                        }
+                        $db->free($resqlUsers);
+                }
 
-		// Form to add new line
-		if ($object->status == 0 && $permissiontoadd && $action != 'selectlines') {
-			if ($action != 'editline') {
-				// Add products/services form
+                print '<div class="underbanner clearboth"></div>';
+                print load_fiche_titre($langs->trans('SafraApplicationAssistant'), '', 'fa-fill-drip');
 
-				$parameters = array();
-				$reshook = $hookmanager->executeHooks('formAddObjectLine', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-				if ($reshook < 0) {
-					setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-				}
-				if (empty($reshook)) {
-					$object->formAddObjectLine(1, $mysoc, $soc);
-				}
-			}
-		}
+                print '<div class="fichecenter">';
+                print '<div class="fichehalfleft">';
 
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '</table>';
-		}
-		print '</div>';
+                print '<form action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'" method="POST" class="marginbottomonly">';
+                print '<input type="hidden" name="token" value="'.newToken().'">';
+                print '<input type="hidden" name="action" value="addline">';
 
-		print "</form>\n";
-	}
+                print '<table class="noborder centpercent">';
+                print '<tr class="liste_titre">';
+                print '<th>'.$langs->trans('Insumo').'</th>';
+                print '<th>'.$langs->trans('Dose').'</th>';
+                print '<th>'.$langs->trans('AreaHa').'</th>';
+                print '<th>'.$langs->trans('Total').'</th>';
+                print '<th>'.$langs->trans('Warehouse').'</th>';
+                print '<th></th>';
+                print '</tr>';
+
+                print '<tr class="oddeven">';
+                print '<td>';
+                print $form->selectarray('fk_product', $productOptions, GETPOSTINT('fk_product'), 1, 0, 0, '', 0, 0, 0, '', 'id="safra-product" class="flat select2 widthcentpercent"');
+                print '<div class="margin-top-small">';
+                print '<select id="safra-linked-tecnico" name="fk_linked" class="flat select2 widthcentpercent" data-placeholder="'.$langs->trans('SelectTecnico').'">';
+                print '<option value="">'.$langs->trans('SelectTecnico').'</option>';
+                print '</select>';
+                print '<select id="safra-linked-formulado" name="fk_linked_formulado" class="flat select2 widthcentpercent margin-top-small" data-placeholder="'.$langs->trans('SelectFormulado').'">';
+                print '<option value="">'.$langs->trans('SelectFormulado').'</option>';
+                print '</select>';
+                print '<input type="hidden" name="product_type" id="safra-product-type" value="product">';
+                print '</div>';
+                print '</td>';
+
+                $doseUnitSelect = '<select name="dose_unit" class="flat">'
+                        .'<option value="l/ha">L/ha</option>'
+                        .'<option value="kg/ha">Kg/ha</option>'
+                        .'</select>';
+
+                print '<td class="nowrap">';
+                print '<input type="number" step="0.0001" min="0" id="safra-dose" name="dose" class="flat width50" value="'.dol_escape_htmltag(GETPOST('dose', 'alphanohtml')).'"> ';
+                print $doseUnitSelect;
+                print '</td>';
+
+                print '<td><input type="number" step="0.0001" min="0" id="safra-area" name="area" class="flat width75" value="'.dol_escape_htmltag($object->qty).'"></td>';
+                print '<td><input type="number" step="0.0001" min="0" id="safra-total" name="qty_total" class="flat width75" value=""></td>';
+                print '<td>'.$warehouseSelect.'</td>';
+                print '<td class="right"><button type="submit" class="button butAction">'.$langs->trans('Add').'</button></td>';
+                print '</tr>';
+                print '</table>';
+                print '</form>';
+
+                $linesData = array();
+                if (!empty($object->lines)) {
+                        $warehouseStatic = new Entrepot($db);
+                        print '<table class="noborder centpercent">';
+                        print '<tr class="liste_titre">';
+                        print '<th>'.$langs->trans('Insumo').'</th>';
+                        print '<th>'.$langs->trans('Dose').'</th>';
+                        print '<th>'.$langs->trans('AreaHa').'</th>';
+                        print '<th>'.$langs->trans('Total').'</th>';
+                        print '<th>'.$langs->trans('Warehouse').'</th>';
+                        print '<th>'.$langs->trans('Stock').'</th>';
+                        print '<th></th>';
+                        print '</tr>';
+
+                        $productStatic = new Product($db);
+                        foreach ($object->lines as $line) {
+                                $productStatic->fetch($line->fk_product);
+                                $linesData[] = array('label' => $productStatic->ref.' - '.$productStatic->label, 'dose' => (float) $line->dose, 'dose_unit' => $line->dose_unit);
+                                print '<tr class="oddeven">';
+                                print '<td>'.$productStatic->getNomUrl(1).'</td>';
+                                print '<td>'.price($line->dose, 0, $langs, 0, 0).' '.$line->dose_unit.'</td>';
+                                print '<td>'.price($line->area_ha, 0, $langs, 0, 0).'</td>';
+                                print '<td>'.price($line->qty_total, 0, $langs, 0, 0).'</td>';
+                                if ($line->fk_warehouse) {
+                                        $warehouseStatic->fetch($line->fk_warehouse);
+                                        $warehouseLabel = $warehouseStatic->getNomUrl(1);
+                                } else {
+                                        $warehouseLabel = '';
+                                }
+                                print '<td>'.$warehouseLabel.'</td>';
+                                print '<td>'.price($productStatic->stock_reel, 0, $langs, 0, 0).'</td>';
+                                print '<td class="right">';
+                                print '<a class="reposition" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete_aplicacao_line&lineid='.$line->id.'&token='.newToken().'">'.img_delete().'</a>';
+                                print '</td>';
+                                print '</tr>';
+                        }
+                        print '</table>';
+                }
+
+                $linesDataJson = json_encode($linesData);
+
+                print '</div>';
+
+                print '<div class="fichehalfright">';
+                print '<form action="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'" method="POST">';
+                print '<input type="hidden" name="token" value="'.newToken().'">';
+                print '<input type="hidden" name="action" value="save_resources">';
+                print '<table class="noborder centpercent">';
+                print '<tr class="liste_titre"><th colspan="2">'.$langs->trans('Resources').'</th></tr>';
+
+                print '<tr class="oddeven"><td>'.$langs->trans('Vehicles').'</td><td>'.$form->multiselectarray('resources_vehicle', $vehicleOptions, array_keys($object->resources['vehicle'] ?? array()), '', '', '', '', 'widthcentpercent select2').'</td></tr>';
+                print '<tr class="oddeven"><td>'.$langs->trans('Implements').'</td><td>'.$form->multiselectarray('resources_implement', $implementOptions, array_keys($object->resources['implement'] ?? array()), '', '', '', '', 'widthcentpercent select2').'</td></tr>';
+                print '<tr class="oddeven"><td>'.$langs->trans('People').'</td><td>'.$form->multiselectarray('resources_user', $userOptions, array_keys($object->resources['user'] ?? array()), '', '', '', '', 'widthcentpercent select2').'</td></tr>';
+
+                print '<tr><td colspan="2" class="right"><button type="submit" class="button butAction">'.$langs->trans('Save').'</button></td></tr>';
+                print '</table>';
+                print '</form>';
+
+                print '<p class="margin-top">';
+                print '<a href="#" id="safra-open-calc-calda" class="butAction">'.$langs->trans('SafraCaldaCalculator').'</a>';
+                print '</p>';
+
+                print '</div>';
+                print '</div>';
+
+                print '<div id="safra-calc-calda" title="'.$langs->trans('SafraCaldaCalculator').'" style="display:none" data-save-label="'.$langs->trans('Save').'" data-cancel-label="'.$langs->trans('Cancel').'">';
+                print '<p>'.$langs->trans('SafraCaldaDescription').'</p>';
+                print '<div class="form-group">';
+                print '<label>'.$langs->trans('ApplicationRate').'</label>';
+                print '<input type="number" step="0.0001" min="0" id="calc-taxa" class="flat width100" value="0">';
+                print '</div>';
+                print '<div class="form-group">';
+                print '<label>'.$langs->trans('TankCapacity').'</label>';
+                print '<input type="number" step="0.0001" min="0" id="calc-tanque" class="flat width100" value="0">';
+                print '</div>';
+                print '<div class="form-group">';
+                print '<label>'.$langs->trans('AreaPerTank').'</label>';
+                print '<span id="calc-area-por-tanque">0,00</span>';
+                print '</div>';
+                print '<div class="form-group">';
+                print '<label>'.$langs->trans('SafraCaldaProducts').'</label>';
+                print '<ul id="calc-products"></ul>';
+                print '</div>';
+                print '</div>';
+
+                print '<script>var dolibarr_safra_aplicacao = {ajax_url: "'.dol_buildpath('/safra/ajax/aplicacao.php', 1).'", lines: '.($linesDataJson ?: '[]').'};</script>';
+                print '<script src="'.dol_buildpath('/safra/js/aplicacao.js', 1).'"></script>';
+        }
 
 
 	// Buttons for actions
@@ -531,6 +809,11 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 		}
 
 		if (empty($reshook)) {
+			if (!empty($object->fk_task)) {
+				print dolGetButtonAction('', $langs->trans('ViewTask'), 'default', dol_buildpath('/projet/tasks/task.php', 1).'?id='.$object->fk_task, '', 1);
+				$canProcess = empty($object->stock_processed);
+				print dolGetButtonAction('', $langs->trans('MarkAsDone'), 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=mark_done&token='.newToken(), '', $permissiontoadd && $canProcess);
+			}
 			// Send
 			if (empty($user->socid)) {
 				print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&token='.newToken().'&mode=init#formmailbeforetitle');
