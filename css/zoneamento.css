@@ -218,7 +218,8 @@
 
 .zoneamento-dashboard__grid {
     display: grid;
-    gap: 24px;
+    column-gap: 24px;
+    row-gap: 70px;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
@@ -428,6 +429,7 @@
     font-size: 0.85rem;
     color: rgba(203, 213, 225, 0.85);
     line-height: 1.6;
+    margin-top: 25px;
 }
 
 .zoneamento-dashboard__footer strong {
