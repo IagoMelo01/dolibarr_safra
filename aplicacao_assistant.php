@@ -38,11 +38,7 @@ if (!isModEnabled('safra')) {
 }
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
-require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
-require_once DOL_DOCUMENT_ROOT.'/core/class/html.formproduct.class.php';
-require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
-require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
 
 dol_include_once('/safra/class/aplicacao.class.php');
 
@@ -52,7 +48,6 @@ $action = GETPOST('action', 'aZ09');
 
 $form = new Form($db);
 $formProject = new FormProjets($db);
-$formProduct = new FormProduct($db);
 
 $errors = array();
 $messages = array();
@@ -120,6 +115,23 @@ $produtosTecnicos = safraTableExists($db, 'safra_produtostecnicos') ? safraFetch
 $produtosFormulados = safraTableExists($db, 'safra_produto_formulado') ? safraFetchPairs($db, 'safra_produto_formulado', array('ref' => 'ref', 'label' => 'label')) : array();
 $vehicleOptions = safraTableExists($db, 'frota_veiculo') ? safraFetchPairs($db, 'frota_veiculo', array('ref' => 'placa', 'label' => 'descricao')) : array();
 $implementOptions = safraTableExists($db, 'frota_implemento') ? safraFetchPairs($db, 'frota_implemento', array('ref' => 'ref', 'label' => 'descricao')) : array();
+$warehouseOptions = array();
+if (safraTableExists($db, 'entrepot')) {
+        $sqlWarehouses = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX."entrepot";
+        $sqlWarehouses .= ' WHERE entity IN ('.getEntity('stock').')';
+        $sqlWarehouses .= ' ORDER BY ref ASC';
+        $resWarehouses = $db->query($sqlWarehouses);
+        if ($resWarehouses) {
+                while ($obj = $db->fetch_object($resWarehouses)) {
+                        $label = $obj->ref;
+                        if (!empty($obj->label)) {
+                                $label .= ' - '.$obj->label;
+                        }
+                        $warehouseOptions[(int) $obj->rowid] = $label;
+                }
+                $db->free($resWarehouses);
+        }
+}
 
 $resourcePersons = array();
 $sqlUsers = 'SELECT rowid, firstname, lastname, login FROM '.MAIN_DB_PREFIX."user WHERE statut = 1 ORDER BY lastname";
@@ -389,14 +401,14 @@ print '</div>';
 $productOptionsJson = json_encode((object) $products, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $tecnicoOptionsJson = json_encode((object) $produtosTecnicos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $formuladoOptionsJson = json_encode((object) $produtosFormulados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-$warehouseSelectJson = json_encode($formProduct->selectWarehouses('', 'lines[__IDX__][fk_entrepot]', '', 1, 0, 0, '', 1, '', '', '', 0, '', '', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$warehouseOptionsJson = json_encode((object) $warehouseOptions, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 print '<script>';
 print 'document.addEventListener("DOMContentLoaded", function () {';
 print 'const productOptions = '.($productOptionsJson ?: '{}').';';
 print 'const tecnicoOptions = '.($tecnicoOptionsJson ?: '{}').';';
 print 'const formuladoOptions = '.($formuladoOptionsJson ?: '{}').';';
-print 'const warehouseSelectHtml = '.($warehouseSelectJson ?: '""').';';
+print 'const warehouseOptions = '.($warehouseOptionsJson ?: '{}').';';
 print 'let lineIndex = 0;';
 print 'function createSelect(name, options) {';
 print '    const select = document.createElement("select");';
@@ -466,9 +478,7 @@ print '    totalInput.value = "0";';
 print '    tdTotal.appendChild(totalInput);';
 print '    tr.appendChild(tdTotal);';
 print '    const tdWarehouse = document.createElement("td");';
-print '    const warehouseWrapper = document.createElement("div");';
-print '    warehouseWrapper.innerHTML = warehouseSelectHtml.replace(/__IDX__/g, idx);';
-print '    tdWarehouse.appendChild(warehouseWrapper);';
+print '    tdWarehouse.appendChild(createSelect(`lines[${idx}][fk_entrepot]`, warehouseOptions));';
 print '    tr.appendChild(tdWarehouse);';
 print '    const tdNote = document.createElement("td");';
 print '    const noteInput = document.createElement("textarea");';
