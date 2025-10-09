@@ -31,6 +31,9 @@
  */
 
 require_once DOL_DOCUMENT_ROOT . '/core/triggers/dolibarrtriggers.class.php';
+require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/stock/class/mouvementstock.class.php';
+dol_include_once('/safra/class/aplicacao.class.php');
 
 
 /**
@@ -141,6 +144,12 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 			//case 'CONTACT_DELETE':
 			//case 'CONTACT_ENABLEDISABLE':
 
+                        case 'MYOBJECT_CREATE':
+                                return $this->handleAplicacaoCreate($object, $user, $langs);
+                        case 'MYOBJECT_DELETE':
+                                return $this->handleAplicacaoDelete($object, $user);
+                        case 'TASK_MODIFY':
+                                return $this->handleTaskModify($object, $user);
                         // Products
                         case 'PRODUCT_CREATE':
                         case 'PRODUCT_MODIFY':
@@ -500,6 +509,104 @@ class InterfaceSafraTriggers extends DolibarrTriggers
          *
          * @return int
          */
+        /**
+         * Handle creation of aplicacao to create linked task.
+         *
+         * @param Aplicacao $object
+         * @param User      $user
+         * @param Translate $langs
+         * @return int
+         */
+        protected function handleAplicacaoCreate($object, User $user, Translate $langs)
+        {
+                if (!$object instanceof Aplicacao) {
+                        return 0;
+                }
+
+                if (empty($object->fk_project) || !isModEnabled('project')) {
+                        return 0;
+                }
+
+                $task = new Task($this->db);
+                $task->fk_project = $object->fk_project;
+                $task->label = $langs->trans('Aplicacao').' '.$object->ref;
+                $task->description = $object->buildTaskDescription($langs);
+                $task->fk_user_creat = $user->id;
+
+                $res = $task->create($user);
+                if ($res > 0) {
+                        $sql = 'UPDATE '.MAIN_DB_PREFIX."safra_aplicacao SET fk_task = ".$task->id." WHERE rowid = ".$object->id;
+                        $this->db->query($sql);
+                        return 1;
+                }
+
+                dol_syslog(__METHOD__.' failed to create task: '.$task->error, LOG_ERR);
+                return -1;
+        }
+
+        /**
+         * Cleanup hook when aplicacao is deleted.
+         *
+         * @param Aplicacao $object
+         * @param User      $user
+         * @return int
+         */
+        protected function handleAplicacaoDelete($object, User $user)
+        {
+                if (!$object instanceof Aplicacao) {
+                        return 0;
+                }
+
+                if (!empty($object->fk_task)) {
+                        $sql = 'UPDATE '.MAIN_DB_PREFIX."safra_aplicacao SET fk_task = NULL WHERE rowid = ".$object->id;
+                        $this->db->query($sql);
+                }
+
+                return 1;
+        }
+
+        /**
+         * Handle stock deduction when task marked completed.
+         *
+         * @param Task $task
+         * @param User $user
+         * @return int
+         */
+        protected function handleTaskModify($task, User $user)
+        {
+                if (!$task instanceof Task) {
+                        return 0;
+                }
+
+                if ((int) $task->progress < 100) {
+                        return 0;
+                }
+
+                $sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX."safra_aplicacao WHERE fk_task = ".$task->id." AND stock_processed = 0";
+                $resql = $this->db->query($sql);
+                if (!$resql) {
+                        return 0;
+                }
+
+                $row = $this->db->fetch_object($resql);
+                if (!$row) {
+                        return 0;
+                }
+
+                $aplicacao = new Aplicacao($this->db);
+                if ($aplicacao->fetch($row->rowid) <= 0) {
+                        return 0;
+                }
+
+                $res = $aplicacao->processStockMovements($user);
+                if ($res < 0) {
+                        dol_syslog(__METHOD__.' error on stock movement', LOG_ERR);
+                        return -1;
+                }
+
+                return 1;
+        }
+
         private function persistSafraProductLinks($object, User $user, Translate $langs)
         {
                 if (empty($object->id) || empty($_SERVER['REQUEST_METHOD']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {

@@ -129,9 +129,11 @@ class Aplicacao extends CommonObject
 		"fk_user_modif" => array("type"=>"integer:User:user/class/user.class.php", "label"=>"UserModif", "picto"=>"user", "enabled"=>"1", 'position'=>511, 'notnull'=>-1, "visible"=>"-2", "csslist"=>"tdoverflowmax150",),
 		"last_main_doc" => array("type"=>"varchar(255)", "label"=>"LastMainDoc", "enabled"=>"1", 'position'=>600, 'notnull'=>0, "visible"=>"0",),
 		"import_key" => array("type"=>"varchar(14)", "label"=>"ImportId", "enabled"=>"1", 'position'=>1000, 'notnull'=>-1, "visible"=>"-2",),
-		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
-		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
-	);
+                "model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
+                "fk_task" => array("type"=>"integer:Task:projet/class/task.class.php:1", "label"=>"Task", "enabled"=>"isModEnabled('project')", 'position'=>1015, 'notnull'=>-1, "visible"=>"-1", "index"=>"1"),
+                "stock_processed" => array("type"=>"integer", "label"=>"StockProcessed", "enabled"=>"1", 'position'=>1016, 'notnull'=>1, "visible"=>"-2", "default"=>0),
+                "status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
+        );
 	public $rowid;
 	public $ref;
 	public $label;
@@ -148,8 +150,10 @@ class Aplicacao extends CommonObject
 	public $fk_user_modif;
 	public $last_main_doc;
 	public $import_key;
-	public $model_pdf;
-	public $status;
+        public $model_pdf;
+        public $fk_task;
+        public $stock_processed;
+        public $status;
 	// END MODULEBUILDER PROPERTIES
 
 
@@ -158,17 +162,17 @@ class Aplicacao extends CommonObject
 	// /**
 	//  * @var string    Name of subtable line
 	//  */
-	// public $table_element_line = 'safra_aplicacaoline';
+    public $table_element_line = 'safra_aplicacao_line';
 
 	// /**
 	//  * @var string    Field with ID of parent key if this object has a parent
 	//  */
-	// public $fk_element = 'fk_aplicacao';
+    public $fk_element = 'fk_aplicacao';
 
 	// /**
 	//  * @var string    Name of subtable class that manage subtable lines
 	//  */
-	// public $class_element_line = 'Aplicacaoline';
+    public $class_element_line = 'AplicacaoLine';
 
 	// /**
 	//  * @var array	List of child tables. To test if we can delete object.
@@ -185,7 +189,14 @@ class Aplicacao extends CommonObject
 	// /**
 	//  * @var AplicacaoLine[]     Array of subtable lines
 	//  */
-	// public $lines = array();
+    public $lines = array();
+
+    /**
+     * List of attached resources (vehicles, implements, users).
+     *
+     * @var AplicacaoResource[]
+     */
+    public $resources = array();
 
 
 
@@ -358,12 +369,15 @@ class Aplicacao extends CommonObject
 	 */
 	public function fetch($id, $ref = null, $noextrafields = 0, $nolines = 0)
 	{
-		$result = $this->fetchCommon($id, $ref, '', $noextrafields);
-		if ($result > 0 && !empty($this->table_element_line) && empty($nolines)) {
-			$this->fetchLines($noextrafields);
-		}
-		return $result;
-	}
+                $result = $this->fetchCommon($id, $ref, '', $noextrafields);
+                if ($result > 0) {
+                        if (!empty($this->table_element_line) && empty($nolines)) {
+                                $this->fetchLines($noextrafields);
+                        }
+                        $this->fetchResources();
+                }
+                return $result;
+        }
 
 	/**
 	 * Load object lines in memory from the database
@@ -371,13 +385,255 @@ class Aplicacao extends CommonObject
 	 * @param	int		$noextrafields	0=Default to load extrafields, 1=No extrafields
 	 * @return 	int         			Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetchLines($noextrafields = 0)
-	{
-		$this->lines = array();
+        public function fetchLines($noextrafields = 0)
+        {
+                $this->lines = array();
 
-		$result = $this->fetchLinesCommon('', $noextrafields);
-		return $result;
-	}
+                $result = $this->fetchLinesCommon('', $noextrafields);
+                return $result;
+        }
+
+        /**
+         * Load application resources.
+         *
+         * @return int
+         */
+        public function fetchResources()
+        {
+                $this->resources = array();
+
+                $sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.$this->table_element.'_resource';
+                $sql .= ' WHERE fk_aplicacao = '.((int) $this->id);
+
+                $resql = $this->db->query($sql);
+                if (!$resql) {
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                while ($obj = $this->db->fetch_object($resql)) {
+                        $resource = new AplicacaoResource($this->db);
+                        if ($resource->fetchCommon($obj->rowid) > 0) {
+                                $this->resources[$resource->resource_type][$resource->fk_target] = $resource;
+                        }
+                }
+                $this->db->free($resql);
+
+                return 1;
+        }
+
+        /**
+         * Persist resource links for the application.
+         *
+         * @param User  $user
+         * @param array $map array(resource_type => array(ids))
+         *
+         * @return int
+         */
+        public function saveResources(User $user, array $map)
+        {
+                $this->db->begin();
+
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX.$this->table_element.'_resource WHERE fk_aplicacao = '.((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->db->rollback();
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                foreach ($map as $type => $ids) {
+                        if (!is_array($ids)) {
+                                continue;
+                        }
+                        foreach ($ids as $targetId) {
+                                $targetId = (int) $targetId;
+                                if ($targetId <= 0) {
+                                        continue;
+                                }
+                                $resource = new AplicacaoResource($this->db);
+                                $resource->fk_aplicacao = $this->id;
+                                $resource->resource_type = $type;
+                                $resource->fk_target = $targetId;
+                                $resource->fk_user_creat = $user->id;
+                                if ($resource->createCommon($user) < 0) {
+                                        $this->db->rollback();
+                                        $this->error = $resource->error;
+                                        return -1;
+                                }
+                        }
+                }
+
+                $this->db->commit();
+
+                return 1;
+        }
+
+        /**
+         * Sum total quantity of products to be deducted from stock.
+         *
+         * @return float
+         */
+        public function getTotalQuantity()
+        {
+                $total = 0;
+                if (is_array($this->lines)) {
+                        foreach ($this->lines as $line) {
+                                $total += (float) $line->qty_total;
+                        }
+                }
+
+                return $total;
+        }
+
+        /**
+         * Build description text for linked task.
+         *
+         * @param Translate $langs
+         * @return string
+         */
+        public function buildTaskDescription(Translate $langs)
+        {
+                $this->fetchLines();
+                $this->fetchResources();
+
+                $out = array();
+                $out[] = $langs->trans('Ref').': '.$this->ref;
+
+                if (!empty($this->lines)) {
+                        $out[] = '';
+                        $out[] = $langs->trans('Products').':';
+                        foreach ($this->lines as $line) {
+                                $out[] = '- '.($line->label ?: '').' ('.$langs->trans('Dose').': '.$line->dose.' '.$line->dose_unit.', '.$langs->trans('Total').': '.$line->qty_total.')';
+                        }
+                }
+
+                $resourceLabels = array('vehicle' => $langs->trans('Vehicles'), 'implement' => $langs->trans('Implements'), 'user' => $langs->trans('People'));
+                foreach ($resourceLabels as $type => $label) {
+                        if (!empty($this->resources[$type])) {
+                                $out[] = '';
+                                $out[] = $label.':';
+                                foreach ($this->resources[$type] as $resource) {
+                                        $out[] = '- '.$this->getResourceLabel($type, $resource->fk_target);
+                                }
+                        }
+                }
+
+                return implode("\n", $out);
+        }
+
+        /**
+         * Resolve label for a resource entry.
+         *
+         * @param string $type
+         * @param int    $id
+         * @return string
+         */
+        protected function getResourceLabel($type, $id)
+        {
+                $id = (int) $id;
+                if ($id <= 0) {
+                        return '';
+                }
+
+                if ($type === 'user') {
+                        require_once DOL_DOCUMENT_ROOT.'/user/class/user.class.php';
+                        $user = new User($this->db);
+                        if ($user->fetch($id) > 0) {
+                                return $user->getFullName($GLOBALS['langs'], 0, -1);
+                        }
+                } elseif ($type === 'vehicle') {
+                        $sql = 'SELECT ref, label FROM '.MAIN_DB_PREFIX."safra_veiculo WHERE rowid = ".$id;
+                        $resql = $this->db->query($sql);
+                        if ($resql) {
+                                $obj = $this->db->fetch_object($resql);
+                                if ($obj) {
+                                        return trim($obj->ref.' - '.$obj->label);
+                                }
+                        }
+                } elseif ($type === 'implement') {
+                        $sql = 'SELECT ref, label FROM '.MAIN_DB_PREFIX."safra_implemento WHERE rowid = ".$id;
+                        $resql = $this->db->query($sql);
+                        if ($resql) {
+                                $obj = $this->db->fetch_object($resql);
+                                if ($obj) {
+                                        return trim($obj->ref.' - '.$obj->label);
+                                }
+                        }
+                }
+
+                return '#'.$id;
+        }
+
+        /**
+         * Update linked task description if available.
+         *
+         * @param User $user
+         * @return int
+         */
+        public function updateLinkedTask(User $user)
+        {
+                if (empty($this->fk_task)) {
+                        return 0;
+                }
+
+                require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+                global $langs;
+                $task = new Task($this->db);
+                if ($task->fetch($this->fk_task) <= 0) {
+                        return 0;
+                }
+
+                $description = $this->buildTaskDescription($langs);
+                $task->description = $description;
+
+                return $task->update($user);
+        }
+
+        /**
+         * Process stock movements for application products.
+         *
+         * @param User $user
+         * @return int
+         */
+        public function processStockMovements(User $user)
+        {
+                require_once DOL_DOCUMENT_ROOT.'/product/stock/class/mouvementstock.class.php';
+                $this->fetchLines();
+
+                if (empty($this->lines)) {
+                        return 0;
+                }
+
+                $movement = new MouvementStock($this->db);
+                $error = 0;
+
+                foreach ($this->lines as $line) {
+                        if (empty($line->fk_warehouse) || $line->fk_warehouse <= 0) {
+                                continue;
+                        }
+                        $qty = (float) $line->qty_total;
+                        if ($qty <= 0) {
+                                continue;
+                        }
+
+                        $result = $movement->addMouvement($user, $line->fk_product, $line->fk_warehouse, -1 * $qty, 0, '', $this->ref);
+                        if ($result < 0) {
+                                $this->error = $movement->error;
+                                $this->errors = $movement->errors;
+                                $error++;
+                                break;
+                        }
+                }
+
+                if ($error) {
+                        return -1;
+                }
+
+                $this->stock_processed = 1;
+                $this->updateCommon($user);
+
+                return 1;
+        }
 
 
 	/**
@@ -1209,25 +1465,107 @@ class Aplicacao extends CommonObject
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobjectline.class.php';
 
 /**
- * Class AplicacaoLine. You can also remove this and generate a CRUD class for lines objects.
+ * Class representing a product line inside an application.
  */
 class AplicacaoLine extends CommonObjectLine
 {
-	// To complete with content of an object AplicacaoLine
-	// We should have a field rowid, fk_aplicacao and position
+        /**
+         * @var string
+         */
+        public $table_element = 'safra_aplicacao_line';
 
-	/**
-	 * @var int  Does object support extrafields ? 0=No, 1=Yes
-	 */
-	public $isextrafieldmanaged = 0;
+        /**
+         * @var array
+         */
+        public $fields = array(
+                'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'notnull' => 1, 'visible' => -2, 'position' => 1),
+                'fk_aplicacao' => array('type' => 'integer', 'label' => 'Aplicacao', 'enabled' => '1', 'notnull' => 1, 'visible' => -2, 'position' => 10),
+                'fk_product' => array('type' => 'integer', 'label' => 'Product', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 20),
+                'product_type' => array('type' => 'varchar(20)', 'label' => 'ProductType', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 30),
+                'fk_linked' => array('type' => 'integer', 'label' => 'LinkedObject', 'enabled' => '1', 'notnull' => 0, 'visible' => -1, 'position' => 40),
+                'label' => array('type' => 'varchar(255)', 'label' => 'Label', 'enabled' => '1', 'notnull' => 0, 'visible' => 1, 'position' => 50),
+                'dose' => array('type' => 'double(24,8)', 'label' => 'Dose', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 60),
+                'dose_unit' => array('type' => 'varchar(8)', 'label' => 'DoseUnit', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 70),
+                'area_ha' => array('type' => 'double(24,8)', 'label' => 'AreaHa', 'enabled' => '1', 'notnull' => 0, 'visible' => 1, 'position' => 80),
+                'qty_total' => array('type' => 'double(24,8)', 'label' => 'TotalQuantity', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 90),
+                'fk_warehouse' => array('type' => 'integer', 'label' => 'Warehouse', 'enabled' => '1', 'notnull' => 0, 'visible' => 1, 'position' => 100),
+                'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'notnull' => 1, 'visible' => -2, 'position' => 500),
+                'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'notnull' => 0, 'visible' => -2, 'position' => 505),
+                'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'notnull' => 0, 'visible' => -2, 'position' => 510),
+                'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'notnull' => 0, 'visible' => -2, 'position' => 520),
+        );
 
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
-	{
-		$this->db = $db;
-	}
+        public $isextrafieldmanaged = 0;
+
+        public $rowid;
+        public $fk_aplicacao;
+        public $fk_product;
+        public $product_type;
+        public $fk_linked;
+        public $label;
+        public $dose;
+        public $dose_unit;
+        public $area_ha;
+        public $qty_total;
+        public $fk_warehouse;
+        public $date_creation;
+        public $tms;
+        public $fk_user_creat;
+        public $fk_user_modif;
+
+        /**
+         * Constructor.
+         *
+         * @param DoliDB $db Database handler
+         */
+        public function __construct(DoliDB $db)
+        {
+                $this->db = $db;
+        }
+}
+
+/**
+ * Resource attached to Aplicacao.
+ */
+class AplicacaoResource extends CommonObject
+{
+        /**
+         * @var string
+         */
+        public $table_element = 'safra_aplicacao_resource';
+
+        /**
+         * @var array
+         */
+        public $fields = array(
+                'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'notnull' => 1, 'visible' => -2, 'position' => 1),
+                'fk_aplicacao' => array('type' => 'integer', 'label' => 'Aplicacao', 'enabled' => '1', 'notnull' => 1, 'visible' => -2, 'position' => 10),
+                'resource_type' => array('type' => 'varchar(16)', 'label' => 'ResourceType', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 20),
+                'fk_target' => array('type' => 'integer', 'label' => 'Target', 'enabled' => '1', 'notnull' => 1, 'visible' => 1, 'position' => 30),
+                'label' => array('type' => 'varchar(255)', 'label' => 'Label', 'enabled' => '1', 'notnull' => 0, 'visible' => 1, 'position' => 40),
+                'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'notnull' => 1, 'visible' => -2, 'position' => 500),
+                'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'notnull' => 0, 'visible' => -2, 'position' => 505),
+                'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'notnull' => 0, 'visible' => -2, 'position' => 510),
+                'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'notnull' => 0, 'visible' => -2, 'position' => 520),
+        );
+
+        public $rowid;
+        public $fk_aplicacao;
+        public $resource_type;
+        public $fk_target;
+        public $label;
+        public $date_creation;
+        public $tms;
+        public $fk_user_creat;
+        public $fk_user_modif;
+
+        /**
+         * Constructor.
+         *
+         * @param DoliDB $db Database handler
+         */
+        public function __construct(DoliDB $db)
+        {
+                $this->db = $db;
+        }
 }
