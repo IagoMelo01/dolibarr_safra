@@ -189,22 +189,27 @@ class Aplicacao extends CommonObject
 	/**
 	 * @var AplicacaoLine[] Array of subtable lines
 	 */
-	public $lines = array();
+        public $lines = array();
 
+        /**
+         * @var bool Flag to avoid running schema checks more than once per request
+         */
+        protected static $schemaVerified = false;
 
-
-	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
-	 */
-	public function __construct(DoliDB $db)
+        /**
+         * Constructor
+         *
+         * @param DoliDb $db Database handler
+         */
+        public function __construct(DoliDB $db)
 	{
 		global $conf, $langs;
 
-		$this->db = $db;
+                $this->db = $db;
 
-		if (!getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID') && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
+                self::ensureDatabaseSchema($db);
+
+                if (!getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID') && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
 			$this->fields['rowid']['visible'] = 0;
 		}
 		if (!isModEnabled('multicompany') && isset($this->fields['entity'])) {
@@ -522,18 +527,18 @@ class Aplicacao extends CommonObject
                         $totalApplied += $totalQty;
 
                         $sql = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element_line
-                                .' ('.$this->fk_element.', fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note) VALUES ('
-                                .((int) $this->id).', '
-                                .($fkProduct > 0 ? $fkProduct : 'NULL').', '
-                                .($fkFormulado > 0 ? $fkFormulado : 'NULL').', '
-                                .($fkTecnico > 0 ? $fkTecnico : 'NULL').', '
-                                .($fkWarehouse > 0 ? $fkWarehouse : 'NULL').', '
-                                ."'".$this->db->escape($label)."'", ', '
-                                .((float) $dose).', '
-                                ."'".$this->db->escape($doseUnit)."'", ', '
-                                .((float) $areaHa).', '
-                                .((float) $totalQty).', '
-                                ."'".$this->db->escape($note)."'".');';
+                                .' ('.$this->fk_element.', fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note) VALUES (';
+                        $sql .= ((int) $this->id).', ';
+                        $sql .= ($fkProduct > 0 ? (int) $fkProduct : 'NULL').', ';
+                        $sql .= ($fkFormulado > 0 ? (int) $fkFormulado : 'NULL').', ';
+                        $sql .= ($fkTecnico > 0 ? (int) $fkTecnico : 'NULL').', ';
+                        $sql .= ($fkWarehouse > 0 ? (int) $fkWarehouse : 'NULL').', ';
+                        $sql .= "'".$this->db->escape($label)."'".', ';
+                        $sql .= ((float) $dose).', ';
+                        $sql .= "'".$this->db->escape($doseUnit)."'".', ';
+                        $sql .= ((float) $areaHa).', ';
+                        $sql .= ((float) $totalQty).', ';
+                        $sql .= "'".$this->db->escape($note)."'".')';
 
                         if (!$this->db->query($sql)) {
                                 $this->error = $this->db->lasterror();
@@ -553,6 +558,88 @@ class Aplicacao extends CommonObject
                 $this->db->query($sql);
 
                 return 1;
+        }
+
+        /**
+         * Ensure required database schema exists.
+         *
+         * @param DoliDB $db Database handler
+         *
+         * @return void
+         */
+        protected static function ensureDatabaseSchema(DoliDB $db)
+        {
+                if (self::$schemaVerified) {
+                        return;
+                }
+
+                self::$schemaVerified = true;
+
+                $mainTable = MAIN_DB_PREFIX.'safra_aplicacao';
+                $info = $db->DDLDescTable($mainTable, $mainTable);
+                $hasFkTask = false;
+                if (is_array($info)) {
+                        foreach ($info as $fieldInfo) {
+                                if (!empty($fieldInfo['field']) && $fieldInfo['field'] === 'fk_task') {
+                                        $hasFkTask = true;
+                                        break;
+                                }
+                        }
+                }
+
+                if (!$hasFkTask) {
+                        $sql = 'ALTER TABLE '.$mainTable.' ADD COLUMN fk_task integer AFTER fk_project';
+                        if (!$db->query($sql)) {
+                                dol_syslog(__METHOD__.' failed to add fk_task column: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                $lineTable = MAIN_DB_PREFIX.'safra_aplicacao_line';
+                if (!is_array($db->DDLDescTable($lineTable, $lineTable))) {
+                        $sql = 'CREATE TABLE IF NOT EXISTS '.$lineTable.' ('
+                                .'rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, '
+                                .'fk_aplicacao integer NOT NULL, '
+                                .'fk_product integer, '
+                                .'fk_produto_formulado integer, '
+                                .'fk_produtotecnico integer, '
+                                .'fk_entrepot integer, '
+                                .'label varchar(255), '
+                                .'dose double, '
+                                .'dose_unit varchar(10), '
+                                .'area_ha double, '
+                                .'total_qty double, '
+                                .'note text, '
+                                .'date_creation datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
+                                .') ENGINE=innodb;';
+                        if ($db->query($sql)) {
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_aplicacao (fk_aplicacao)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_product (fk_product)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_formulado (fk_produto_formulado)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_produtotecnico (fk_produtotecnico)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD CONSTRAINT llx_safra_aplicacao_line_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES '.MAIN_DB_PREFIX.'safra_aplicacao(rowid)');
+                        } else {
+                                dol_syslog(__METHOD__.' failed to create safra_aplicacao_line: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                $resourceTable = MAIN_DB_PREFIX.'safra_aplicacao_resource';
+                if (!is_array($db->DDLDescTable($resourceTable, $resourceTable))) {
+                        $sql = 'CREATE TABLE IF NOT EXISTS '.$resourceTable.' ('
+                                .'rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, '
+                                .'fk_aplicacao integer NOT NULL, '
+                                .'element_type varchar(32) NOT NULL, '
+                                .'fk_target integer, '
+                                .'label varchar(255), '
+                                .'note text'
+                                .') ENGINE=innodb;';
+                        if ($db->query($sql)) {
+                                $db->query('ALTER TABLE '.$resourceTable.' ADD INDEX idx_safra_aplicacao_resource_fk_aplicacao (fk_aplicacao)');
+                                $db->query('ALTER TABLE '.$resourceTable.' ADD INDEX idx_safra_aplicacao_resource_type (element_type)');
+                                $db->query('ALTER TABLE '.$resourceTable.' ADD CONSTRAINT llx_safra_aplicacao_resource_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES '.MAIN_DB_PREFIX.'safra_aplicacao(rowid)');
+                        } else {
+                                dol_syslog(__METHOD__.' failed to create safra_aplicacao_resource: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
         }
 
         /**
