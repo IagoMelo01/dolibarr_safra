@@ -391,3 +391,21 @@ ZoneamentoSoilsLabelShort=Soils
 ZoneamentoCycleLabel=Cycle
 ZoneamentoCycleLabelShort=Cycles
 ZoneamentoCultivoLabel=System
+
+#
+# Application assistant
+#
+SafraAplicacaoAreaHa = Applied area (ha)
+SafraAplicacaoDate = Application date
+SafraAplicacaoCaldaObservation = Spray mixture notes
+SafraAplicacaoTaskProducts = Products to apply
+SafraAplicacaoResourceVehicle = Vehicles
+SafraAplicacaoResourceImplement = Implements
+SafraAplicacaoResourcePerson = Team
+SafraAplicacaoStockMovementLabel = Application %s
+SafraAplicacaoMissingWarehouse = Select a warehouse for each product line before completing the application.
+SafraAplicacaoTechnicalProduct = Technical product
+SafraAplicacaoFormulatedProduct = Formulated product
+AplicacaoCreateAssistant = Application assistant
+SafraAplicacaoViewTask = View task
+SafraAplicacaoComplete = Mark as completed

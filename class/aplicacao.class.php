@@ -116,13 +116,16 @@ class Aplicacao extends CommonObject
 		"rowid" => array("type"=>"integer", "label"=>"TechnicalID", "enabled"=>"1", 'position'=>1, 'notnull'=>1, "visible"=>"0", "noteditable"=>"1", "index"=>"1", "css"=>"left", "comment"=>"Id"),
 		"ref" => array("type"=>"varchar(128)", "label"=>"Ref", "enabled"=>"1", 'position'=>20, 'notnull'=>1, "visible"=>"1", "index"=>"1", "searchall"=>"1", "showoncombobox"=>"1", "validate"=>"1", "comment"=>"Reference of object"),
 		"label" => array("type"=>"varchar(255)", "label"=>"Label", "enabled"=>"1", 'position'=>30, 'notnull'=>0, "visible"=>"1", "alwayseditable"=>"1", "searchall"=>"1", "css"=>"minwidth300", "cssview"=>"wordbreak", "help"=>"Help text", "showoncombobox"=>"2", "validate"=>"1",),
-		"amount" => array("type"=>"price", "label"=>"Amount", "enabled"=>"1", 'position'=>40, 'notnull'=>0, "visible"=>"1", "default"=>"null", "isameasure"=>"1", "help"=>"Help text for amount", "validate"=>"1",),
-		"qty" => array("type"=>"real", "label"=>"Qty", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "help"=>"Help text for quantity", "validate"=>"1",),
-		"fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
-		"fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"-1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
-		"description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
-		"note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
-		"note_private" => array("type"=>"html", "label"=>"NotePrivate", "enabled"=>"1", 'position'=>62, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
+                "amount" => array("type"=>"price", "label"=>"Amount", "enabled"=>"1", 'position'=>40, 'notnull'=>0, "visible"=>"0", "default"=>"null", "isameasure"=>"1", "help"=>"Help text for amount", "validate"=>"1",),
+                "qty" => array("type"=>"double(28,8)", "label"=>"SafraAplicacaoAreaHa", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "validate"=>"1",),
+                "fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
+                "fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"-1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
+                "fk_task" => array("type"=>"integer:Task:projet/class/task.class.php:1", "label"=>"Task", "picto"=>"projecttask", "enabled"=>"isModEnabled('project')", 'position'=>53, 'notnull'=>-1, "visible"=>"-2", "index"=>"1", "csslist"=>"tdoverflowmax150"),
+                "date_application" => array("type"=>"date", "label"=>"SafraAplicacaoDate", "enabled"=>"1", 'position'=>54, 'notnull'=>0, "visible"=>"1", "validate"=>"1"),
+                "description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
+                "note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
+                "note_private" => array("type"=>"html", "label"=>"NotePrivate", "enabled"=>"1", 'position'=>62, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
+                "calda_observacao" => array("type"=>"text", "label"=>"SafraAplicacaoCaldaObservation", "enabled"=>"1", 'position'=>63, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak"),
 		"date_creation" => array("type"=>"datetime", "label"=>"DateCreation", "enabled"=>"1", 'position'=>500, 'notnull'=>1, "visible"=>"-2",),
 		"tms" => array("type"=>"timestamp", "label"=>"DateModification", "enabled"=>"1", 'position'=>501, 'notnull'=>0, "visible"=>"-2",),
 		"fk_user_creat" => array("type"=>"integer:User:user/class/user.class.php", "label"=>"UserAuthor", "picto"=>"user", "enabled"=>"1", 'position'=>510, 'notnull'=>1, "visible"=>"-2", "foreignkey"=>"0", "csslist"=>"tdoverflowmax150",),
@@ -135,57 +138,58 @@ class Aplicacao extends CommonObject
 	public $rowid;
 	public $ref;
 	public $label;
-	public $amount;
-	public $qty;
-	public $fk_soc;
-	public $fk_project;
-	public $description;
-	public $note_public;
-	public $note_private;
-	public $date_creation;
+        public $amount;
+        public $qty;
+        public $fk_soc;
+        public $fk_project;
+        public $fk_task;
+        public $date_application;
+        public $description;
+        public $note_public;
+        public $note_private;
+        public $calda_observacao;
+        public $date_creation;
 	public $tms;
 	public $fk_user_creat;
 	public $fk_user_modif;
 	public $last_main_doc;
 	public $import_key;
 	public $model_pdf;
-	public $status;
+        public $status;
 	// END MODULEBUILDER PROPERTIES
 
 
 	// If this object has a subtable with lines
 
-	// /**
-	//  * @var string    Name of subtable line
-	//  */
-	// public $table_element_line = 'safra_aplicacaoline';
+	/**
+	 * @var string Name of subtable line
+	 */
+	public $table_element_line = 'safra_aplicacao_line';
 
-	// /**
-	//  * @var string    Field with ID of parent key if this object has a parent
-	//  */
-	// public $fk_element = 'fk_aplicacao';
+	/**
+	 * @var string Field with ID of parent key if this object has a parent
+	 */
+	public $fk_element = 'fk_aplicacao';
 
-	// /**
-	//  * @var string    Name of subtable class that manage subtable lines
-	//  */
-	// public $class_element_line = 'Aplicacaoline';
+	/**
+	 * @var string Name of subtable class that manage subtable lines
+	 */
+	public $class_element_line = 'AplicacaoLine';
 
-	// /**
-	//  * @var array	List of child tables. To test if we can delete object.
-	//  */
-	// protected $childtables = array('mychildtable' => array('name'=>'Aplicacao', 'fk_element'=>'fk_aplicacao'));
+	/**
+	 * @var array List of child tables. To test if we can delete object.
+	 */
+	protected $childtables = array('safra_aplicacao_resource');
 
-	// /**
-	//  * @var array    List of child tables. To know object to delete on cascade.
-	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
-	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
-	//  */
-	// protected $childtablesoncascade = array('safra_aplicacaodet');
+	/**
+	 * @var array[] Indexed list of allocated resources grouped by element_type
+	 */
+	public $resources = array();
 
-	// /**
-	//  * @var AplicacaoLine[]     Array of subtable lines
-	//  */
-	// public $lines = array();
+	/**
+	 * @var AplicacaoLine[] Array of subtable lines
+	 */
+	public $lines = array();
 
 
 
@@ -356,14 +360,17 @@ class Aplicacao extends CommonObject
 	 * @param	int		$nolines		0=Default to load extrafields, 1=No extrafields
 	 * @return 	int     				Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null, $noextrafields = 0, $nolines = 0)
-	{
-		$result = $this->fetchCommon($id, $ref, '', $noextrafields);
-		if ($result > 0 && !empty($this->table_element_line) && empty($nolines)) {
-			$this->fetchLines($noextrafields);
-		}
-		return $result;
-	}
+        public function fetch($id, $ref = null, $noextrafields = 0, $nolines = 0)
+        {
+                $result = $this->fetchCommon($id, $ref, '', $noextrafields);
+                if ($result > 0) {
+                        if (!empty($this->table_element_line) && empty($nolines)) {
+                                $this->fetchLines($noextrafields);
+                        }
+                        $this->fetchResources();
+                }
+                return $result;
+        }
 
 	/**
 	 * Load object lines in memory from the database
@@ -371,13 +378,362 @@ class Aplicacao extends CommonObject
 	 * @param	int		$noextrafields	0=Default to load extrafields, 1=No extrafields
 	 * @return 	int         			Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetchLines($noextrafields = 0)
-	{
-		$this->lines = array();
+        public function fetchLines($noextrafields = 0)
+        {
+                $this->lines = array();
 
-		$result = $this->fetchLinesCommon('', $noextrafields);
-		return $result;
-	}
+                $result = $this->fetchLinesCommon('', $noextrafields);
+                return $result;
+        }
+
+        /**
+         * Load allocated resources for the application.
+         *
+         * @return void
+         */
+        public function fetchResources()
+        {
+                $this->resources = array(
+                        'vehicle' => array(),
+                        'implement' => array(),
+                        'person' => array(),
+                );
+
+                if (empty($this->id)) {
+                        return;
+                }
+
+                $sql = 'SELECT rowid, element_type, fk_target, label, note'
+                        .' FROM '.MAIN_DB_PREFIX."safra_aplicacao_resource"
+                        .' WHERE fk_aplicacao = '.((int) $this->id)
+                        .' ORDER BY rowid ASC';
+
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        while ($obj = $this->db->fetch_object($resql)) {
+                                $type = (string) $obj->element_type;
+                                if (!isset($this->resources[$type])) {
+                                        $this->resources[$type] = array();
+                                }
+
+                                $this->resources[$type][] = array(
+                                        'rowid' => (int) $obj->rowid,
+                                        'fk_target' => (int) $obj->fk_target,
+                                        'label' => $obj->label,
+                                        'note' => $obj->note,
+                                );
+                        }
+                        $this->db->free($resql);
+                }
+        }
+
+        /**
+         * Replace existing resources with provided set.
+         *
+         * @param array $resources Array of associative arrays with keys type,fk_target,label,note
+         *
+         * @return int  <0 if error, >0 success
+         */
+        public function replaceResources(array $resources)
+        {
+                if (empty($this->id)) {
+                        return -1;
+                }
+
+                $this->db->begin();
+
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX."safra_aplicacao_resource WHERE fk_aplicacao = ".((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->db->rollback();
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                foreach ($resources as $resource) {
+                        if (empty($resource['type'])) {
+                                continue;
+                        }
+
+                        $type = preg_replace('/[^a-z0-9_]/i', '', $resource['type']);
+                        if ($type === '') {
+                                continue;
+                        }
+
+                        $fkTarget = isset($resource['fk_target']) ? (int) $resource['fk_target'] : 0;
+                        $label = isset($resource['label']) ? trim((string) $resource['label']) : '';
+                        $note = isset($resource['note']) ? trim((string) $resource['note']) : '';
+
+                        $sql = "INSERT INTO ".MAIN_DB_PREFIX."safra_aplicacao_resource (fk_aplicacao, element_type, fk_target, label, note) VALUES (";
+                        $sql .= ((int) $this->id).", '".$this->db->escape($type)."', ".($fkTarget > 0 ? $fkTarget : 'NULL').", '".$this->db->escape($label)."', '".$this->db->escape($note)."')";
+
+                        if (!$this->db->query($sql)) {
+                                $this->error = $this->db->lasterror();
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->db->commit();
+                $this->fetchResources();
+
+                return 1;
+        }
+
+        /**
+         * Replace all application lines with provided set.
+         *
+         * @param array $lines Lines definition
+         *
+         * @return int <0 if error, >0 success
+         */
+        public function replaceLines(array $lines)
+        {
+                if (empty($this->id)) {
+                        return -1;
+                }
+
+                $this->db->begin();
+
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX.$this->table_element_line.' WHERE '.$this->fk_element.' = '.((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->db->rollback();
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                $totalApplied = 0.0;
+
+                foreach ($lines as $line) {
+                        $fkProduct = empty($line['fk_product']) ? 0 : (int) $line['fk_product'];
+                        $fkFormulado = empty($line['fk_produto_formulado']) ? 0 : (int) $line['fk_produto_formulado'];
+                        $fkTecnico = empty($line['fk_produtotecnico']) ? 0 : (int) $line['fk_produtotecnico'];
+                        $fkWarehouse = empty($line['fk_entrepot']) ? 0 : (int) $line['fk_entrepot'];
+                        $label = isset($line['label']) ? trim((string) $line['label']) : '';
+                        $dose = isset($line['dose']) ? (float) $line['dose'] : 0;
+                        $doseUnit = isset($line['dose_unit']) ? substr(trim((string) $line['dose_unit']), 0, 10) : '';
+                        $areaHa = isset($line['area_ha']) ? (float) $line['area_ha'] : 0;
+                        $totalQty = isset($line['total_qty']) ? (float) $line['total_qty'] : ($dose * $areaHa);
+                        $note = isset($line['note']) ? trim((string) $line['note']) : '';
+
+                        if ($fkProduct <= 0 && empty($label)) {
+                                continue;
+                        }
+
+                        $totalApplied += $totalQty;
+
+                        $sql = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element_line
+                                .' ('.$this->fk_element.', fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note) VALUES ('
+                                .((int) $this->id).', '
+                                .($fkProduct > 0 ? $fkProduct : 'NULL').', '
+                                .($fkFormulado > 0 ? $fkFormulado : 'NULL').', '
+                                .($fkTecnico > 0 ? $fkTecnico : 'NULL').', '
+                                .($fkWarehouse > 0 ? $fkWarehouse : 'NULL').', '
+                                ."'".$this->db->escape($label)."'", ', '
+                                .((float) $dose).', '
+                                ."'".$this->db->escape($doseUnit)."'", ', '
+                                .((float) $areaHa).', '
+                                .((float) $totalQty).', '
+                                ."'".$this->db->escape($note)."'".');';
+
+                        if (!$this->db->query($sql)) {
+                                $this->error = $this->db->lasterror();
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->amount = $totalApplied;
+                $this->db->commit();
+
+                $this->fetchLines();
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element
+                        .' SET amount = '.((float) $this->amount)
+                        .' WHERE rowid = '.((int) $this->id);
+                $this->db->query($sql);
+
+                return 1;
+        }
+
+        /**
+         * Build textual description for linked task.
+         *
+         * @return string
+         */
+        public function buildTaskDescription()
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'projects', 'stocks', 'product'));
+
+                $output = array();
+
+                if (!empty($this->label)) {
+                        $output[] = $langs->trans('Label').': '.dol_escape_htmltag($this->label);
+                }
+
+                if (!empty($this->qty)) {
+                        $output[] = $langs->trans('SafraAplicacaoAreaHa').': '.price2num($this->qty, '2');
+                }
+
+                if (!empty($this->date_application)) {
+                        $output[] = $langs->trans('Date').': '.dol_print_date($this->date_application, 'day');
+                }
+
+                if (!empty($this->description)) {
+                        $output[] = trim($this->description);
+                }
+
+                if (!empty($this->lines)) {
+                        $output[] = $langs->trans('SafraAplicacaoTaskProducts');
+                        foreach ($this->lines as $line) {
+                                $lineLabel = trim($line->label);
+                                if ($line->fk_product > 0 && $lineLabel === '') {
+                                        require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+                                        $product = new Product($this->db);
+                                        if ($product->fetch($line->fk_product) > 0) {
+                                                $lineLabel = $product->ref;
+                                                if (!empty($product->label)) {
+                                                        $lineLabel .= ' - '.$product->label;
+                                                }
+                                        }
+                                }
+
+                                $doseParts = array();
+                                if (!empty($line->dose)) {
+                                        $doseParts[] = price2num($line->dose, 4).' '.$line->dose_unit;
+                                }
+                                if (!empty($line->total_qty)) {
+                                        $doseParts[] = $langs->trans('Total').': '.price2num($line->total_qty, 4);
+                                }
+                                if (!empty($line->area_ha)) {
+                                        $doseParts[] = $langs->trans('SafraAplicacaoAreaHa').': '.price2num($line->area_ha, 4);
+                                }
+
+                                $output[] = '- '.($lineLabel !== '' ? $lineLabel : $langs->trans('Product')).(!empty($doseParts) ? ' ('.implode(', ', $doseParts).')' : '');
+                        }
+                }
+
+                if (!empty($this->resources)) {
+                        foreach ($this->resources as $type => $items) {
+                                if (empty($items)) {
+                                        continue;
+                                }
+
+                                $labelKey = 'SafraAplicacaoResource'.ucfirst($type);
+                                $output[] = $langs->trans($labelKey);
+                                foreach ($items as $item) {
+                                        $resourceLabel = $item['label'];
+                                        if ($resourceLabel === '' && !empty($item['fk_target'])) {
+                                                $resourceLabel = '#'.$item['fk_target'];
+                                        }
+
+                                        $lineText = '- '.$resourceLabel;
+                                        if (!empty($item['note'])) {
+                                                $lineText .= ' ('.$item['note'].')';
+                                        }
+                                        $output[] = $lineText;
+                                }
+                        }
+                }
+
+                if (!empty($this->calda_observacao)) {
+                        $output[] = $langs->trans('SafraAplicacaoCaldaObservation').': '.$this->calda_observacao;
+                }
+
+                return implode("\n", $output);
+        }
+
+        /**
+         * Mark application as completed: close task and consume stock.
+         *
+         * @param User $user User triggering completion
+         *
+         * @return int <0 if error, >0 success
+         */
+        public function markAsCompleted(User $user)
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                if (empty($this->id)) {
+                        $this->error = 'NotLoaded';
+                        return -1;
+                }
+
+                if ($this->status == self::STATUS_VALIDATED) {
+                        return 0;
+                }
+
+                if (empty($this->lines)) {
+                        $this->fetchLines();
+                }
+
+                $this->db->begin();
+
+                require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+
+                foreach ($this->lines as $line) {
+                        if (empty($line->fk_product)) {
+                                continue;
+                        }
+
+                        $qty = (float) $line->total_qty;
+                        if ($qty <= 0) {
+                                continue;
+                        }
+
+                        if (empty($line->fk_entrepot)) {
+                                $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                $this->db->rollback();
+                                return -1;
+                        }
+
+                        $product = new Product($this->db);
+                        if ($product->fetch($line->fk_product) <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->db->rollback();
+                                return -1;
+                        }
+
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref);
+                        if (!empty($line->label)) {
+                                $label .= ' - '.$line->label;
+                        }
+
+                        $res = $product->correct_stock($user, (int) $line->fk_entrepot, $qty, 1, $label, 0, '', $this->element, $this->id);
+                        if ($res <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element
+                        .' SET status = '.self::STATUS_VALIDATED
+                        .', tms = tms'
+                        .' WHERE rowid = '.((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->error = $this->db->lasterror();
+                        $this->db->rollback();
+                        return -1;
+                }
+
+                $this->status = self::STATUS_VALIDATED;
+
+                if (!empty($this->fk_task)) {
+                        require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+                        $task = new Task($this->db);
+                        if ($task->fetch($this->fk_task) > 0) {
+                                $task->progress = 100;
+                                $task->date_end = dol_now();
+                                $task->update($user, 1);
+                        }
+                }
+
+                $this->db->commit();
+
+                return 1;
+        }
 
 
 	/**
