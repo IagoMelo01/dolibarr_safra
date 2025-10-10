@@ -80,6 +80,8 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
 dol_include_once('/safra/class/aplicacao.class.php');
 dol_include_once('/safra/lib/safra_aplicacao.lib.php');
 
@@ -101,8 +103,13 @@ $backtopagejsfields = GETPOST('backtopagejsfields', 'alpha');
 $dol_openinpopup = GETPOST('dol_openinpopup', 'aZ09');
 
 if (!empty($backtopagejsfields)) {
-	$tmpbacktopagejsfields = explode(':', $backtopagejsfields);
-	$dol_openinpopup = $tmpbacktopagejsfields[0];
+        $tmpbacktopagejsfields = explode(':', $backtopagejsfields);
+        $dol_openinpopup = $tmpbacktopagejsfields[0];
+}
+
+if ($action === 'create') {
+        header('Location: '.dol_buildpath('/safra/aplicacao_assistant.php', 1));
+        exit;
 }
 
 // Initialize technical objects
@@ -126,7 +133,7 @@ foreach ($object->fields as $key => $val) {
 }
 
 if (empty($action) && empty($id) && empty($ref)) {
-	$action = 'view';
+        $action = 'view';
 }
 
 // Load object
@@ -175,9 +182,9 @@ if ($reshook < 0) {
 }
 
 if (empty($reshook)) {
-	$error = 0;
+        $error = 0;
 
-	$backurlforlist = dol_buildpath('/safra/aplicacao_list.php', 1);
+        $backurlforlist = dol_buildpath('/safra/aplicacao_list.php', 1);
 
 	if (empty($backtopage) || ($cancel && empty($id))) {
 		if (empty($backtopage) || ($cancel && strpos($backtopage, '__ID__'))) {
@@ -217,7 +224,18 @@ if (empty($reshook)) {
 	$triggersendname = 'SAFRA_MYOBJECT_SENTBYMAIL';
 	$autocopy = 'MAIN_MAIL_AUTOCOPY_MYOBJECT_TO';
 	$trackid = 'aplicacao'.$object->id;
-	include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
+        include DOL_DOCUMENT_ROOT.'/core/actions_sendmails.inc.php';
+
+        if ($action === 'complete' && $object->id > 0) {
+                $resultComplete = $object->markAsCompleted($user);
+                if ($resultComplete >= 0) {
+                        setEventMessages($langs->trans('StatusUpdated'), null, 'mesgs');
+                } else {
+                        setEventMessages($object->error, $object->errors, 'errors');
+                }
+                header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+                exit;
+        }
 }
 
 
@@ -466,58 +484,142 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print dol_get_fiche_end();
 
 
-	/*
-	 * Lines
-	 */
 
-	if (!empty($object->table_element_line)) {
-		// Show object lines
-		$result = $object->getLinesArray();
+        if (!empty($object->lines)) {
+                $productCache = array();
+                $formuladoCache = array();
+                $tecnicoCache = array();
+                $warehouseCache = array();
+                $productStatic = new Product($db);
+                $warehouseStatic = new Entrepot($db);
 
-		print '	<form name="addproduct" id="addproduct" action="'.$_SERVER["PHP_SELF"].'?id='.$object->id.(($action != 'editline') ? '' : '#line_'.GETPOST('lineid', 'int')).'" method="POST">
-		<input type="hidden" name="token" value="' . newToken().'">
-		<input type="hidden" name="action" value="' . (($action != 'editline') ? 'addline' : 'updateline').'">
-		<input type="hidden" name="mode" value="">
-		<input type="hidden" name="page_y" value="">
-		<input type="hidden" name="id" value="' . $object->id.'">
-		';
+                print '<div class="fichecenter">';
+                print '<div class="titre">'.$langs->trans('SafraAplicacaoTaskProducts').'</div>';
+                print '<div class="div-table-responsive">';
+                print '<table class="noborder centpercent">';
+                print '<tr class="liste_titre">';
+                print '<th>'.$langs->trans('Product').'</th>';
+                print '<th>'.$langs->trans('SafraAplicacaoTechnicalProduct').'</th>';
+                print '<th>'.$langs->trans('SafraAplicacaoFormulatedProduct').'</th>';
+                print '<th class="right">'.$langs->trans('SafraAplicacaoAreaHa').'</th>';
+                print '<th class="right">'.$langs->trans('Dose').'</th>';
+                print '<th class="right">'.$langs->trans('Unit').'</th>';
+                print '<th class="right">'.$langs->trans('Total').'</th>';
+                print '<th>'.$langs->trans('Warehouse').'</th>';
+                print '<th>'.$langs->trans('Notes').'</th>';
+                print '</tr>';
 
-		if (!empty($conf->use_javascript_ajax) && $object->status == 0) {
-			include DOL_DOCUMENT_ROOT.'/core/tpl/ajaxrow.tpl.php';
-		}
+                foreach ($object->lines as $line) {
+                        $productLabel = '';
+                        if (!empty($line->fk_product)) {
+                                if (!isset($productCache[$line->fk_product])) {
+                                        if ($productStatic->fetch($line->fk_product) > 0) {
+                                                $productCache[$line->fk_product] = $productStatic->getNomUrl(1);
+                                        } else {
+                                                $productCache[$line->fk_product] = $line->fk_product;
+                                        }
+                                }
+                                $productLabel = $productCache[$line->fk_product];
+                        } else {
+                                $productLabel = dol_escape_htmltag($line->label);
+                        }
 
-		print '<div class="div-table-responsive-no-min">';
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '<table id="tablelines" class="noborder noshadow" width="100%">';
-		}
+                        $tecnicoLabel = '';
+                        if (!empty($line->fk_produtotecnico)) {
+                                if (!isset($tecnicoCache[$line->fk_produtotecnico])) {
+                                        $sqlTec = 'SELECT ref, label FROM '.MAIN_DB_PREFIX.'safra_produtostecnicos WHERE rowid = '.((int) $line->fk_produtotecnico);
+                                        $resTec = $db->query($sqlTec);
+                                        if ($resTec && ($objTec = $db->fetch_object($resTec))) {
+                                                $tecnicoCache[$line->fk_produtotecnico] = dol_escape_htmltag($objTec->ref.(empty($objTec->label) ? '' : ' - '.$objTec->label));
+                                        } else {
+                                                $tecnicoCache[$line->fk_produtotecnico] = $line->fk_produtotecnico;
+                                        }
+                                }
+                                $tecnicoLabel = $tecnicoCache[$line->fk_produtotecnico];
+                        }
 
-		if (!empty($object->lines)) {
-			$object->printObjectLines($action, $mysoc, null, GETPOST('lineid', 'int'), 1);
-		}
+                        $formuladoLabel = '';
+                        if (!empty($line->fk_produto_formulado)) {
+                                if (!isset($formuladoCache[$line->fk_produto_formulado])) {
+                                        $sqlForm = 'SELECT ref, label FROM '.MAIN_DB_PREFIX.'safra_produto_formulado WHERE rowid = '.((int) $line->fk_produto_formulado);
+                                        $resForm = $db->query($sqlForm);
+                                        if ($resForm && ($objForm = $db->fetch_object($resForm))) {
+                                                $formuladoCache[$line->fk_produto_formulado] = dol_escape_htmltag($objForm->ref.(empty($objForm->label) ? '' : ' - '.$objForm->label));
+                                        } else {
+                                                $formuladoCache[$line->fk_produto_formulado] = $line->fk_produto_formulado;
+                                        }
+                                }
+                                $formuladoLabel = $formuladoCache[$line->fk_produto_formulado];
+                        }
 
-		// Form to add new line
-		if ($object->status == 0 && $permissiontoadd && $action != 'selectlines') {
-			if ($action != 'editline') {
-				// Add products/services form
+                        $warehouseLabel = '';
+                        if (!empty($line->fk_entrepot)) {
+                                if (!isset($warehouseCache[$line->fk_entrepot])) {
+                                        if ($warehouseStatic->fetch($line->fk_entrepot) > 0) {
+                                                $warehouseCache[$line->fk_entrepot] = $warehouseStatic->getNomUrl(1);
+                                        } else {
+                                                $warehouseCache[$line->fk_entrepot] = $line->fk_entrepot;
+                                        }
+                                }
+                                $warehouseLabel = $warehouseCache[$line->fk_entrepot];
+                        }
 
-				$parameters = array();
-				$reshook = $hookmanager->executeHooks('formAddObjectLine', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
-				if ($reshook < 0) {
-					setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
-				}
-				if (empty($reshook)) {
-					$object->formAddObjectLine(1, $mysoc, $soc);
-				}
-			}
-		}
+                        print '<tr class="oddeven">';
+                        print '<td>'.$productLabel.'</td>';
+                        print '<td>'.$tecnicoLabel.'</td>';
+                        print '<td>'.$formuladoLabel.'</td>';
+                        print '<td class="right">'.price2num($line->area_ha, '4').'</td>';
+                        print '<td class="right">'.price2num($line->dose, '4').'</td>';
+                        print '<td class="right">'.dol_escape_htmltag($line->dose_unit).'</td>';
+                        print '<td class="right">'.price2num($line->total_qty, '4').'</td>';
+                        print '<td>'.$warehouseLabel.'</td>';
+                        print '<td>'.dol_escape_htmltag($line->note).'</td>';
+                        print '</tr>';
+                }
 
-		if (!empty($object->lines) || ($object->status == $object::STATUS_DRAFT && $permissiontoadd && $action != 'selectlines' && $action != 'editline')) {
-			print '</table>';
-		}
-		print '</div>';
+                print '</table>';
+                print '</div>';
+                print '</div>';
+        }
 
-		print "</form>\n";
-	}
+        $hasResource = false;
+        foreach ($object->resources as $items) {
+                if (!empty($items)) {
+                        $hasResource = true;
+                        break;
+                }
+        }
+        if ($hasResource) {
+                print '<div class="fichecenter">';
+                foreach ($object->resources as $type => $items) {
+                        if (empty($items)) {
+                                continue;
+                        }
+                        $titleKey = 'SafraAplicacaoResource'.ucfirst($type);
+                        print '<div class="underbanner clearboth"></div>';
+                        print '<div class="titre">'.$langs->trans($titleKey).'</div>';
+                        print '<ul class="listwithicons">';
+                        foreach ($items as $item) {
+                                $label = dol_escape_htmltag($item['label']);
+                                if ($label === '' && !empty($item['fk_target'])) {
+                                        $label = '#'.$item['fk_target'];
+                                }
+                                if (!empty($item['note'])) {
+                                        $label .= ' <span class="opacitymedium">'.dol_escape_htmltag($item['note']).'</span>';
+                                }
+                                print '<li>'.$label.'</li>';
+                        }
+                        print '</ul>';
+                }
+                print '</div>';
+        }
+
+        if (!empty($object->calda_observacao)) {
+                print '<div class="fichecenter">';
+                print '<div class="titre">'.$langs->trans('SafraAplicacaoCaldaObservation').'</div>';
+                print '<div class="inline-block">'.dol_nl2br(dol_escape_htmltag($object->calda_observacao)).'</div>';
+                print '</div>';
+        }
 
 
 	// Buttons for actions
@@ -530,11 +632,19 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 		}
 
-		if (empty($reshook)) {
-			// Send
-			if (empty($user->socid)) {
-				print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&token='.newToken().'&mode=init#formmailbeforetitle');
-			}
+                if (empty($reshook)) {
+                        if (!empty($object->fk_task)) {
+                                $taskUrl = dol_buildpath('/projet/tasks/card.php', 1).'?id='.$object->fk_task;
+                                print dolGetButtonAction('', $langs->trans('SafraAplicacaoViewTask'), 'view', $taskUrl, '', 1);
+                        }
+                        if ($object->status != $object::STATUS_VALIDATED) {
+                                print dolGetButtonAction('', $langs->trans('SafraAplicacaoComplete'), 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=complete&token='.newToken(), '', $permissiontoadd);
+                        }
+
+                        // Send
+                        if (empty($user->socid)) {
+                                print dolGetButtonAction('', $langs->trans('SendMail'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=presend&token='.newToken().'&mode=init#formmailbeforetitle');
+                        }
 
 			// Back to draft
 			if ($object->status == $object::STATUS_VALIDATED) {

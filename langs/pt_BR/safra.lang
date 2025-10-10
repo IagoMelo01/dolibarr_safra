@@ -395,3 +395,35 @@ ZoneamentoSoilsLabelShort=Solos
 ZoneamentoCycleLabel=Ciclo
 ZoneamentoCycleLabelShort=Ciclos
 ZoneamentoCultivoLabel=Sistema
+
+#
+# Assistente de aplicação
+#
+SafraAplicacaoAreaHa = Área aplicada (ha)
+SafraAplicacaoDate = Data da aplicação
+SafraAplicacaoCaldaObservation = Observações da calda
+SafraAplicacaoTaskProducts = Produtos para aplicar
+SafraAplicacaoResourceVehicle = Veículos
+SafraAplicacaoResourceImplement = Implementos
+SafraAplicacaoResourcePerson = Equipe
+SafraAplicacaoStockMovementLabel = Aplicação %s
+SafraAplicacaoMissingWarehouse = Selecione um almoxarifado para cada produto antes de concluir a aplicação.
+SafraAplicacaoTechnicalProduct = Produto técnico
+SafraAplicacaoFormulatedProduct = Produto formulado
+SafraAplicacaoSearchMode = Buscar por
+SafraAplicacaoCatalogOption = Opção do catálogo
+SafraAplicacaoTalhao = Talhão
+SafraAplicacaoSelectTalhao = Selecione um talhão
+SafraAplicacaoResources = Recursos
+SafraAplicacaoNoWarehouseProducts = Nenhum produto disponível para o armazém selecionado.
+SafraAplicacaoAddNewProduct = Adicionar novo produto
+SafraAplicacaoErrorTalhaoRequired = É necessário selecionar um talhão antes de continuar.
+SafraAplicacaoTalhaoInfo = Informações do talhão
+SafraAplicacaoTalhaoNotLinked = Nenhum talhão vinculado ao projeto selecionado.
+SafraAplicacaoTalhaoAreaFormat = Área: %s ha
+SafraAplicacaoTalhaoMunicipioFormat = Município: %s
+SafraAplicacaoNoLinkedProducts = Nenhum produto do estoque vinculado
+SafraAplicacaoAddLinkedProduct = Adicionar novo
+AplicacaoCreateAssistant = Assistente de aplicação
+SafraAplicacaoViewTask = Visualizar tarefa
+SafraAplicacaoComplete = Marcar como concluída
