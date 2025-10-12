@@ -116,13 +116,16 @@ class Aplicacao extends CommonObject
 		"rowid" => array("type"=>"integer", "label"=>"TechnicalID", "enabled"=>"1", 'position'=>1, 'notnull'=>1, "visible"=>"0", "noteditable"=>"1", "index"=>"1", "css"=>"left", "comment"=>"Id"),
 		"ref" => array("type"=>"varchar(128)", "label"=>"Ref", "enabled"=>"1", 'position'=>20, 'notnull'=>1, "visible"=>"1", "index"=>"1", "searchall"=>"1", "showoncombobox"=>"1", "validate"=>"1", "comment"=>"Reference of object"),
 		"label" => array("type"=>"varchar(255)", "label"=>"Label", "enabled"=>"1", 'position'=>30, 'notnull'=>0, "visible"=>"1", "alwayseditable"=>"1", "searchall"=>"1", "css"=>"minwidth300", "cssview"=>"wordbreak", "help"=>"Help text", "showoncombobox"=>"2", "validate"=>"1",),
-		"amount" => array("type"=>"price", "label"=>"Amount", "enabled"=>"1", 'position'=>40, 'notnull'=>0, "visible"=>"1", "default"=>"null", "isameasure"=>"1", "help"=>"Help text for amount", "validate"=>"1",),
-		"qty" => array("type"=>"real", "label"=>"Qty", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "help"=>"Help text for quantity", "validate"=>"1",),
-		"fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
-		"fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"-1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
-		"description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
-		"note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
-		"note_private" => array("type"=>"html", "label"=>"NotePrivate", "enabled"=>"1", 'position'=>62, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
+                "amount" => array("type"=>"price", "label"=>"Amount", "enabled"=>"1", 'position'=>40, 'notnull'=>0, "visible"=>"0", "default"=>"null", "isameasure"=>"1", "help"=>"Help text for amount", "validate"=>"1",),
+                "qty" => array("type"=>"double(28,8)", "label"=>"SafraAplicacaoAreaHa", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "validate"=>"1",),
+                "fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
+                "fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
+                "fk_task" => array("type"=>"integer:Task:projet/class/task.class.php:1", "label"=>"Task", "picto"=>"projecttask", "enabled"=>"isModEnabled('project')", 'position'=>53, 'notnull'=>-1, "visible"=>"-2", "index"=>"1", "csslist"=>"tdoverflowmax150"),
+                "date_application" => array("type"=>"date", "label"=>"SafraAplicacaoDate", "enabled"=>"1", 'position'=>54, 'notnull'=>0, "visible"=>"1", "validate"=>"1"),
+                "description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
+                "note_public" => array("type"=>"html", "label"=>"NotePublic", "enabled"=>"1", 'position'=>61, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
+                "note_private" => array("type"=>"html", "label"=>"NotePrivate", "enabled"=>"1", 'position'=>62, 'notnull'=>0, "visible"=>"0", "cssview"=>"wordbreak", "validate"=>"1",),
+                "calda_observacao" => array("type"=>"text", "label"=>"SafraAplicacaoCaldaObservation", "enabled"=>"1", 'position'=>63, 'notnull'=>0, "visible"=>"3", "cssview"=>"wordbreak"),
 		"date_creation" => array("type"=>"datetime", "label"=>"DateCreation", "enabled"=>"1", 'position'=>500, 'notnull'=>1, "visible"=>"-2",),
 		"tms" => array("type"=>"timestamp", "label"=>"DateModification", "enabled"=>"1", 'position'=>501, 'notnull'=>0, "visible"=>"-2",),
 		"fk_user_creat" => array("type"=>"integer:User:user/class/user.class.php", "label"=>"UserAuthor", "picto"=>"user", "enabled"=>"1", 'position'=>510, 'notnull'=>1, "visible"=>"-2", "foreignkey"=>"0", "csslist"=>"tdoverflowmax150",),
@@ -135,72 +138,78 @@ class Aplicacao extends CommonObject
 	public $rowid;
 	public $ref;
 	public $label;
-	public $amount;
-	public $qty;
-	public $fk_soc;
-	public $fk_project;
-	public $description;
-	public $note_public;
-	public $note_private;
-	public $date_creation;
+        public $amount;
+        public $qty;
+        public $fk_soc;
+        public $fk_project;
+        public $fk_task;
+        public $date_application;
+        public $description;
+        public $note_public;
+        public $note_private;
+        public $calda_observacao;
+        public $date_creation;
 	public $tms;
 	public $fk_user_creat;
 	public $fk_user_modif;
 	public $last_main_doc;
 	public $import_key;
 	public $model_pdf;
-	public $status;
+        public $status;
 	// END MODULEBUILDER PROPERTIES
 
 
 	// If this object has a subtable with lines
 
-	// /**
-	//  * @var string    Name of subtable line
-	//  */
-	// public $table_element_line = 'safra_aplicacaoline';
-
-	// /**
-	//  * @var string    Field with ID of parent key if this object has a parent
-	//  */
-	// public $fk_element = 'fk_aplicacao';
-
-	// /**
-	//  * @var string    Name of subtable class that manage subtable lines
-	//  */
-	// public $class_element_line = 'Aplicacaoline';
-
-	// /**
-	//  * @var array	List of child tables. To test if we can delete object.
-	//  */
-	// protected $childtables = array('mychildtable' => array('name'=>'Aplicacao', 'fk_element'=>'fk_aplicacao'));
-
-	// /**
-	//  * @var array    List of child tables. To know object to delete on cascade.
-	//  *               If name matches '@ClassNAme:FilePathClass;ParentFkFieldName' it will
-	//  *               call method deleteByParentField(parentId, ParentFkFieldName) to fetch and delete child object
-	//  */
-	// protected $childtablesoncascade = array('safra_aplicacaodet');
-
-	// /**
-	//  * @var AplicacaoLine[]     Array of subtable lines
-	//  */
-	// public $lines = array();
-
-
+	/**
+	 * @var string Name of subtable line
+	 */
+	public $table_element_line = 'safra_aplicacao_line';
 
 	/**
-	 * Constructor
-	 *
-	 * @param DoliDb $db Database handler
+	 * @var string Field with ID of parent key if this object has a parent
 	 */
-	public function __construct(DoliDB $db)
+	public $fk_element = 'fk_aplicacao';
+
+	/**
+	 * @var string Name of subtable class that manage subtable lines
+	 */
+	public $class_element_line = 'AplicacaoLine';
+
+	/**
+	 * @var array List of child tables. To test if we can delete object.
+	 */
+	protected $childtables = array('safra_aplicacao_resource');
+
+	/**
+	 * @var array[] Indexed list of allocated resources grouped by element_type
+	 */
+	public $resources = array();
+
+	/**
+	 * @var AplicacaoLine[] Array of subtable lines
+	 */
+        public $lines = array();
+
+        /**
+         * @var bool Flag to avoid running schema checks more than once per request
+         */
+        protected static $schemaVerified = false;
+
+        /**
+         * Constructor
+         *
+         * @param DoliDb $db Database handler
+         */
+        public function __construct(DoliDB $db)
 	{
 		global $conf, $langs;
 
-		$this->db = $db;
+                $this->db = $db;
 
-		if (!getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID') && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
+                self::ensureDatabaseSchema($db);
+
+                if (!getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID') && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
 			$this->fields['rowid']['visible'] = 0;
 		}
 		if (!isModEnabled('multicompany') && isset($this->fields['entity'])) {
@@ -243,7 +252,10 @@ class Aplicacao extends CommonObject
 	{
 		$resultcreate = $this->createCommon($user, $notrigger);
 
-		//$resultvalidate = $this->validate($user, $notrigger);
+		if ($resultcreate > 0) {
+			$this->id = $resultcreate;
+			$this->syncTask($user);
+		}
 
 		return $resultcreate;
 	}
@@ -356,14 +368,17 @@ class Aplicacao extends CommonObject
 	 * @param	int		$nolines		0=Default to load extrafields, 1=No extrafields
 	 * @return 	int     				Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetch($id, $ref = null, $noextrafields = 0, $nolines = 0)
-	{
-		$result = $this->fetchCommon($id, $ref, '', $noextrafields);
-		if ($result > 0 && !empty($this->table_element_line) && empty($nolines)) {
-			$this->fetchLines($noextrafields);
-		}
-		return $result;
-	}
+        public function fetch($id, $ref = null, $noextrafields = 0, $nolines = 0)
+        {
+                $result = $this->fetchCommon($id, $ref, '', $noextrafields);
+                if ($result > 0) {
+                        if (!empty($this->table_element_line) && empty($nolines)) {
+                                $this->fetchLines($noextrafields);
+                        }
+                        $this->fetchResources();
+                }
+                return $result;
+        }
 
 	/**
 	 * Load object lines in memory from the database
@@ -371,13 +386,1045 @@ class Aplicacao extends CommonObject
 	 * @param	int		$noextrafields	0=Default to load extrafields, 1=No extrafields
 	 * @return 	int         			Return integer <0 if KO, 0 if not found, >0 if OK
 	 */
-	public function fetchLines($noextrafields = 0)
-	{
-		$this->lines = array();
+        public function fetchLines($noextrafields = 0)
+        {
+                $this->lines = array();
+                if (empty($this->id)) return 0;
 
-		$result = $this->fetchLinesCommon('', $noextrafields);
-		return $result;
-	}
+                $sql = 'SELECT rowid, fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note'
+                    .' FROM '.MAIN_DB_PREFIX.$this->table_element_line
+                    .' WHERE '.$this->fk_element.' = '.((int) $this->id)
+                    .' ORDER BY rowid ASC';
+
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        while ($obj = $this->db->fetch_object($resql)) {
+                                $line = new stdClass();
+                                $line->id = (int) $obj->rowid;
+                                $line->rowid = (int) $obj->rowid;
+                                $line->fk_product = isset($obj->fk_product) ? (int) $obj->fk_product : 0;
+                                $line->fk_produto_formulado = isset($obj->fk_produto_formulado) ? (int) $obj->fk_produto_formulado : 0;
+                                $line->fk_produtotecnico = isset($obj->fk_produtotecnico) ? (int) $obj->fk_produtotecnico : 0;
+                                $line->fk_entrepot = isset($obj->fk_entrepot) ? (int) $obj->fk_entrepot : 0;
+                                $line->label = (string) $obj->label;
+                                $line->dose = (float) $obj->dose;
+                                $line->dose_unit = (string) $obj->dose_unit;
+                                $line->area_ha = (float) $obj->area_ha;
+                                $line->total_qty = (float) $obj->total_qty;
+                                $line->note = (string) $obj->note;
+                                $this->lines[] = $line;
+                        }
+                        $this->db->free($resql);
+                        return count($this->lines);
+                }
+                $this->error = $this->db->lasterror();
+                return -1;
+        }
+
+        /**
+         * Load allocated resources for the application.
+         *
+         * @return void
+         */
+        public function fetchResources()
+        {
+                $this->resources = array(
+                        'vehicle' => array(),
+                        'implement' => array(),
+                        'person' => array(),
+                );
+
+                if (empty($this->id)) {
+                        return;
+                }
+
+                $sql = 'SELECT rowid, element_type, fk_target, label, note'
+                        .' FROM '.MAIN_DB_PREFIX."safra_aplicacao_resource"
+                        .' WHERE fk_aplicacao = '.((int) $this->id)
+                        .' ORDER BY rowid ASC';
+
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        while ($obj = $this->db->fetch_object($resql)) {
+                                $type = (string) $obj->element_type;
+                                if (!isset($this->resources[$type])) {
+                                        $this->resources[$type] = array();
+                                }
+
+                                $this->resources[$type][] = array(
+                                        'rowid' => (int) $obj->rowid,
+                                        'fk_target' => (int) $obj->fk_target,
+                                        'label' => $obj->label,
+                                        'note' => $obj->note,
+                                );
+                        }
+                        $this->db->free($resql);
+                }
+        }
+
+        /**
+         * Replace existing resources with provided set.
+         *
+         * @param array $resources Array of associative arrays with keys type,fk_target,label,note
+         *
+         * @return int  <0 if error, >0 success
+         */
+        public function replaceResources(array $resources)
+        {
+                if (empty($this->id)) {
+                        return -1;
+                }
+
+                $this->db->begin();
+
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX."safra_aplicacao_resource WHERE fk_aplicacao = ".((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->db->rollback();
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                foreach ($resources as $resource) {
+                        if (empty($resource['type'])) {
+                                continue;
+                        }
+
+                        $type = preg_replace('/[^a-z0-9_]/i', '', $resource['type']);
+                        if ($type === '') {
+                                continue;
+                        }
+
+                        $fkTarget = isset($resource['fk_target']) ? (int) $resource['fk_target'] : 0;
+                        $label = isset($resource['label']) ? trim((string) $resource['label']) : '';
+                        $note = isset($resource['note']) ? trim((string) $resource['note']) : '';
+
+                        $sql = "INSERT INTO ".MAIN_DB_PREFIX."safra_aplicacao_resource (fk_aplicacao, element_type, fk_target, label, note) VALUES (";
+                        $sql .= ((int) $this->id).", '".$this->db->escape($type)."', ".($fkTarget > 0 ? $fkTarget : 'NULL').", '".$this->db->escape($label)."', '".$this->db->escape($note)."')";
+
+                        if (!$this->db->query($sql)) {
+                                $this->error = $this->db->lasterror();
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->db->commit();
+                $this->fetchResources();
+
+                global $user;
+                if (!empty($user) && $user instanceof User) {
+                        $this->syncTask($user);
+                }
+
+                return 1;
+        }
+
+        /**
+         * Build stock summary (grouped by product/warehouse) from provided lines.
+         *
+         * @param array $lines             List of lines (objects or associative arrays)
+         * @param bool  $missingWarehouse  Flag set to true when a line lacks warehouse information
+         *
+         * @return array
+         */
+        protected function summarizeLinesForStock(array $lines, User $user = null, &$missingWarehouse = false)
+        {
+                $summary = array();
+                foreach ($lines as $line) {
+                        $productId = 0;
+                        $warehouseId = 0;
+                        $qty = 0.0;
+                        $label = '';
+
+                        if (is_object($line)) {
+                                $productId = empty($line->fk_product) ? 0 : (int) $line->fk_product;
+                                $warehouseId = empty($line->fk_entrepot) ? 0 : (int) $line->fk_entrepot;
+                                $qty = isset($line->total_qty) ? (float) $line->total_qty : 0.0;
+                                $label = isset($line->label) ? trim((string) $line->label) : '';
+                        } else {
+                                $productId = empty($line['fk_product']) ? 0 : (int) $line['fk_product'];
+                                $warehouseId = empty($line['fk_entrepot']) ? 0 : (int) $line['fk_entrepot'];
+                                $qty = isset($line['total_qty']) ? (float) $line['total_qty'] : 0.0;
+                                $label = !empty($line['label']) ? trim((string) $line['label']) : '';
+                        }
+
+                        if ($productId <= 0) {
+                                continue;
+                        }
+                        if ($warehouseId <= 0) {
+                                $missingWarehouse = true;
+                                if ($user instanceof User) {
+                                        $resolvedWarehouse = $this->resolveWarehouseIdForProduct($productId, $user);
+                                        if ($resolvedWarehouse > 0) {
+                                                $warehouseId = $resolvedWarehouse;
+                                        }
+                                }
+                        }
+                        if (abs($qty) < 1e-9) {
+                                continue;
+                        }
+
+                        $key = $productId.':'.$warehouseId;
+
+                        if ($label !== '') {
+                                $summary[$key]['labels'][$label] = true;
+                        }
+                }
+
+                return $summary;
+        }
+
+        protected function resolveWarehouseIdForProduct($productId, User $user = null)
+        {
+                if (empty($productId)) {
+                        return 0;
+                }
+
+                if ($user instanceof User && getDolGlobalString('MAIN_DEFAULT_WAREHOUSE_USER') && !empty($user->fk_warehouse)) {
+                        return (int) $user->fk_warehouse;
+                }
+                if (getDolGlobalString('MAIN_DEFAULT_WAREHOUSE')) {
+                        return (int) getDolGlobalInt('MAIN_DEFAULT_WAREHOUSE');
+                }
+
+                $productId = (int) $productId;
+                $sql = 'SELECT fk_entrepot FROM '.MAIN_DB_PREFIX.'product_stock WHERE fk_product = '.$productId.' ORDER BY reel DESC LIMIT 1';
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        $obj = $this->db->fetch_object($resql);
+                        if ($obj && !empty($obj->fk_entrepot)) {
+                                return (int) $obj->fk_entrepot;
+                        }
+                }
+
+                $sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX.'entrepot WHERE entity IN ('.getEntity('stock').') ORDER BY rowid ASC LIMIT 1';
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        $obj = $this->db->fetch_object($resql);
+                        if ($obj && !empty($obj->rowid)) {
+                                return (int) $obj->rowid;
+                        }
+                }
+
+                return 0;
+        }
+
+        /**
+         * Apply stock movements based on provided summary (all movements are decreases).
+         *
+         * @param User  $user     Current user
+         * @param array $summary  Summary built with summarizeLinesForStock
+         *
+         * @return int            >0 success, <0 error
+         */
+        protected function applyStockMovementsFromSummary(User $user, array $summary, array &$applied = array())
+        {
+                if (empty($summary)) {
+                        return 1;
+                }
+
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+
+                foreach ($summary as $key => $item) {
+                        $productId = (int) $item['fk_product'];
+                        $warehouseId = (int) $item['fk_entrepot'];
+                        $qty = (float) $item['qty'];
+
+                        if ($productId <= 0 || $qty <= 0) {
+                                continue;
+                        }
+                        if ($warehouseId <= 0) {
+                                $warehouseId = $this->resolveWarehouseIdForProduct($productId, $user);
+                                if ($warehouseId <= 0) {
+                                        $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                        $this->rollbackStockOperations($user, $applied);
+                                        return -1;
+                                }
+                                $summary[$key]['fk_entrepot'] = $warehouseId;
+                        }
+
+                        $product = new Product($this->db);
+                        if ($product->fetch($productId) <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->rollbackStockOperations($user, $applied);
+                                return -1;
+                        }
+
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id);
+                        if (!empty($item['labels'])) {
+                                $label .= ' - '.implode(', ', array_slice(array_keys($item['labels']), 0, 3));
+                        }
+
+                        $res = $product->correct_stock($user, $warehouseId, $qty, 1, $label, 0, '', $this->element, $this->id);
+                        if ($res <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->rollbackStockOperations($user, $applied);
+                                return -1;
+                        }
+
+                        $applied[] = array(
+                                'fk_product' => $productId,
+                                'fk_entrepot' => $warehouseId,
+                                'movement' => 1,
+                                'qty' => $qty,
+                        );
+                }
+
+                return 1;
+        }
+
+                protected function revertStockMovements(User $user, array $summary, array &$applied = array())
+        {
+                if (empty($summary)) {
+                        return 1;
+                }
+
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+
+                foreach ($summary as $item) {
+                        $productId = (int) $item['fk_product'];
+                        $warehouseId = (int) $item['fk_entrepot'];
+                        $qty = (float) $item['qty'];
+
+                        if ($productId <= 0 || $qty <= 0) {
+                                continue;
+                        }
+                        if ($warehouseId <= 0) {
+                                $warehouseId = $this->resolveWarehouseIdForProduct($productId, $user);
+                                if ($warehouseId <= 0) {
+                                        $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                        return -1;
+                                }
+                        }
+
+                        $product = new Product($this->db);
+                        if ($product->fetch($productId) <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->rollbackStockOperations($user, $applied);
+                                return -1;
+                        }
+
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id).' (delete)';
+                        $res = $product->correct_stock($user, $warehouseId, $qty, 0, $label, 0, '', $this->element, $this->id);
+                        if ($res <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->rollbackStockOperations($user, $applied);
+                                return -1;
+                        }
+
+                        $applied[] = array(
+                                'fk_product' => $productId,
+                                'fk_entrepot' => $warehouseId,
+                                'movement' => 0,
+                                'qty' => $qty,
+                        );
+                }
+
+                return 1;
+        }
+
+        /**
+         * Adjust stock movements
+         * Adjust stock movements when a validated application is edited.
+         *
+         * @param User  $user        Current user
+         * @param array $oldSummary  Summary before edit
+         * @param array $newSummary  Summary after edit
+         *
+         * @return int               >0 success, <0 error
+         */
+        protected function adjustStockForLineChanges(User $user, array $oldSummary, array $newSummary, array &$applied = array())
+        {
+                $keys = array_unique(array_merge(array_keys($oldSummary), array_keys($newSummary)));
+                if (empty($keys)) {
+                        return 1;
+                }
+
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+
+                foreach ($keys as $key) {
+                        $oldQty = isset($oldSummary[$key]) ? (float) $oldSummary[$key]['qty'] : 0.0;
+                        $newQty = isset($newSummary[$key]) ? (float) $newSummary[$key]['qty'] : 0.0;
+                        $delta = $newQty - $oldQty;
+                        if (abs($delta) < 1e-9) {
+                                continue;
+                        }
+
+                        $item = isset($newSummary[$key]) ? $newSummary[$key] : $oldSummary[$key];
+                        $productId = (int) $item['fk_product'];
+                        $warehouseId = (int) $item['fk_entrepot'];
+
+                        if ($warehouseId <= 0) {
+                                $warehouseId = $this->resolveWarehouseIdForProduct($productId, $user);
+                                if ($warehouseId <= 0) {
+                                        $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                        $this->rollbackStockOperations($user, $applied);
+                                        return -1;
+                                }
+                                if (!isset($newSummary[$key])) {
+                                        $oldSummary[$key]['fk_entrepot'] = $warehouseId;
+                                } else {
+                                        $newSummary[$key]['fk_entrepot'] = $warehouseId;
+                                }
+                        }
+
+                        $product = new Product($this->db);
+                        if ($product->fetch($productId) <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->rollbackStockOperations($user, $applied);
+                                return -1;
+                        }
+
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id);
+                        $labels = array();
+                        if (!empty($item['labels'])) {
+                                $labels = array_keys($item['labels']);
+                        } elseif (!empty($oldSummary[$key]['labels'])) {
+                                $labels = array_keys($oldSummary[$key]['labels']);
+                        }
+                        if (!empty($labels)) {
+                                $label .= ' - '.implode(', ', array_slice($labels, 0, 3));
+                        }
+
+                        $movement = ($delta > 0) ? 1 : 0;
+                        $qty = abs($delta);
+
+                        $res = $product->correct_stock($user, $warehouseId, $qty, $movement, $label, 0, '', $this->element, $this->id);
+                        if ($res <= 0) {
+                                $this->error = $product->error ?: $product->errors;
+                                $this->rollbackStockOperations($user, $applied);
+                                return -1;
+                        }
+
+                        $applied[] = array(
+                                'fk_product' => $productId,
+                                'fk_entrepot' => $warehouseId,
+                                'movement' => $movement,
+                                'qty' => $qty,
+                        );
+                }
+
+                return 1;
+        }
+
+        /**
+         * Rollback previously applied stock operations.
+         *
+         * @param User  $user        Current user
+         * @param array $operations  List of operations (movement 0/1)
+         *
+         * @return void
+         */
+        protected function rollbackStockOperations(User $user, array $operations)
+        {
+                if (empty($operations)) {
+                        return;
+                }
+
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+
+                foreach (array_reverse($operations) as $operation) {
+                        $productId = (int) $operation['fk_product'];
+                        $warehouseId = (int) $operation['fk_entrepot'];
+                        $movement = (int) $operation['movement'];
+                        $qty = (float) $operation['qty'];
+
+                        if ($productId <= 0 || $warehouseId <= 0 || $qty <= 0) {
+                                continue;
+                        }
+
+                        $product = new Product($this->db);
+                        if ($product->fetch($productId) <= 0) {
+                                continue;
+                        }
+
+                        $rollbackMovement = $movement === 1 ? 0 : 1;
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id).' (rollback)';
+                        $product->correct_stock($user, $warehouseId, $qty, $rollbackMovement, $label, 0, '', $this->element, $this->id);
+                }
+        }
+
+        /**
+         * Replace all application lines with provided set.
+         *
+         * @param array $lines Lines definition
+         *
+         * @return int <0 if error, >0 success
+         */
+        public function replaceLines(array $lines, User $user = null)
+        {
+                if (empty($this->id)) {
+                        return -1;
+                }
+
+                if (!$user instanceof User && !empty($GLOBALS['user']) && $GLOBALS['user'] instanceof User) {
+                        $user = $GLOBALS['user'];
+                }
+
+                if (empty($this->lines)) {
+                        $this->fetchLines();
+                }
+
+                $oldSummary = $this->summarizeLinesForStock($this->lines, $user);
+
+                $this->db->begin();
+
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX.$this->table_element_line.' WHERE '.$this->fk_element.' = '.((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->db->rollback();
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                $totalApplied = 0.0;
+
+                foreach ($lines as $line) {
+                        $fkProduct = empty($line['fk_product']) ? 0 : (int) $line['fk_product'];
+                        $fkFormulado = empty($line['fk_produto_formulado']) ? 0 : (int) $line['fk_produto_formulado'];
+                        $fkTecnico = empty($line['fk_produtotecnico']) ? 0 : (int) $line['fk_produtotecnico'];
+                        $fkWarehouse = empty($line['fk_entrepot']) ? 0 : (int) $line['fk_entrepot'];
+                        $label = isset($line['label']) ? trim((string) $line['label']) : '';
+                        $dose = isset($line['dose']) ? (float) $line['dose'] : 0;
+                        $doseUnit = isset($line['dose_unit']) ? substr(trim((string) $line['dose_unit']), 0, 10) : '';
+                        $areaHa = isset($line['area_ha']) ? (float) $line['area_ha'] : 0;
+                        $totalQty = isset($line['total_qty']) ? (float) $line['total_qty'] : ($dose * $areaHa);
+                        $note = isset($line['note']) ? trim((string) $line['note']) : '';
+
+                        if ($fkProduct <= 0 && empty($label)) {
+                                continue;
+                        }
+
+                        $totalApplied += $totalQty;
+
+                        $sql = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element_line
+                                .' ('.$this->fk_element.', fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note) VALUES (';
+                        $sql .= ((int) $this->id).', ';
+                        $sql .= ($fkProduct > 0 ? (int) $fkProduct : 'NULL').', ';
+                        $sql .= ($fkFormulado > 0 ? (int) $fkFormulado : 'NULL').', ';
+                        $sql .= ($fkTecnico > 0 ? (int) $fkTecnico : 'NULL').', ';
+                        $sql .= ($fkWarehouse > 0 ? (int) $fkWarehouse : 'NULL').', ';
+                        $sql .= "'".$this->db->escape($label)."'".', ';
+                        $sql .= ((float) $dose).', ';
+                        $sql .= "'".$this->db->escape($doseUnit)."'".', ';
+                        $sql .= ((float) $areaHa).', ';
+                        $sql .= ((float) $totalQty).', ';
+                        $sql .= "'".$this->db->escape($note)."'".')';
+
+                        if (!$this->db->query($sql)) {
+                                $this->error = $this->db->lasterror();
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->amount = $totalApplied;
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element
+                        .' SET amount = '.((float) $this->amount)
+                        .' WHERE rowid = '.((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->db->rollback();
+                        $this->error = $this->db->lasterror();
+                        return -1;
+                }
+
+                $missingWarehouse = false;
+                $newSummary = $this->summarizeLinesForStock($lines, $user, $missingWarehouse);
+
+                $appliedStock = array();
+                if ($this->status == self::STATUS_VALIDATED && $user instanceof User) {
+                        global $langs;
+                        foreach ($newSummary as $item) {
+                                if (empty($item['fk_entrepot'])) {
+                                        $this->db->rollback();
+                                        $langs->loadLangs(array('safra@safra'));
+                                        $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                        return -1;
+                                }
+                        }
+
+                        $adjustRes = $this->adjustStockForLineChanges($user, $oldSummary, $newSummary, $appliedStock);
+                        if ($adjustRes < 0) {
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->fetchLines();
+
+                if ($user instanceof User) {
+                        $syncRes = $this->syncTask($user);
+                        if ($syncRes < 0) {
+                                if (!empty($appliedStock)) {
+                                        $this->rollbackStockOperations($user, $appliedStock);
+                                }
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->db->commit();
+
+                return 1;
+        }
+
+        /**
+         * Ensure required database schema exists.
+         *
+         * @param DoliDB $db Database handler
+         *
+         * @return void
+         */
+        protected static function ensureDatabaseSchema(DoliDB $db)
+        {
+                if (self::$schemaVerified) {
+                        return;
+                }
+
+                self::$schemaVerified = true;
+
+                $mainTable = MAIN_DB_PREFIX.'safra_aplicacao';
+                $info = $db->DDLDescTable($mainTable, $mainTable);
+                $hasFkTask = false;
+                if (is_array($info)) {
+                        foreach ($info as $fieldInfo) {
+                                if (!empty($fieldInfo['field']) && $fieldInfo['field'] === 'fk_task') {
+                                        $hasFkTask = true;
+                                        break;
+                                }
+                        }
+                }
+
+                if (!$hasFkTask) {
+                        $sql = 'ALTER TABLE '.$mainTable.' ADD COLUMN fk_task integer AFTER fk_project';
+                        if (!$db->query($sql)) {
+                                dol_syslog(__METHOD__.' failed to add fk_task column: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                $lineTable = MAIN_DB_PREFIX.'safra_aplicacao_line';
+                if (!is_array($db->DDLDescTable($lineTable, $lineTable))) {
+                        $sql = 'CREATE TABLE IF NOT EXISTS '.$lineTable.' ('
+                                .'rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, '
+                                .'fk_aplicacao integer NOT NULL, '
+                                .'fk_product integer, '
+                                .'fk_produto_formulado integer, '
+                                .'fk_produtotecnico integer, '
+                                .'fk_entrepot integer, '
+                                .'label varchar(255), '
+                                .'dose double, '
+                                .'dose_unit varchar(10), '
+                                .'area_ha double, '
+                                .'total_qty double, '
+                                .'note text, '
+                                .'date_creation datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
+                                .') ENGINE=innodb;';
+                        if ($db->query($sql)) {
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_aplicacao (fk_aplicacao)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_product (fk_product)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_formulado (fk_produto_formulado)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD INDEX idx_safra_aplicacao_line_fk_produtotecnico (fk_produtotecnico)');
+                                $db->query('ALTER TABLE '.$lineTable.' ADD CONSTRAINT llx_safra_aplicacao_line_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES '.MAIN_DB_PREFIX.'safra_aplicacao(rowid)');
+                        } else {
+                                dol_syslog(__METHOD__.' failed to create safra_aplicacao_line: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                $taskTable = MAIN_DB_PREFIX.'projet_task';
+                $taskInfo = $db->DDLDescTable($taskTable, $taskTable);
+                $hasFkAplicacao = false;
+                if (is_array($taskInfo)) {
+                        foreach ($taskInfo as $fieldInfo) {
+                                if (!empty($fieldInfo['field']) && $fieldInfo['field'] === 'fk_aplicacao') {
+                                        $hasFkAplicacao = true;
+                                        break;
+                                }
+                        }
+                }
+                if (!$hasFkAplicacao) {
+                        $sql = 'ALTER TABLE '.$taskTable.' ADD COLUMN fk_aplicacao integer DEFAULT NULL';
+                        if ($db->query($sql)) {
+                                $db->query('CREATE INDEX idx_projet_task_fk_aplicacao ON '.$taskTable.' (fk_aplicacao)');
+                        } else {
+                                dol_syslog(__METHOD__.' failed to add fk_aplicacao column on projet_task: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                require_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+                $extrafields = new ExtraFields($db);
+                $labels = $extrafields->fetch_name_optionals_label('projet_task');
+                if (!is_array($labels) || !array_key_exists('fk_aplicacao', $labels)) {
+                        $extrafields->addExtraField(
+                                'fk_aplicacao',
+                                'Aplicação',
+                                'link',
+                                150,
+                                '',
+                                'projet_task',
+                                0,
+                                0,
+                                '',
+                                array('options' => array('Aplicacao:safra/class/aplicacao.class.php:1' => null)),
+                                1,
+                                '',
+                                'isModEnabled("safra")'
+                        );
+                }
+
+                $resourceTable = MAIN_DB_PREFIX.'safra_aplicacao_resource';
+                if (!is_array($db->DDLDescTable($resourceTable, $resourceTable))) {
+                        $sql = 'CREATE TABLE IF NOT EXISTS '.$resourceTable.' ('
+                                .'rowid integer AUTO_INCREMENT PRIMARY KEY NOT NULL, '
+                                .'fk_aplicacao integer NOT NULL, '
+                                .'element_type varchar(32) NOT NULL, '
+                                .'fk_target integer, '
+                                .'label varchar(255), '
+                                .'note text'
+                                .') ENGINE=innodb;';
+                        if ($db->query($sql)) {
+                                $db->query('ALTER TABLE '.$resourceTable.' ADD INDEX idx_safra_aplicacao_resource_fk_aplicacao (fk_aplicacao)');
+                                $db->query('ALTER TABLE '.$resourceTable.' ADD INDEX idx_safra_aplicacao_resource_type (element_type)');
+                                $db->query('ALTER TABLE '.$resourceTable.' ADD CONSTRAINT llx_safra_aplicacao_resource_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES '.MAIN_DB_PREFIX.'safra_aplicacao(rowid)');
+                        } else {
+                                dol_syslog(__METHOD__.' failed to create safra_aplicacao_resource: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+        }
+
+        /**
+         * Build textual description for linked task.
+         *
+         * @return string
+         */
+        public function buildTaskDescription()
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'projects', 'stocks', 'product'));
+
+                $output = array();
+
+                if (!empty($this->label)) {
+                        $output[] = $langs->trans('Label').': '.dol_escape_htmltag($this->label);
+                }
+
+                if (!empty($this->qty)) {
+                        $output[] = $langs->trans('SafraAplicacaoAreaHa').': '.price2num($this->qty, '2');
+                }
+
+                if (!empty($this->date_application)) {
+                        $output[] = $langs->trans('Date').': '.dol_print_date($this->date_application, 'day');
+                }
+
+                if (!empty($this->description)) {
+                        $output[] = trim($this->description);
+                }
+
+                if (!empty($this->lines)) {
+                        $output[] = $langs->trans('SafraAplicacaoTaskProducts');
+                        foreach ($this->lines as $line) {
+                                $lineLabel = trim($line->label);
+                                if ($line->fk_product > 0 && $lineLabel === '') {
+                                        require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+                                        $product = new Product($this->db);
+                                        if ($product->fetch($line->fk_product) > 0) {
+                                                $lineLabel = $product->ref;
+                                                if (!empty($product->label)) {
+                                                        $lineLabel .= ' - '.$product->label;
+                                                }
+                                        }
+                                }
+
+                                $doseParts = array();
+                                if (!empty($line->dose)) {
+                                        $doseParts[] = price2num($line->dose, 4).' '.$line->dose_unit;
+                                }
+                                if (!empty($line->total_qty)) {
+                                        $doseParts[] = $langs->trans('Total').': '.price2num($line->total_qty, 4);
+                                }
+                                if (!empty($line->area_ha)) {
+                                        $doseParts[] = $langs->trans('SafraAplicacaoAreaHa').': '.price2num($line->area_ha, 4);
+                                }
+
+                                $output[] = '- '.($lineLabel !== '' ? $lineLabel : $langs->trans('Product')).(!empty($doseParts) ? ' ('.implode(', ', $doseParts).')' : '');
+                        }
+                }
+
+                if (!empty($this->resources)) {
+                        foreach ($this->resources as $type => $items) {
+                                if (empty($items)) {
+                                        continue;
+                                }
+
+                                $labelKey = 'SafraAplicacaoResource'.ucfirst($type);
+                                $output[] = $langs->trans($labelKey);
+                                foreach ($items as $item) {
+                                        $resourceLabel = $item['label'];
+                                        if ($resourceLabel === '' && !empty($item['fk_target'])) {
+                                                $resourceLabel = '#'.$item['fk_target'];
+                                        }
+
+                                        $lineText = '- '.$resourceLabel;
+                                        if (!empty($item['note'])) {
+                                                $lineText .= ' ('.$item['note'].')';
+                                        }
+                                        $output[] = $lineText;
+                                }
+                        }
+                }
+
+                if (!empty($this->calda_observacao)) {
+                        $output[] = $langs->trans('SafraAplicacaoCaldaObservation').': '.$this->calda_observacao;
+                }
+
+                return implode("\n", $output);
+        }
+
+        /**
+         * Mark application as completed: close task and consume stock.
+         *
+         * @param User $user User triggering completion
+         *
+         * @return int <0 if error, >0 success
+         */
+        public function markAsCompleted(User $user)
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                if (empty($this->id)) {
+                        $this->error = 'NotLoaded';
+                        return -1;
+                }
+
+                if ($this->status == self::STATUS_VALIDATED) {
+                        return 0;
+                }
+
+                if (empty($this->lines)) {
+                        $this->fetchLines();
+                }
+
+                $this->db->begin();
+
+                $missingWarehouse = false;
+                $summary = $this->summarizeLinesForStock($this->lines, $user, $missingWarehouse);
+                if ($missingWarehouse) {
+                        foreach ($summary as $item) {
+                                if (empty($item['fk_entrepot'])) {
+                                        $this->db->rollback();
+                                        $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                        return -1;
+                                }
+                        }
+                }
+
+                $appliedMovements = array();
+                if ($this->applyStockMovementsFromSummary($user, $summary, $appliedMovements) < 0) {
+                        $this->db->rollback();
+                        return -1;
+                }
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element
+                        .' SET status = '.self::STATUS_VALIDATED
+                        .', tms = tms'
+                        .' WHERE rowid = '.((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->error = $this->db->lasterror();
+                        $this->rollbackStockOperations($user, $appliedMovements);
+                        $this->db->rollback();
+                        return -1;
+                }
+
+                $this->status = self::STATUS_VALIDATED;
+
+                if ($this->syncTask($user) < 0) {
+                        $this->rollbackStockOperations($user, $appliedMovements);
+                        $this->db->rollback();
+                        return -1;
+                }
+
+                $this->db->commit();
+
+                return 1;
+        }
+
+        /**
+         * Create or update the project task linked to this application.
+         *
+         * @param User $user Current user
+         * @return int               Task rowid if synced, <0 on error
+         */
+        public function syncTask(User $user)
+        {
+                global $langs;
+
+                if (!isModEnabled('project')) {
+                        return 0;
+                }
+
+                if (empty($this->id)) {
+                        return 0;
+                }
+
+                if (empty($this->fk_project)) {
+                        $this->unlinkTask();
+                        return 0;
+                }
+
+                $langs->loadLangs(array('projects', 'safra@safra'));
+
+                require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+
+                if (empty($this->lines)) {
+                        $this->fetchLines();
+                }
+                if (empty($this->resources) || !array_key_exists('vehicle', $this->resources)) {
+                        $this->fetchResources();
+                }
+
+                $label = !empty($this->ref) ? $langs->trans('SafraAplicacaoTaskLabel', $this->ref) : $langs->trans('SafraAplicacaoTaskLabelNoRef');
+                $description = $this->buildTaskDescription();
+
+                $taskId = (int) $this->fk_task;
+                $task = new Task($this->db);
+                if ($taskId > 0 && $task->fetch($taskId) > 0) {
+                        // keep
+                } else {
+                        $taskId = 0;
+                }
+
+                if ($taskId === 0) {
+                        $task->fk_project = (int) $this->fk_project;
+                        $task->label = $label;
+                        $task->description = $description;
+                        if (!empty($this->date_application)) {
+                                $task->date_start = $this->date_application;
+                                if ($this->status == self::STATUS_VALIDATED) {
+                                        $task->date_end = $this->date_application;
+                                }
+                        }
+                        $task->progress = ($this->status == self::STATUS_VALIDATED) ? 100 : 0;
+                        $task->array_options = array('options_fk_aplicacao' => (int) $this->id);
+                        $task->fk_aplicacao = (int) $this->id;
+                        $res = $task->create($user);
+                        if ($res <= 0) {
+                                $this->error = $task->error ?: $task->errors;
+                                return -1;
+                        }
+                        $taskId = $task->id;
+                        $this->fk_task = $taskId;
+                } else {
+                        $task->fk_project = (int) $this->fk_project;
+                        $task->label = $label;
+                        $task->description = $description;
+                        if (!is_array($task->array_options)) {
+                                $task->array_options = array();
+                        }
+                        $task->array_options['options_fk_aplicacao'] = (int) $this->id;
+                        $task->fk_aplicacao = (int) $this->id;
+                        if (!empty($this->date_application)) {
+                                $task->date_start = $this->date_application;
+                                if ($this->status == self::STATUS_VALIDATED) {
+                                        $task->date_end = $this->date_application;
+                                } elseif ((int) $task->progress >= 100) {
+                                        $task->date_end = null;
+                                }
+                        }
+                        if ($this->status == self::STATUS_VALIDATED) {
+                                $task->progress = 100;
+                                if (empty($task->date_end)) {
+                                        $task->date_end = !empty($this->date_application) ? $this->date_application : dol_now();
+                                }
+                        } elseif ((int) $task->progress >= 100) {
+                                $task->progress = 0;
+                                $task->date_end = null;
+                        }
+
+                        $res = $task->update($user, 1);
+                        if ($res <= 0) {
+                                $this->error = $task->error ?: $task->errors;
+                                return -1;
+                        }
+                }
+
+                $this->updateTaskLinking($taskId);
+
+                return $taskId;
+        }
+
+        /**
+         * Persist relation between application and provided task.
+         *
+         * @param int $taskId Task identifier
+         * @return void
+         */
+        protected function updateTaskLinking($taskId)
+        {
+                if (empty($taskId) || empty($this->id)) {
+                        return;
+                }
+
+                $taskId = (int) $taskId;
+                $appId = (int) $this->id;
+
+                if ((int) $this->fk_task !== $taskId) {
+                        $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element.' SET fk_task = '.$taskId.' WHERE rowid = '.$appId;
+                        if ($this->db->query($sql)) {
+                                $this->fk_task = $taskId;
+                        } else {
+                                $this->error = $this->db->lasterror();
+                        }
+                }
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX."projet_task SET fk_aplicacao = ".$appId." WHERE rowid = ".$taskId;
+                if (!$this->db->query($sql)) {
+                        dol_syslog(__METHOD__.' failed to bind task '.$taskId.' to application '.$appId.': '.$this->db->lasterror(), LOG_WARNING);
+                }
+        }
+
+        /**
+         * Detach current linked task if any.
+         *
+         * @return void
+         */
+        protected function unlinkTask()
+        {
+                if (empty($this->fk_task)) {
+                        return;
+                }
+
+                $taskId = (int) $this->fk_task;
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element.' SET fk_task = NULL WHERE rowid = '.((int) $this->id);
+                if ($this->db->query($sql)) {
+                        $this->fk_task = null;
+                }
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX."projet_task SET fk_aplicacao = NULL WHERE rowid = ".$taskId;
+                $this->db->query($sql);
+
+                require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+                $task = new Task($this->db);
+                if ($task->fetch($taskId) > 0) {
+                        if (!is_array($task->array_options)) {
+                                $task->array_options = array();
+                        }
+                        $task->array_options['options_fk_aplicacao'] = '';
+                        $task->update(null, 1);
+                }
+        }
 
 
 	/**
@@ -496,7 +1543,11 @@ class Aplicacao extends CommonObject
 	 */
 	public function update(User $user, $notrigger = false)
 	{
-		return $this->updateCommon($user, $notrigger);
+		$res = $this->updateCommon($user, $notrigger);
+		if ($res > 0) {
+			$this->syncTask($user);
+		}
+		return $res;
 	}
 
 	/**
@@ -507,10 +1558,54 @@ class Aplicacao extends CommonObject
 	 * @return int             Return integer <0 if KO, >0 if OK
 	 */
 	public function delete(User $user, $notrigger = false)
-	{
-		return $this->deleteCommon($user, $notrigger);
-		//return $this->deleteCommon($user, $notrigger, 1);
-	}
+        {
+                if (empty($this->id) && !empty($this->rowid)) {
+                        $this->id = (int) $this->rowid;
+                }
+                if (empty($this->id)) {
+                        return 0;
+                }
+
+                if (empty($this->lines)) {
+                        $this->fetchLines();
+                }
+
+                $this->db->begin();
+
+                global $langs;
+
+                $summary = $this->summarizeLinesForStock($this->lines, $user);
+                $revertedOperations = array();
+                if ($this->status == self::STATUS_VALIDATED && $user instanceof User) {
+                        $langs->loadLangs(array('safra@safra'));
+                        foreach ($summary as $item) {
+                                if (empty($item['fk_entrepot'])) {
+                                        $this->error = $langs->trans('SafraAplicacaoMissingWarehouse');
+                                        $this->db->rollback();
+                                        return -1;
+                                }
+                        }
+
+                        if ($this->revertStockMovements($user, $summary, $revertedOperations) < 0) {
+                                $this->db->rollback();
+                                return -1;
+                        }
+                }
+
+                $this->unlinkTask();
+
+                $res = $this->deleteCommon($user, $notrigger);
+                if ($res > 0) {
+                        $this->db->commit();
+                } else {
+                        if (!empty($revertedOperations) && $user instanceof User) {
+                                $this->rollbackStockOperations($user, $revertedOperations);
+                        }
+                        $this->db->rollback();
+                }
+
+                return $res;
+        }
 
 	/**
 	 *  Delete a line of object in database
@@ -685,7 +1780,13 @@ class Aplicacao extends CommonObject
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'SAFRA_MYOBJECT_UNVALIDATE');
+		$result = $this->setStatusCommon($user, self::STATUS_DRAFT, $notrigger, 'SAFRA_MYOBJECT_UNVALIDATE');
+		if ($result > 0) {
+			$this->status = self::STATUS_DRAFT;
+			$this->syncTask($user);
+		}
+
+		return $result;
 	}
 
 	/**
@@ -709,7 +1810,13 @@ class Aplicacao extends CommonObject
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SAFRA_MYOBJECT_CANCEL');
+		$result = $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SAFRA_MYOBJECT_CANCEL');
+		if ($result > 0) {
+			$this->status = self::STATUS_CANCELED;
+			$this->syncTask($user);
+		}
+
+		return $result;
 	}
 
 	/**
@@ -733,7 +1840,13 @@ class Aplicacao extends CommonObject
 		 return -1;
 		 }*/
 
-		return $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SAFRA_MYOBJECT_REOPEN');
+		$result = $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SAFRA_MYOBJECT_REOPEN');
+		if ($result > 0) {
+			$this->status = self::STATUS_VALIDATED;
+			$this->syncTask($user);
+		}
+
+		return $result;
 	}
 
 	/**

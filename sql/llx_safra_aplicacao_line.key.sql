@@ -1,0 +1,5 @@
+ALTER TABLE llx_safra_aplicacao_line ADD INDEX idx_safra_aplicacao_line_fk_aplicacao (fk_aplicacao);
+ALTER TABLE llx_safra_aplicacao_line ADD INDEX idx_safra_aplicacao_line_fk_product (fk_product);
+ALTER TABLE llx_safra_aplicacao_line ADD INDEX idx_safra_aplicacao_line_fk_formulado (fk_produto_formulado);
+ALTER TABLE llx_safra_aplicacao_line ADD INDEX idx_safra_aplicacao_line_fk_produtotecnico (fk_produtotecnico);
+ALTER TABLE llx_safra_aplicacao_line ADD CONSTRAINT llx_safra_aplicacao_line_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES llx_safra_aplicacao(rowid);

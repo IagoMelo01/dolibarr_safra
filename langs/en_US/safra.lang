@@ -391,3 +391,45 @@ ZoneamentoSoilsLabelShort=Soils
 ZoneamentoCycleLabel=Cycle
 ZoneamentoCycleLabelShort=Cycles
 ZoneamentoCultivoLabel=System
+
+#
+# Application assistant
+#
+SafraAplicacaoAreaHa = Applied area (ha)
+SafraAplicacaoDate = Application date
+SafraAplicacaoCaldaObservation = Spray mixture notes
+SafraAplicacaoTaskProducts = Products to apply
+SafraAplicacaoTaskLabel = Application %s
+SafraAplicacaoTaskLabelNoRef = Application
+SafraAplicacaoResourceVehicle = Vehicles
+SafraAplicacaoResourceImplement = Implements
+SafraAplicacaoResourcePerson = Team
+SafraAplicacaoStockMovementLabel = Application %s
+SafraAplicacaoMissingWarehouse = Select a warehouse for each product line before completing the application.
+SafraAplicacaoTechnicalProduct = Technical product
+SafraAplicacaoFormulatedProduct = Formulated product
+SafraAplicacaoSearchMode = Search by
+SafraAplicacaoCatalogOption = Catalog option
+SafraAplicacaoTalhaoInfo = Field information
+SafraAplicacaoAddNewProduct = Add new product
+SafraAplicacaoErrorTalhaoRequired = You must select a field before continuing.
+SafraAplicacaoNoWarehouseProducts = No products available for the selected warehouse.
+SafraAplicacaoResources = Resources
+SafraAplicacaoSelectTalhao = Select a field
+SafraAplicacaoTalhao = Field
+SafraAplicacaoTalhaoNotLinked = No field linked to the selected project.
+SafraAplicacaoTalhaoAreaFormat = Area: %s ha
+SafraAplicacaoTalhaoMunicipioFormat = Municipality: %s
+SafraAplicacaoNoLinkedProducts = No linked stock products
+SafraAplicacaoAddLinkedProduct = Add new
+AplicacaoCreateAssistant = Application assistant
+SafraAplicacaoViewTask = View task
+SafraAplicacaoComplete = Mark as completed
+
+SafraAplicacaoCaldaCalculation = Mixture calculation
+ApplicationRate = Application rate (L/ha)
+TankCapacity = Tank capacity (L)
+AreaPerTank = Area per tank
+QuantityPerTank = Quantity per tank
+SaveAsNote = Save as note
+

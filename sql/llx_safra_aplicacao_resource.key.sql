@@ -1,0 +1,3 @@
+ALTER TABLE llx_safra_aplicacao_resource ADD INDEX idx_safra_aplicacao_resource_fk_aplicacao (fk_aplicacao);
+ALTER TABLE llx_safra_aplicacao_resource ADD INDEX idx_safra_aplicacao_resource_type (element_type);
+ALTER TABLE llx_safra_aplicacao_resource ADD CONSTRAINT llx_safra_aplicacao_resource_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES llx_safra_aplicacao(rowid);

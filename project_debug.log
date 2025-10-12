@@ -1,0 +1,1 @@
+{"project_sql_fallback":"SELECT p.rowid, p.ref, p.title, p.dateo, p.datee, p.fk_statut, NULL AS talhao_id FROM llx_projet AS p WHERE p.entity IN (1) ORDER BY p.ref ASC","allowed":[1,2],"order":[1,2],"map_ids":[1,2],"using_fallback":1}
