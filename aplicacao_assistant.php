@@ -293,9 +293,10 @@ document.addEventListener('DOMContentLoaded',function(){
     const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
     Object.keys(allProducts||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=allProducts[k]; sel.appendChild(o); });
   }
+  const warehousePlaceholder = <?php echo json_encode($langs->trans('SelectWarehouse') ?: $langs->trans('Select') ?: 'Selecione um armazém'); ?>;
   function fillWarehouses(sel){
     sel.innerHTML='';
-    const ph=document.createElement('option'); ph.value=''; ph.textContent='-'; sel.appendChild(ph);
+    const ph=document.createElement('option'); ph.value=''; ph.textContent=warehousePlaceholder; ph.dataset.placeholder='1'; sel.appendChild(ph);
     Object.keys(warehouses||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=warehouses[k]; sel.appendChild(o); });
   }
   function selectFirstNonEmpty(sel){
@@ -385,6 +386,7 @@ function ensureWarehouseOption(selectEl, warehouseId){
     const warehouseSelect=document.createElement('select');
     warehouseSelect.className='flat minwidth200';
     fillWarehouses(warehouseSelect);
+    warehouseSelect.dataset.user='';
 
     const warehouseHidden=document.createElement('input');
     warehouseHidden.type='hidden';
@@ -429,31 +431,31 @@ function ensureWarehouseOption(selectEl, warehouseId){
     function rec(){ it.value=((parseFloat(ia.value)||0)*(parseFloat(id.value)||0)).toFixed(4); }
     ia.addEventListener('input',rec); id.addEventListener('input',rec); rec();
 
-    function resetWarehouseSelection(){
-      warehouseSelect.dataset.user = '';
+    function setWarehouseValue(value, markUser){
+      const stringValue = value ? String(value) : '';
       if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2 && window.jQuery(warehouseSelect).data('select2')){
-        window.jQuery(warehouseSelect).val(null).trigger('change');
+        window.jQuery(warehouseSelect).val(stringValue || null).trigger('change');
       } else {
-        warehouseSelect.value = '';
+        warehouseSelect.value = stringValue;
       }
-      warehouseHidden.value = '0';
+      warehouseHidden.value = stringValue && stringValue !== '0' ? stringValue : '0';
+      warehouseSelect.dataset.user = markUser ? '1' : '';
+    }
+
+    function resetWarehouseSelection(){
+      setWarehouseValue('', false);
     }
 
     function applyDefaultWarehouse(productId){
-      const def = defaultWarehouses && defaultWarehouses[String(productId)];
+      const key = productId ? String(productId) : '';
+      const def = key && defaultWarehouses ? defaultWarehouses[key] : null;
       if(!def){
         resetWarehouseSelection();
         return;
       }
       if(warehouseSelect.dataset.user === '1') return;
       ensureWarehouseOption(warehouseSelect, def);
-      warehouseSelect.dataset.user = '';
-      if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2 && window.jQuery(warehouseSelect).data('select2')){
-        window.jQuery(warehouseSelect).val(String(def)).trigger('change');
-      } else {
-        warehouseSelect.value = String(def);
-      }
-      warehouseHidden.value = String(def);
+      setWarehouseValue(def, false);
     }
 
     pUI.addEventListener('change',()=>{
@@ -463,10 +465,25 @@ function ensureWarehouseOption(selectEl, warehouseId){
       rec();
     });
 
+    if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
+      window.jQuery(pUI).on('select2:select select2:clear',()=>{
+        pHidden.value = pUI.value || '';
+        warehouseSelect.dataset.user = '';
+        applyDefaultWarehouse(pHidden.value);
+        rec();
+      });
+    }
+
     warehouseSelect.addEventListener('change',()=>{
       warehouseHidden.value = warehouseSelect.value || '0';
       warehouseSelect.dataset.user = warehouseSelect.value && warehouseSelect.value !== '0' ? '1' : '';
     });
+    if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
+      window.jQuery(warehouseSelect).on('select2:select select2:clear',()=>{
+        warehouseHidden.value = warehouseSelect.value || '0';
+        warehouseSelect.dataset.user = warehouseSelect.value && warehouseSelect.value !== '0' ? '1' : '';
+      });
+    }
 
     let initialWarehouse = null;
     if(pref && pref.fk_entrepot){
@@ -479,12 +496,7 @@ function ensureWarehouseOption(selectEl, warehouseId){
 
     if(initialWarehouse){
       ensureWarehouseOption(warehouseSelect, initialWarehouse);
-      if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
-        window.jQuery(warehouseSelect).val(initialWarehouse).trigger('change');
-      } else {
-        warehouseSelect.value = initialWarehouse;
-      }
-      warehouseHidden.value = initialWarehouse;
+      setWarehouseValue(initialWarehouse, true);
     } else {
       applyDefaultWarehouse(pHidden.value);
       warehouseHidden.value = warehouseSelect.value || '0';
