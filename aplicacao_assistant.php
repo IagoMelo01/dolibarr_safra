@@ -35,18 +35,32 @@ $warehouseEntityFilter = trim(getEntity('stock'));
 if ($warehouseEntityFilter === '') {
     $warehouseEntityFilter = (string) ((int) $conf->entity);
 }
-$warehousesSql='SELECT rowid, ref, description, lieu FROM '.MAIN_DB_PREFIX."entrepot".' WHERE entity IN ('.$warehouseEntityFilter.') ORDER BY ref ASC';
+$warehouseColumns=array('description'=>safraColumnExists($db,'entrepot','description'));
+$warehouseColumns['label']=safraColumnExists($db,'entrepot','label');
+$warehouseColumns['lieu']=safraColumnExists($db,'entrepot','lieu');
+$warehouseSelectFields=array('rowid','ref');
+foreach(array('description','label','lieu') as $col){
+    if(!empty($warehouseColumns[$col])) $warehouseSelectFields[]=$col;
+}
+$warehousesSql='SELECT '.implode(', ',$warehouseSelectFields).' FROM '.MAIN_DB_PREFIX."entrepot".' WHERE entity IN ('.$warehouseEntityFilter.') ORDER BY ref ASC';
 $warehousesError=null;
+$warehouseColumnsUsed=$warehouseSelectFields;
 $rw=$db->query($warehousesSql);
 if($rw){
     while($ow=$db->fetch_object($rw)){
         $parts=array();
         $ref=trim((string) $ow->ref);
-        $lieu=trim((string) $ow->lieu);
-        $lib=trim((string) $ow->description);
+        $candidates=array();
+        if(!empty($warehouseColumns['lieu'])) $candidates[] = trim((string) $ow->lieu);
+        if(!empty($warehouseColumns['label'])) $candidates[] = trim((string) $ow->label);
+        if(!empty($warehouseColumns['description'])) $candidates[] = trim((string) $ow->description);
         if($ref!=='') $parts[]=$ref;
-        if($lieu!=='' && $lieu!==$ref) $parts[]=$lieu;
-        elseif($lib!=='' && $lib!==$ref) $parts[]=$lib;
+        foreach($candidates as $cand){
+            if($cand!=='' && $cand!==$ref){
+                $parts[]=$cand;
+                break;
+            }
+        }
         if(empty($parts)) $parts[]='#'.(int)$ow->rowid;
         $warehouses[(int)$ow->rowid]=implode(' - ', $parts);
     }
@@ -124,6 +138,7 @@ if($__debug){
         'warehouses_first' => array_slice($warehouses,0,10,true),
         'warehouses_sql' => $warehousesSql,
         'warehouses_error' => $warehousesError,
+        'warehouses_fields' => $warehouseSelectFields,
         'vehicles_count' => count($vehicles),
         'vehicles_first' => array_slice($vehicles,0,10,true),
         'implements_count' => count($implements),
@@ -420,8 +435,8 @@ function ensureWarehouseOption(selectEl, warehouseId){
         window.jQuery(warehouseSelect).val(null).trigger('change');
       } else {
         warehouseSelect.value = '';
-        warehouseHidden.value = '0';
       }
+      warehouseHidden.value = '0';
     }
 
     function applyDefaultWarehouse(productId){
@@ -437,8 +452,8 @@ function ensureWarehouseOption(selectEl, warehouseId){
         window.jQuery(warehouseSelect).val(String(def)).trigger('change');
       } else {
         warehouseSelect.value = String(def);
-        warehouseHidden.value = String(def);
       }
+      warehouseHidden.value = String(def);
     }
 
     pUI.addEventListener('change',()=>{
@@ -468,8 +483,8 @@ function ensureWarehouseOption(selectEl, warehouseId){
         window.jQuery(warehouseSelect).val(initialWarehouse).trigger('change');
       } else {
         warehouseSelect.value = initialWarehouse;
-        warehouseHidden.value = initialWarehouse;
       }
+      warehouseHidden.value = initialWarehouse;
     } else {
       applyDefaultWarehouse(pHidden.value);
       warehouseHidden.value = warehouseSelect.value || '0';
