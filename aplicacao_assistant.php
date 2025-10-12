@@ -492,7 +492,6 @@ function ensureWarehouseOption(selectEl, warehouseId){
 
     body.appendChild(row);
     enhanceSelectWithSearch(pUI, searchPlaceholder, row);
-    enhanceSelectWithSearch(warehouseSelect, searchPlaceholder, row);
     if(DEBUG){ try { console.log('DEBUG product options', pUI.options.length); } catch(e){} }
     idx++;
   }
