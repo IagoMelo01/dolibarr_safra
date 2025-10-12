@@ -399,6 +399,8 @@ SafraAplicacaoAreaHa = Applied area (ha)
 SafraAplicacaoDate = Application date
 SafraAplicacaoCaldaObservation = Spray mixture notes
 SafraAplicacaoTaskProducts = Products to apply
+SafraAplicacaoTaskLabel = Application %s
+SafraAplicacaoTaskLabelNoRef = Application
 SafraAplicacaoResourceVehicle = Vehicles
 SafraAplicacaoResourceImplement = Implements
 SafraAplicacaoResourcePerson = Team
@@ -423,3 +425,11 @@ SafraAplicacaoAddLinkedProduct = Add new
 AplicacaoCreateAssistant = Application assistant
 SafraAplicacaoViewTask = View task
 SafraAplicacaoComplete = Mark as completed
+
+SafraAplicacaoCaldaCalculation = Mixture calculation
+ApplicationRate = Application rate (L/ha)
+TankCapacity = Tank capacity (L)
+AreaPerTank = Area per tank
+QuantityPerTank = Quantity per tank
+SaveAsNote = Save as note
+

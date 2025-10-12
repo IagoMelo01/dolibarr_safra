@@ -1984,6 +1984,24 @@ class modSafra extends DolibarrModules
 			);
 
 
+		// Adicionar extrafield para vincular Aplicação às tarefas
+		$extrafields->addExtraField(
+			'fk_aplicacao',
+			'Aplicação',
+			'link',
+			150,
+			'',
+			'projet_task',
+			0,
+			0,
+			'',
+			array('options' => array("Aplicacao:safra/class/aplicacao.class.php:1"=>null)),
+			1,
+			'',
+			'isModEnabled("safra")'
+		);
+
+
 		// Create extrafields during init
 		//include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 		//$extrafields = new ExtraFields($this->db);

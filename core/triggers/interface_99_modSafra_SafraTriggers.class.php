@@ -1055,6 +1055,102 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 return $alerts;
         }
 
+        public function taskModify($action, $task, User $user, Translate $langs, Conf $conf)
+        {
+                if (empty($task->id)) {
+                        return 0;
+                }
+
+                $aplicacaoId = $this->getAplicacaoIdFromTask($task);
+                if ($aplicacaoId <= 0) {
+                        return 0;
+                }
+
+                dol_include_once('/safra/class/aplicacao.class.php');
+
+                $aplicacao = new Aplicacao($this->db);
+                if ($aplicacao->fetch($aplicacaoId) <= 0) {
+                        return 0;
+                }
+
+                if ((int) $aplicacao->fk_task !== (int) $task->id) {
+                        $aplicacao->fk_task = (int) $task->id;
+                        if (empty($aplicacao->fk_project) && !empty($task->fk_project)) {
+                                $aplicacao->fk_project = $task->fk_project;
+                        }
+                        $aplicacao->syncTask($user);
+                }
+
+                $progress = isset($task->progress) ? (int) $task->progress : 0;
+
+                if ($progress >= 100 && $aplicacao->status != Aplicacao::STATUS_VALIDATED) {
+                        $res = $aplicacao->markAsCompleted($user);
+                        if ($res < 0) {
+                                $this->errors[] = $aplicacao->error;
+                                return -1;
+                        }
+                } elseif ($progress < 100 && $aplicacao->status == Aplicacao::STATUS_VALIDATED) {
+                        $res = $aplicacao->setDraft($user, 1);
+                        if ($res < 0) {
+                                $this->errors[] = $aplicacao->error;
+                                return -1;
+                        }
+                        $aplicacao->syncTask($user);
+                }
+
+                return 0;
+        }
+
+        public function taskDelete($action, $task, User $user, Translate $langs, Conf $conf)
+        {
+                $aplicacaoId = $this->getAplicacaoIdFromTask($task);
+                if ($aplicacaoId <= 0) {
+                        return 0;
+                }
+
+                dol_include_once('/safra/class/aplicacao.class.php');
+
+                $aplicacao = new Aplicacao($this->db);
+                if ($aplicacao->fetch($aplicacaoId) <= 0) {
+                        return 0;
+                }
+
+                $sql = 'UPDATE '.MAIN_DB_PREFIX."safra_aplicacao SET fk_task = NULL WHERE rowid = ".((int) $aplicacaoId);
+                if (!$this->db->query($sql)) {
+                        dol_syslog(__METHOD__.' failed to detach task for application '.$aplicacaoId.': '.$this->db->lasterror(), LOG_WARNING);
+                }
+
+                return 0;
+        }
+
+        private function getAplicacaoIdFromTask($task)
+        {
+                $taskId = isset($task->id) ? (int) $task->id : 0;
+                $fkAplicacao = 0;
+
+                if (!empty($task->array_options) && is_array($task->array_options) && !empty($task->array_options['options_fk_aplicacao'])) {
+                        $fkAplicacao = (int) $task->array_options['options_fk_aplicacao'];
+                }
+
+                if (!$fkAplicacao && !empty($task->fk_aplicacao)) {
+                        $fkAplicacao = (int) $task->fk_aplicacao;
+                }
+
+                if (!$fkAplicacao && $taskId > 0) {
+                        dol_include_once('/projet/class/task.class.php');
+                        $tmpTask = new Task($this->db);
+                        if ($tmpTask->fetch($taskId) > 0) {
+                                if (!empty($tmpTask->array_options['options_fk_aplicacao'])) {
+                                        $fkAplicacao = (int) $tmpTask->array_options['options_fk_aplicacao'];
+                                } elseif (!empty($tmpTask->fk_aplicacao)) {
+                                        $fkAplicacao = (int) $tmpTask->fk_aplicacao;
+                                }
+                        }
+                }
+
+                return $fkAplicacao;
+        }
+
         private function formatNumber($value, $decimals)
         {
                 if ($value === null || $value === '') {

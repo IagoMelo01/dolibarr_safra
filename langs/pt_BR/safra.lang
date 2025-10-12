@@ -403,6 +403,8 @@ SafraAplicacaoAreaHa = √Årea aplicada (ha)
 SafraAplicacaoDate = Data da aplica√ß√£o
 SafraAplicacaoCaldaObservation = Observa√ß√µes da calda
 SafraAplicacaoTaskProducts = Produtos para aplicar
+SafraAplicacaoTaskLabel = AplicaÁ„o %s
+SafraAplicacaoTaskLabelNoRef = AplicaÁ„o
 SafraAplicacaoResourceVehicle = Ve√≠culos
 SafraAplicacaoResourceImplement = Implementos
 SafraAplicacaoResourcePerson = Equipe
@@ -427,3 +429,11 @@ SafraAplicacaoAddLinkedProduct = Adicionar novo
 AplicacaoCreateAssistant = Assistente de aplica√ß√£o
 SafraAplicacaoViewTask = Visualizar tarefa
 SafraAplicacaoComplete = Marcar como conclu√≠da
+
+SafraAplicacaoCaldaCalculation = C·lculo de calda
+ApplicationRate = Taxa de aplicaÁ„o (L/ha)
+TankCapacity = Capacidade do tanque (L)
+AreaPerTank = ¡rea aplicada por tanque
+QuantityPerTank = Quantidade por tanque
+SaveAsNote = Salvar como observaÁ„o
+

@@ -324,36 +324,13 @@ if ($action == 'create') {
 
 // Part to edit record
 if (($id || $ref) && $action == 'edit') {
-	print load_fiche_titre($langs->trans("Aplicacao"), '', 'object_'.$object->picto);
-
-	print '<form method="POST" action="'.$_SERVER["PHP_SELF"].'">';
-	print '<input type="hidden" name="token" value="'.newToken().'">';
-	print '<input type="hidden" name="action" value="update">';
-	print '<input type="hidden" name="id" value="'.$object->id.'">';
-	if ($backtopage) {
-		print '<input type="hidden" name="backtopage" value="'.$backtopage.'">';
-	}
-	if ($backtopageforcancel) {
-		print '<input type="hidden" name="backtopageforcancel" value="'.$backtopageforcancel.'">';
-	}
-
-	print dol_get_fiche_head();
-
-	print '<table class="border centpercent tableforfieldedit">'."\n";
-
-	// Common attributes
-	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_edit.tpl.php';
-
-	// Other attributes
-	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_edit.tpl.php';
-
-	print '</table>';
-
-	print dol_get_fiche_end();
-
-	print $form->buttonsSaveCancel();
-
-	print '</form>';
+    // Redirect after page header is already printed -> use JS redirect with fallback link
+    $target = dol_buildpath('/safra/aplicacao_assistant.php', 1).'?action=edit&id='.$object->id;
+    print '<div class="center">';
+    print '<br><br><strong>'.$langs->trans('Loading').'</strong><br>';
+    print '<a class="button" href="'.$target.'">'.$langs->trans('ClickHere').'</a>';
+    print '</div>';
+    print '<script>window.location.href='.json_encode($target).';</script>';
 }
 
 // Part to show record
@@ -492,6 +469,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
                 $warehouseCache = array();
                 $productStatic = new Product($db);
                 $warehouseStatic = new Entrepot($db);
+                $warehouseStatic = new Entrepot($db);
 
                 print '<div class="fichecenter">';
                 print '<div class="titre">'.$langs->trans('SafraAplicacaoTaskProducts').'</div>';
@@ -552,6 +530,10 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
                                 $formuladoLabel = $formuladoCache[$line->fk_produto_formulado];
                         }
 
+                        print '<tr class="oddeven">';
+                        print '<td>'.$productLabel.'</td>';
+                        print '<td>'.$tecnicoLabel.'</td>';
+                        print '<td>'.$formuladoLabel.'</td>';
                         $warehouseLabel = '';
                         if (!empty($line->fk_entrepot)) {
                                 if (!isset($warehouseCache[$line->fk_entrepot])) {
@@ -563,11 +545,6 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
                                 }
                                 $warehouseLabel = $warehouseCache[$line->fk_entrepot];
                         }
-
-                        print '<tr class="oddeven">';
-                        print '<td>'.$productLabel.'</td>';
-                        print '<td>'.$tecnicoLabel.'</td>';
-                        print '<td>'.$formuladoLabel.'</td>';
                         print '<td class="right">'.price2num($line->area_ha, '4').'</td>';
                         print '<td class="right">'.price2num($line->dose, '4').'</td>';
                         print '<td class="right">'.dol_escape_htmltag($line->dose_unit).'</td>';

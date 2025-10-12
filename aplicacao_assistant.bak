@@ -1,0 +1,1176 @@
+<?php
+/*
+ * Assistant for creating crop applications - modern layout.
+ */
+
+$res = 0;
+if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
+	$res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'].'/main.inc.php';
+}
+if (!$res && !empty($_SERVER['SCRIPT_FILENAME'])) {
+	$tmp = $_SERVER['SCRIPT_FILENAME'];
+	$tmp2 = realpath(__FILE__);
+	$i = strlen($tmp) - 1;
+	$j = strlen($tmp2) - 1;
+	while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
+		$i--;
+		$j--;
+	}
+	if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1)).'/main.inc.php')) {
+		$res = @include substr($tmp, 0, ($i + 1)).'/main.inc.php';
+	}
+	if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))).'/main.inc.php')) {
+		$res = @include dirname(substr($tmp, 0, ($i + 1))).'/main.inc.php';
+	}
+}
+if (!$res && file_exists('../main.inc.php')) {
+	$res = @include '../main.inc.php';
+}
+if (!$res && file_exists('../../main.inc.php')) {
+	$res = @include '../../main.inc.php';
+}
+if (!$res) {
+	die('Include of main fails');
+}
+
+if (!isModEnabled('safra')) {
+	accessforbidden();
+}
+
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
+
+dol_include_once('/safra/class/aplicacao.class.php');
+
+$langs->loadLangs(array('safra@safra', 'projects', 'products', 'stocks'));
+
+$action = GETPOST('action', 'aZ09');
+
+$form = new Form($db);
+$formProject = new FormProjets($db);
+
+$errors = array();
+$messages = array();
+
+function safraTableExists(DoliDB $db, $tablename)
+{
+	$info = $db->DDLDescTable(MAIN_DB_PREFIX.$tablename, $tablename);
+	return is_array($info);
+}
+
+function safraTableColumnExists(DoliDB $db, $tablename, $columnname)
+{
+	if (!safraTableExists($db, $tablename)) {
+		return false;
+	}
+
+	$sql = "SHOW COLUMNS FROM ".MAIN_DB_PREFIX.$tablename." LIKE '".$db->escape($columnname)."'";
+	$resql = $db->query($sql);
+	if ($resql) {
+		$exists = ($db->num_rows($resql) > 0);
+		$db->free($resql);
+		return $exists;
+	}
+
+	return false;
+}
+
+function safraGetProjectTalhaoColumn(DoliDB $db)
+{
+	if (safraTableColumnExists($db, 'projet_extrafields', 'fk_talhao')) {
+		return 'fk_talhao';
+	}
+	if (safraTableColumnExists($db, 'projet_extrafields', 'options_fk_talhao')) {
+		return 'options_fk_talhao';
+	}
+	return '';
+}
+
+function safraProjectStatusLabel($status, Translate $langs)
+{
+	switch ((int) $status) {
+		case 0:
+			return $langs->trans('ProjectStatusDraftShort');
+		case 1:
+			return $langs->trans('ProjectStatusOpenedShort');
+		case 2:
+			return $langs->trans('ProjectStatusClosedShort');
+	}
+
+	return '';
+}
+
+function safraFetchProjects(DoliDB $db, $talhaoColumn, Translate $langs, array $allowedIds = array(), array &$debug = null)
+{
+	$projects = array();
+	$order = array();
+
+	if (!isModEnabled('project') || !safraTableExists($db, 'projet')) {
+		return array($projects, $order);
+	}
+
+	$allowedIds = array_values(array_filter(array_map('intval', $allowedIds)));
+
+	$fields = 'p.rowid, p.ref, p.title, p.dateo, p.datee, p.fk_statut';
+	if ($talhaoColumn) {
+		$fields .= ', ef.'.$talhaoColumn.' AS talhao_id';
+	} else {
+		$fields .= ', NULL AS talhao_id';
+	}
+
+	$sql = 'SELECT '.$fields.' FROM '.MAIN_DB_PREFIX.'projet AS p';
+	if ($talhaoColumn) {
+		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'projet_extrafields AS ef ON ef.fk_object = p.rowid';
+	}
+	$sql .= ' WHERE p.entity IN ('.getEntity('project').')';
+	if (!empty($allowedIds)) {
+		$sql .= ' AND p.rowid IN ('.implode(',', $allowedIds).')';
+	}
+	$sql .= ' ORDER BY p.dateo DESC, p.ref ASC';
+	if (is_array($debug)) {
+		$debug['project_sql'] = $sql;
+	}
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$id = (int) $obj->rowid;
+			if ($id <= 0) {
+				continue;
+			}
+
+			$labelParts = array();
+			if (!empty($obj->ref)) {
+				$labelParts[] = $obj->ref;
+			}
+			if (!empty($obj->title)) {
+				$labelParts[] = $obj->title;
+			}
+			$label = trim(implode(' - ', $labelParts));
+			if ($label === '') {
+				$label = $langs->trans('Project').' #'.$id;
+			}
+
+			$projects[$id] = array(
+				'id' => $id,
+				'label' => $label,
+				'status' => (int) $obj->fk_statut,
+				'date_start' => $db->jdate($obj->dateo),
+				'date_end' => $db->jdate($obj->datee),
+				'talhao_id' => $obj->talhao_id ? (int) $obj->talhao_id : 0,
+			);
+			$order[] = $id;
+		}
+		$db->free($resql);
+	}
+
+	return array($projects, $order);
+}
+
+function safraFetchProducts(DoliDB $db)
+{
+	$list = array();
+	$sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX."product";
+	$sql .= ' WHERE entity IN ('.getEntity('product').')';
+	$sql .= ' ORDER BY ref ASC LIMIT 500';
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$label = $obj->ref;
+			if (!empty($obj->label)) {
+				$label .= ' - '.$obj->label;
+			}
+			$list[(int) $obj->rowid] = $label;
+		}
+		$db->free($resql);
+	}
+	return $list;
+}
+
+function safraFetchWarehouseProducts(DoliDB $db)
+{
+	$map = array();
+
+	if (!safraTableExists($db, 'product_stock')) {
+		return $map;
+	}
+
+	$sql = 'SELECT ps.fk_entrepot, p.rowid, p.ref, p.label'
+		.' FROM '.MAIN_DB_PREFIX.'product_stock AS ps'
+		.' INNER JOIN '.MAIN_DB_PREFIX."product AS p ON p.rowid = ps.fk_product";
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$warehouse = (int) $obj->fk_entrepot;
+			if (!isset($map[$warehouse])) {
+				$map[$warehouse] = array();
+			}
+			$label = $obj->ref;
+			if (!empty($obj->label)) {
+				$label .= ' - '.$obj->label;
+			}
+			$map[$warehouse][(int) $obj->rowid] = $label;
+		}
+		$db->free($resql);
+	}
+
+	return $map;
+}
+
+function safraFetchTalhoes(DoliDB $db)
+{
+	$list = array();
+
+	if (!safraTableExists($db, 'safra_talhao')) {
+		return $list;
+	}
+
+	$sql = 'SELECT t.rowid, t.ref, t.label, t.area, t.municipio, m.label AS municipio_label'
+		.' FROM '.MAIN_DB_PREFIX.'safra_talhao AS t'
+		.' LEFT JOIN '.MAIN_DB_PREFIX.'safra_municipio AS m ON m.rowid = t.municipio'
+		.' ORDER BY t.ref ASC';
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$id = (int) $obj->rowid;
+			if ($id <= 0) {
+				continue;
+			}
+
+			$labelParts = array();
+			if (!empty($obj->ref)) {
+				$labelParts[] = $obj->ref;
+			}
+			if (!empty($obj->label)) {
+				$labelParts[] = $obj->label;
+			}
+
+			$list[$id] = array(
+				'id' => $id,
+				'label' => implode(' - ', $labelParts),
+				'area' => (float) $obj->area,
+				'municipio' => $obj->municipio_label,
+				'url' => dol_buildpath('/safra/talhao_card.php', 1).'?id='.$id,
+			);
+		}
+		$db->free($resql);
+	}
+
+	return $list;
+}
+
+function safraCleanIdList($values)
+{
+	$out = array();
+	foreach ($values as $value) {
+		$id = (int) $value;
+		if ($id > 0) {
+			$out[$id] = $id;
+		}
+	}
+	return array_values($out);
+}
+
+function safraFetchAllProjects(DoliDB $db, $talhaoColumn, Translate $langs, array &$debug = null)
+{
+	$projects = array();
+	$order = array();
+
+	$fields = 'p.rowid, p.ref, p.title, p.dateo, p.datee, p.fk_statut';
+	if ($talhaoColumn) {
+		$fields .= ', ef.'.$talhaoColumn.' AS talhao_id';
+	} else {
+		$fields .= ', NULL AS talhao_id';
+	}
+
+	$sql = 'SELECT '.$fields.' FROM '.MAIN_DB_PREFIX.'projet AS p';
+	if ($talhaoColumn) {
+		$sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'projet_extrafields AS ef ON ef.fk_object = p.rowid';
+	}
+	$sql .= ' WHERE p.entity IN ('.getEntity('project').')';
+	$sql .= ' ORDER BY p.ref ASC';
+
+	if (is_array($debug)) {
+		$debug['project_sql_fallback'] = $sql;
+	}
+
+	$resql = $db->query($sql);
+	if ($resql) {
+		while ($obj = $db->fetch_object($resql)) {
+			$id = (int) $obj->rowid;
+			if ($id <= 0) {
+				continue;
+			}
+
+			$labelParts = array();
+			if (!empty($obj->ref)) {
+				$labelParts[] = $obj->ref;
+			}
+			if (!empty($obj->title)) {
+				$labelParts[] = $obj->title;
+			}
+
+			$label = trim(implode(' - ', $labelParts));
+			if ($label === '') {
+				$label = $langs->trans('Project').' #'.$id;
+			}
+
+			$dateStart = $db->jdate($obj->dateo);
+			$dateEnd = $db->jdate($obj->datee);
+
+			$projects[$id] = array(
+				'id' => $id,
+				'ref' => $obj->ref,
+				'title' => $obj->title,
+				'label' => $label,
+				'status' => (int) $obj->fk_statut,
+				'status_label' => safraProjectStatusLabel($obj->fk_statut, $langs),
+				'date_start' => $dateStart ? dol_print_date($dateStart, 'day', '', $langs, true) : '',
+				'date_end' => $dateEnd ? dol_print_date($dateEnd, 'day', '', $langs, true) : '',
+				'talhao_id' => !empty($obj->talhao_id) ? (int) $obj->talhao_id : 0,
+			);
+			$order[] = $id;
+		}
+		$db->free($resql);
+	}
+
+	return array($projects, $order);
+}
+
+$products = safraFetchProducts($db);
+$warehouseProductOptions = safraFetchWarehouseProducts($db);
+$warehouseOptions = array();
+if (safraTableExists($db, 'entrepot')) {
+	$sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX."entrepot";
+	$sql .= ' WHERE entity IN ('.getEntity('stock').')';
+	$sql .= ' ORDER BY ref ASC';
+	$res = $db->query($sql);
+	if ($res) {
+		while ($obj = $db->fetch_object($res)) {
+			$caption = $obj->ref;
+			if (!empty($obj->label)) {
+				$caption .= ' - '.$obj->label;
+			}
+			$warehouseOptions[(int) $obj->rowid] = $caption;
+		}
+		$db->free($res);
+	}
+}
+
+$talhaoList = safraFetchTalhoes($db);
+$talhaoColumn = safraGetProjectTalhaoColumn($db);
+$debugProjectInfo = array();
+$projectOptionsArray = $formProject->select_projects_list(-1, 0, 'fk_project', 24, 0, 1, 0, 0, 0, 1, '', 1);
+$allowedProjectIds = array();
+if (is_array($projectOptionsArray)) {
+	foreach ($projectOptionsArray as $option) {
+		if (!isset($option['key']) || (int) $option['key'] <= 0) {
+			continue;
+		}
+		$allowedProjectIds[] = (int) $option['key'];
+	}
+}
+list($projectMap, $projectOrder) = safraFetchProjects($db, $talhaoColumn, $langs, $allowedProjectIds, $debugProjectInfo);
+if (!empty($allowedProjectIds)) {
+	$projectOrder = array_values(array_intersect($allowedProjectIds, array_keys($projectMap)));
+} elseif (empty($projectOrder) && !empty($projectMap)) {
+	$projectOrder = array_keys($projectMap);
+}
+$usingFallbackProjects = 0;
+if (empty($projectMap)) {
+	list($projectMap, $projectOrder) = safraFetchAllProjects($db, $talhaoColumn, $langs, $debugProjectInfo);
+	$usingFallbackProjects = 1;
+}
+$debugProjectInfo['allowed'] = $allowedProjectIds;
+$debugProjectInfo['order'] = $projectOrder;
+$debugProjectInfo['map_ids'] = array_keys($projectMap);
+$debugProjectInfo['using_fallback'] = $usingFallbackProjects;
+file_put_contents(__DIR__.'/project_debug.log', json_encode($debugProjectInfo));
+if (defined('DOL_DATA_ROOT')) {
+	file_put_contents(DOL_DATA_ROOT.'/safra_aplicacao_project_debug.log', json_encode($debugProjectInfo));
+}
+$debugProjectFlag = (int) GETPOST('debug_project', 'int');
+$projectTalhaoMap = array();
+foreach ($projectMap as $project) {
+	if (!empty($project['talhao_id'])) {
+		$projectTalhaoMap[$project['id']] = $project['talhao_id'];
+	}
+}
+
+$vehicleOptions = safraTableExists($db, 'frota_veiculo') ? safraFetchPairs($db, 'frota_veiculo', array('ref' => 'placa', 'label' => 'descricao')) : array();
+$implementOptions = safraTableExists($db, 'frota_implemento') ? safraFetchPairs($db, 'frota_implemento', array('ref' => 'ref', 'label' => 'descricao')) : array();
+
+$resourcePersons = array();
+$sqlUsers = 'SELECT rowid, firstname, lastname, login FROM '.MAIN_DB_PREFIX."user WHERE statut = 1 ORDER BY lastname";
+$resUsers = $db->query($sqlUsers);
+if ($resUsers) {
+	while ($obj = $db->fetch_object($resUsers)) {
+		$label = trim($obj->firstname.' '.$obj->lastname);
+		if ($label === '') {
+			$label = $obj->login;
+		}
+		$resourcePersons[(int) $obj->rowid] = $label;
+	}
+	$db->free($resUsers);
+}
+
+$postedVehicles = GETPOST('vehicles', 'array');
+if (!is_array($postedVehicles)) {
+	$postedVehicles = array();
+}
+$postedImplements = GETPOST('implements', 'array');
+if (!is_array($postedImplements)) {
+	$postedImplements = array();
+}
+$postedPersons = GETPOST('persons', 'array');
+if (!is_array($postedPersons)) {
+	$postedPersons = array();
+}
+
+$postedLines = GETPOST('lines', 'array');
+if (!is_array($postedLines)) {
+	$postedLines = array();
+}
+
+$vehicleSelected = safraCleanIdList($postedVehicles);
+$implementSelected = safraCleanIdList($postedImplements);
+$personSelected = safraCleanIdList($postedPersons);
+
+$selectedProjectId = (int) GETPOST('fk_project', 'int');
+$selectedTalhaoId = (int) GETPOST('talhao_id', 'int');
+if ($selectedTalhaoId <= 0 && $selectedProjectId > 0 && isset($projectTalhaoMap[$selectedProjectId])) {
+	$selectedTalhaoId = (int) $projectTalhaoMap[$selectedProjectId];
+}
+if ($selectedTalhaoId > 0 && !isset($talhaoList[$selectedTalhaoId])) {
+	$selectedTalhaoId = 0;
+}
+
+$talhaoDetails = $selectedTalhaoId > 0 ? $talhaoList[$selectedTalhaoId] : null;
+
+$prefillLines = array();
+foreach ($postedLines as $line) {
+	if (!is_array($line)) {
+		continue;
+	}
+	$prefillLines[] = array(
+		'fk_entrepot' => isset($line['fk_entrepot']) ? (int) $line['fk_entrepot'] : 0,
+		'fk_product' => isset($line['fk_product']) ? (int) $line['fk_product'] : 0,
+		'area_ha' => isset($line['area_ha']) ? (string) $line['area_ha'] : '',
+		'dose' => isset($line['dose']) ? (string) $line['dose'] : '',
+		'dose_unit' => isset($line['dose_unit']) ? (string) $line['dose_unit'] : '',
+		'total_qty' => isset($line['total_qty']) ? (string) $line['total_qty'] : '',
+		'note' => isset($line['note']) ? (string) $line['note'] : '',
+	);
+}
+
+if ($action === 'save') {
+	if (!GETPOST('token') || !dol_verify_token(GETPOST('token'))) {
+		accessforbidden('Bad token');
+	}
+
+	$ref = trim(GETPOST('ref', 'alphanohtml'));
+	$label = trim(GETPOST('label', 'alphanohtml'));
+	$fkProject = (int) GETPOST('fk_project', 'int');
+	$qtyInput = GETPOST('qty', 'alphanohtml');
+	$areaHa = $qtyInput !== '' ? (double) str_replace(',', '.', $qtyInput) : 0;
+	if ($areaHa <= 0 && $talhaoDetails && !empty($talhaoDetails['area'])) {
+		$areaHa = (double) $talhaoDetails['area'];
+	}
+
+	$dateInput = trim(GETPOST('date_application', 'alphanohtml'));
+	$applicationDate = null;
+	if ($dateInput !== '') {
+		$tmpDate = dol_stringtotime($dateInput.' 00:00:00');
+		if ($tmpDate > 0) {
+			$applicationDate = $tmpDate;
+		} else {
+			$errors[] = $langs->trans('ErrorBadDateFormat');
+		}
+	}
+
+	$description = GETPOST('description', 'restricthtml');
+	$caldaObservacao = trim(GETPOST('calda_observacao', 'restricthtml'));
+
+	if ($selectedTalhaoId <= 0 && $fkProject > 0 && isset($projectTalhaoMap[$fkProject])) {
+		$selectedTalhaoId = (int) $projectTalhaoMap[$fkProject];
+		$talhaoDetails = $selectedTalhaoId > 0 && isset($talhaoList[$selectedTalhaoId]) ? $talhaoList[$selectedTalhaoId] : null;
+		if ($areaHa <= 0 && $talhaoDetails && !empty($talhaoDetails['area'])) {
+			$areaHa = (double) $talhaoDetails['area'];
+		}
+	}
+
+	if ($ref === '') {
+		$errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('Ref'));
+	}
+	if ($fkProject <= 0) {
+		$errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('Project'));
+	}
+	if ($selectedTalhaoId <= 0) {
+		$errors[] = $langs->trans('SafraAplicacaoErrorTalhaoRequired');
+	}
+
+	$lineData = GETPOST('lines', 'array');
+	$lineArray = array();
+	if (is_array($lineData)) {
+		foreach ($lineData as $line) {
+			$fkProduct = empty($line['fk_product']) ? 0 : (int) $line['fk_product'];
+			$dose = isset($line['dose']) ? (double) str_replace(',', '.', $line['dose']) : 0;
+			$doseUnit = isset($line['dose_unit']) ? $line['dose_unit'] : '';
+			$lineArea = isset($line['area_ha']) ? (double) str_replace(',', '.', $line['area_ha']) : $areaHa;
+			$totalQty = isset($line['total_qty']) ? (double) str_replace(',', '.', $line['total_qty']) : ($dose * $lineArea);
+
+			if ($fkProduct <= 0 || $dose <= 0 || $totalQty <= 0) {
+				continue;
+			}
+
+			$lineEntry = array(
+				'fk_product' => $fkProduct,
+				'fk_entrepot' => empty($line['fk_entrepot']) ? 0 : (int) $line['fk_entrepot'],
+				'label' => isset($line['label']) ? trim($line['label']) : '',
+				'dose' => $dose,
+				'dose_unit' => $doseUnit,
+				'area_ha' => $lineArea,
+				'total_qty' => $totalQty,
+				'note' => isset($line['note']) ? trim($line['note']) : '',
+			);
+
+			if ($lineEntry['label'] === '' && isset($products[$fkProduct])) {
+				$lineEntry['label'] = $products[$fkProduct];
+			}
+			$lineArray[] = $lineEntry;
+		}
+	}
+
+	if (empty($lineArray)) {
+		$errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('Products'));
+	}
+
+	if (empty($errors)) {
+		$application = new Aplicacao($db);
+		$application->ref = $ref;
+		$application->label = $label;
+		$application->fk_project = $fkProject > 0 ? $fkProject : null;
+		$application->qty = $areaHa;
+		$application->date_application = $applicationDate ?: null;
+		$application->description = $description;
+		$application->calda_observacao = $caldaObservacao;
+		$application->status = Aplicacao::STATUS_DRAFT;
+
+		$resCreate = $application->create($user);
+		if ($resCreate > 0) {
+			$application->replaceLines($lineArray);
+
+			$resourcePayload = array();
+			foreach ($vehicleSelected as $id) {
+				if (isset($vehicleOptions[$id])) {
+					$resourcePayload[] = array('type' => 'vehicle', 'fk_target' => $id, 'label' => $vehicleOptions[$id]);
+				}
+			}
+			foreach ($implementSelected as $id) {
+				if (isset($implementOptions[$id])) {
+					$resourcePayload[] = array('type' => 'implement', 'fk_target' => $id, 'label' => $implementOptions[$id]);
+				}
+			}
+			foreach ($personSelected as $id) {
+				if (isset($resourcePersons[$id])) {
+					$resourcePayload[] = array('type' => 'person', 'fk_target' => $id, 'label' => $resourcePersons[$id]);
+				}
+			}
+			$application->replaceResources($resourcePayload);
+
+			if (!empty($application->fk_project) && isModEnabled('project')) {
+				require_once DOL_DOCUMENT_ROOT.'/projet/class/task.class.php';
+				$task = new Task($db);
+				$task->fk_project = $application->fk_project;
+				$task->label = $application->label ?: $application->ref;
+				$task->description = $application->buildTaskDescription();
+				$task->date_start = $applicationDate ?: dol_now();
+				$task->date_end = $applicationDate ?: dol_now();
+				$task->progress = 0;
+				if ($task->create($user) > 0) {
+					$application->fk_task = $task->id;
+					$application->updateCommon('', array('fk_task' => $task->id));
+				}
+			}
+
+			setEventMessages($langs->trans('RecordSaved'), null, 'mesgs');
+			header('Location: '.dol_buildpath('/safra/aplicacao_card.php', 1).'?id='.$application->id);
+			exit;
+		} else {
+			$errors[] = $application->error ?: $application->errors;
+		}
+	}
+}
+
+$title = $langs->trans('Aplicacao').' - '.$langs->trans('New');
+
+$areaFieldValue = GETPOST('qty', 'alphanohtml');
+if ($areaFieldValue === '' && $talhaoDetails && !empty($talhaoDetails['area'])) {
+	$areaFieldValue = sprintf('%.4f', (float) $talhaoDetails['area']);
+}
+
+$talhaoSummary = $langs->trans('SafraAplicacaoTalhaoNotLinked');
+if ($talhaoDetails) {
+	$parts = array();
+	$label = dol_escape_htmltag($talhaoDetails['label']);
+	if (!empty($talhaoDetails['url'])) {
+		$parts[] = '<strong><a href="'.dol_escape_htmltag($talhaoDetails['url']).'" target="_blank" rel="noopener">'.$label.'</a></strong>';
+	} else {
+		$parts[] = '<strong>'.$label.'</strong>';
+	}
+	if (!empty($talhaoDetails['area'])) {
+		$parts[] = dol_escape_htmltag($langs->trans('SafraAplicacaoTalhaoAreaFormat', sprintf('%.2f', (float) $talhaoDetails['area'])));
+}
+	if (!empty($talhaoDetails['municipio'])) {
+		$parts[] = dol_escape_htmltag($langs->trans('SafraAplicacaoTalhaoMunicipioFormat', $talhaoDetails['municipio']));
+	}
+	$talhaoSummary = implode('<br>', $parts);
+}
+
+$projectOptionsHtml = '';
+foreach ($projectOrder as $projectId) {
+	if (!isset($projectMap[$projectId])) {
+		continue;
+	}
+	$selected = $projectId === $selectedProjectId ? ' selected' : '';
+	$projectOptionsHtml .= '<option value="'.$projectId.'"'.$selected.'>'.dol_escape_htmltag($projectMap[$projectId]['label']).'</option>';
+}
+
+$projectsDataJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$projectTalhaoJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$talhaoDataJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$productsJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$warehouseProductJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$warehouseOptionsJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$prefillLinesJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$labelsJson
+$ajaxProjectTalhaoJson = json_encode(dol_buildpath('/custom/safra/ajax/project_talhao.php', 1), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+llxHeader('', $title);
+?>
+<style>
+.safra-shell {max-width:1080px;margin:0 auto;padding:24px 16px 60px;}
+.safra-header {margin-bottom:24px;}
+.safra-header h1 {margin:0;font-size:26px;color:#0f172a;}
+.safra-header p {margin:6px 0 0;color:#475569;}
+.safra-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;}
+.safra-card {background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 12px 24px rgba(15,23,42,0.08);padding:20px;margin-bottom:20px;}
+.safra-card h2 {margin:0 0 16px;font-size:18px;color:#0f172a;}
+.safra-field {display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.safra-field label {font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#64748b;font-weight:600;}
+.safra-field input,
+.safra-field select,
+.safra-field textarea {border:1px solid #cbd5f5;border-radius:10px;padding:10px 12px;font-size:14px;color:#0f172a;background:#f8fafc;}
+.safra-field textarea {resize:vertical;min-height:100px;}\n.select2-container {width:100% !important;}\n.select2-container--default .select2-selection--single {border:1px solid #cbd5f5;border-radius:10px;height:44px;padding:6px 12px;background:#f8fafc;display:flex;align-items:center;}\n.select2-container--default .select2-selection--single .select2-selection__arrow {height:44px;}\n.select2-container--default .select2-selection--single .select2-selection__rendered {line-height:30px;color:#0f172a;padding-left:0;}\n.select2-container--default .select2-selection--multiple {border:1px solid #cbd5f5;border-radius:10px;background:#f8fafc;min-height:44px;padding:4px;}\n.select2-container--default .select2-selection--multiple .select2-selection__choice {background:#e0e7ff;border:none;border-radius:8px;color:#312e81;padding:2px 8px;}\n.select2-container--open .select2-selection--single {border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,0.2);}
+.safra-field input:focus,
+.safra-field select:focus,
+.safra-field textarea:focus {outline:none;border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,0.2);}
+.talhao-box {border:1px solid #dbe2f1;border-radius:10px;background:#f8fafc;padding:12px;color:#1f2937;font-size:13px;min-height:60px;}
+.talhao-box a {color:#4338ca;text-decoration:none;}
+.safra-table-wrap {overflow-x:auto;}
+.safra-table {width:100%;border-collapse:collapse;}
+.safra-table th {text-align:left;padding:10px;font-size:12px;color:#64748b;text-transform:uppercase;border-bottom:1px solid #e5e7eb;}
+.safra-table td {padding:10px;border-bottom:1px solid #f1f5f9;}
+.safra-table input,
+.safra-table select,
+.safra-table textarea {width:100%;border:1px solid #cbd5f5;border-radius:8px;padding:8px 10px;background:#ffffff;}
+.line-remove {background:#fee2e2;color:#991b1b;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;}
+.line-remove:hover {background:#fecaca;}
+.safra-actions {display:flex;justify-content:flex-end;gap:12px;margin-top:24px;}
+.safra-actions .button {border-radius:10px;padding:12px 22px;font-weight:600;font-size:14px;border:none;cursor:pointer;}
+.button-cancel {background:#e2e8f0;color:#475569;}
+.button-save {background:#4f46e5;color:#ffffff;}
+.button-save:hover {background:#4338ca;}
+.button-outline {background:#ffffff;border:1px solid #cbd5f5;color:#1f2937;border-radius:10px;padding:9px 16px;cursor:pointer;}
+.button-outline[disabled],
+input[disabled],
+select[disabled],
+textarea[disabled],
+button[disabled] {opacity:0.55;cursor:not-allowed;}
+.resource-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;}
+</style>
+<?php
+if (!empty($errors)) {
+	setEventMessages('', $errors, 'errors');
+}
+if (!empty($messages)) {
+	setEventMessages('', $messages, 'mesgs');
+}
+?>
+<div class="safra-shell">
+	<?php
+	if ($debugProjectFlag) {
+		echo '<pre class="safra-debug-block">'.dol_escape_htmltag(print_r($debugProjectInfo, true)).'</pre>';
+	}
+	?>
+	<?php echo '<!-- project_debug '.dol_escape_htmltag(json_encode($debugProjectInfo)).' -->'; ?>
+	<div class="safra-header">
+		<h1><?php echo dol_escape_htmltag($langs->trans('New').' '.$langs->trans('Aplicacao')); ?></h1>
+		<p><?php echo dol_escape_htmltag($langs->trans('Select').' '.$langs->trans('Project').' - '.$langs->trans('SafraAplicacaoTalhao')); ?></p>
+	</div>
+
+	<form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+		<input type="hidden" name="token" value="<?php echo newToken(); ?>">
+		<input type="hidden" name="action" value="save">
+
+		<div class="safra-grid">
+			<section class="safra-card">
+				<h2><?php echo dol_escape_htmltag($langs->trans('Project')); ?></h2>
+				<div class="safra-field">
+					<label for="project-filter"><?php echo dol_escape_htmltag($langs->trans('Search')); ?></label>
+					<input type="search" id="project-filter" placeholder="<?php echo dol_escape_htmltag($langs->trans('Search').'...'); ?>">
+				</div>
+				<div class="safra-field">
+					<label for="project-select"><?php echo dol_escape_htmltag($langs->trans('Project')); ?></label>
+					<select name="fk_project" id="project-select" class="js-select2" data-placeholder="<?php echo dol_escape_htmltag($langs->trans('Select')); ?>">
+						<option value=""><?php echo dol_escape_htmltag($langs->trans('Select')); ?></option>
+						<?php echo $projectOptionsHtml; ?>
+					</select>
+				</div>
+				<input type="hidden" name="talhao_id" id="talhao-id" value="<?php echo $selectedTalhaoId > 0 ? (int) $selectedTalhaoId : ''; ?>">
+				<div class="talhao-box" id="talhao-info"><?php echo $talhaoSummary; ?></div>
+			</section>
+
+			<section class="safra-card">
+				<h2><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoTaskProducts')); ?></h2>
+				<div class="safra-field">
+					<label for="ref-input"><?php echo dol_escape_htmltag($langs->trans('Ref')); ?> *</label>
+					<input type="text" id="ref-input" name="ref" value="<?php echo dol_escape_htmltag(GETPOST('ref', 'alphanohtml')); ?>" required>
+				</div>
+				<div class="safra-field">
+					<label for="label-input"><?php echo dol_escape_htmltag($langs->trans('Label')); ?></label>
+					<input type="text" id="label-input" name="label" value="<?php echo dol_escape_htmltag(GETPOST('label', 'alphanohtml')); ?>">
+				</div>
+				<div class="safra-field">
+					<label for="qty-input"><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoAreaHa')); ?></label>
+					<input type="number" step="0.0001" min="0" id="qty-input" name="qty" value="<?php echo dol_escape_htmltag($areaFieldValue); ?>" data-requires-talhao="1">
+				</div>
+				<div class="safra-field">
+					<label for="date-input"><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoDate')); ?></label>
+					<input type="date" id="date-input" name="date_application" value="<?php echo dol_escape_htmltag(GETPOST('date_application', 'alphanohtml')); ?>">
+				</div>
+				<div class="safra-field">
+					<label for="description-input"><?php echo dol_escape_htmltag($langs->trans('Description')); ?></label>
+					<textarea id="description-input" name="description" rows="4"><?php echo dol_escape_htmltag(GETPOST('description', 'restricthtml')); ?></textarea>
+				</div>
+			</section>
+		</div>
+
+		<section class="safra-card">
+			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+				<h2 style="margin:0;"><?php echo dol_escape_htmltag($langs->trans('Products')); ?></h2>
+				<button type="button" class="button-outline" id="add-line" data-requires-talhao="1"><?php echo dol_escape_htmltag($langs->trans('Add')); ?></button>
+			</div>
+			<div class="safra-table-wrap">
+				<table class="safra-table">
+					<thead>
+						<tr>
+							<th><?php echo dol_escape_htmltag($langs->trans('Warehouse')); ?></th>
+							<th><?php echo dol_escape_htmltag($langs->trans('Product')); ?></th>
+							<th><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoAreaHa')); ?></th>
+							<th><?php echo dol_escape_htmltag($langs->trans('Dose')); ?></th>
+							<th><?php echo dol_escape_htmltag($langs->trans('Unit')); ?></th>
+							<th><?php echo dol_escape_htmltag($langs->trans('Total')); ?></th>
+							<th><?php echo dol_escape_htmltag($langs->trans('Notes')); ?></th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody id="line-body"></tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="safra-card">
+			<h2><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoResources')); ?></h2>
+			<div class="resource-grid">
+				<div class="safra-field">
+					<label><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoResourceVehicle')); ?></label>
+			<select name="vehicles[]" multiple data-requires-talhao="1" class="js-select2" data-placeholder="<?php echo dol_escape_htmltag($langs->trans('Select')); ?>">
+				<?php foreach ($vehicleOptions as $id => $labelOption) { ?>
+					<option value="<?php echo (int) $id; ?>" <?php echo in_array($id, $vehicleSelected, true) ? 'selected' : ''; ?>><?php echo dol_escape_htmltag($labelOption); ?></option>
+				<?php } ?>
+			</select>
+				</div>
+				<div class="safra-field">
+					<label><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoResourceImplement')); ?></label>
+			<select name="implements[]" multiple data-requires-talhao="1" class="js-select2" data-placeholder="<?php echo dol_escape_htmltag($langs->trans('Select')); ?>">
+				<?php foreach ($implementOptions as $id => $labelOption) { ?>
+					<option value="<?php echo (int) $id; ?>" <?php echo in_array($id, $implementSelected, true) ? 'selected' : ''; ?>><?php echo dol_escape_htmltag($labelOption); ?></option>
+				<?php } ?>
+			</select>
+				</div>
+				<div class="safra-field">
+					<label><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoResourcePerson')); ?></label>
+			<select name="persons[]" multiple data-requires-talhao="1" class="js-select2" data-placeholder="<?php echo dol_escape_htmltag($langs->trans('Select')); ?>">
+				<?php foreach ($resourcePersons as $id => $labelOption) { ?>
+					<option value="<?php echo (int) $id; ?>" <?php echo in_array($id, $personSelected, true) ? 'selected' : ''; ?>><?php echo dol_escape_htmltag($labelOption); ?></option>
+				<?php } ?>
+			</select>
+				</div>
+			</div>
+		</section>
+
+		<section class="safra-card">
+			<h2><?php echo dol_escape_htmltag($langs->trans('SafraAplicacaoCaldaObservation')); ?></h2>
+			<div class="safra-field">
+				<label for="calda-text"><?php echo dol_escape_htmltag($langs->trans('Notes')); ?></label>
+				<textarea id="calda-text" name="calda_observacao" rows="5"><?php echo dol_escape_htmltag(GETPOST('calda_observacao', 'restricthtml')); ?></textarea>
+			</div>
+		</section>
+
+		<div class="safra-actions">
+			<a class="button button-cancel" href="<?php echo dol_buildpath('/safra/aplicacao_list.php', 1); ?>"><?php echo dol_escape_htmltag($langs->trans('Cancel')); ?></a>
+			<button type="submit" class="button button-save"><?php echo dol_escape_htmltag($langs->trans('Create')); ?></button>
+		</div>
+	</form>
+</div>
+
+<?php
+$js = <<<JS
+document.addEventListener('DOMContentLoaded', function () {
+	const projects = {$projectsDataJson} || {};
+	const projectTalhao = {$projectTalhaoJson} || {};
+	const talhoes = {$talhaoDataJson} || {};
+	const products = {$productsJson} || {};
+	const warehouseOptions = {$warehouseOptionsJson} || {};
+	const warehouseProductMap = {$warehouseProductJson} || {};
+	const prefillLines = {$prefillLinesJson} || [];
+	const labels = {$labelsJson} || {};
+
+	const projectSelect = document.getElementById('project-select');
+	const projectFilter = document.getElementById('project-filter');
+	const talhaoHidden = document.getElementById('talhao-id');
+	const talhaoInfo = document.getElementById('talhao-info');
+	const qtyInput = document.getElementById('qty-input');
+	const addLineButton = document.getElementById('add-line');
+	const lineBody = document.getElementById('line-body');
+	const requiredNodes = document.querySelectorAll('[data-requires-talhao="1"]');
+	const select2Available = typeof window.jQuery !== 'undefined' && window.jQuery.fn && typeof window.jQuery.fn.select2 === 'function';
+
+	let lineIndex = 0;
+	let areaManual = !!(qtyInput && qtyInput.value);
+
+	function initSelect2(node, opts) {
+		if (!select2Available || !node) {
+			return;
+		}
+		const $node = window.jQuery(node);
+		if ($node.hasClass('select2-hidden-accessible')) {
+			return;
+		}
+		const baseOptions = {
+			width: '100%',
+			placeholder: node.dataset.placeholder || '',
+			allowClear: !node.multiple && !node.required
+		};
+		$node.select2(Object.assign(baseOptions, opts || {}));
+	}
+
+	function refreshSelect2(node) {
+		if (select2Available && node) {
+			window.jQuery(node).trigger('change.select2');
+		}
+	}
+
+	function escapeHtml(value) {
+		const div = document.createElement('div');
+		div.textContent = value === undefined || value === null ? '' : String(value);
+		return div.innerHTML;
+	}
+
+	function renderTalhao(id) {
+		const data = talhoes[id];
+		if (!data) {
+			return escapeHtml(labels.talhaoDefault || '');
+		}
+		const rows = [];
+		if (data.url) {
+			rows.push('<strong><a href="' + escapeHtml(data.url) + '" target="_blank" rel="noopener">' + escapeHtml(data.label || '') + '</a></strong>');
+		} else {
+			rows.push('<strong>' + escapeHtml(data.label || '') + '</strong>');
+		}
+		if (data.area) {
+			const fmt = labels.talhaoAreaFormat || '%s';
+			rows.push(escapeHtml(fmt.replace('%s', (Number(data.area) || 0).toFixed(2))));
+		}
+		if (data.municipio) {
+			const fmt = labels.talhaoMunicipioFormat || '%s';
+			rows.push(escapeHtml(fmt.replace('%s', data.municipio)));
+		}
+		return rows.join('<br>');
+	}
+
+	function toggleTalhao(active) {
+		requiredNodes.forEach(function (node) {
+			if (active) {
+				node.removeAttribute('disabled');
+			} else {
+				node.setAttribute('disabled', 'disabled');
+			}
+		});
+	}
+
+	function syncArea() {
+		if (!lineBody || !qtyInput) return;
+		lineBody.querySelectorAll('input.line-area').forEach(function (input) {
+			if (input.dataset.auto === '1') {
+				input.value = qtyInput.value || '';
+				input.dispatchEvent(new Event('input'));
+			}
+		});
+	}
+
+	function updateTalhao(id, opts) {
+		const talhaoId = parseInt(id, 10) || 0;
+		if (talhaoHidden) {
+			talhaoHidden.value = talhaoId > 0 ? String(talhaoId) : '';
+		}
+		if (talhaoInfo) {
+			talhaoInfo.innerHTML = renderTalhao(talhaoId);
+		}
+		toggleTalhao(talhaoId > 0);
+
+		if (talhaoId > 0 && qtyInput && talhoes[talhaoId] && talhoes[talhaoId].area) {
+			const autoValue = (Number(talhoes[talhaoId].area) || 0).toFixed(4);
+			if (!areaManual || (opts && opts.forceArea)) {
+				qtyInput.value = autoValue;
+				areaManual = false;
+				syncArea();
+			}
+		}
+	}
+
+	function setProject(projectId, opts) {
+		const id = parseInt(projectId, 10) || 0;
+		if (projectSelect) {
+			projectSelect.value = id ? String(id) : '';
+		}
+		const talhaoId = id && projectTalhao[id] ? projectTalhao[id] : 0;
+		updateTalhao(talhaoId, opts || {});
+	}
+
+	function fillSelect(select, options, selectedValue) {
+		select.innerHTML = '';
+		Object.keys(options || {}).forEach(function (key) {
+			const opt = document.createElement('option');
+			opt.value = key;
+			opt.textContent = options[key];
+			if (selectedValue && String(selectedValue) === String(key)) {
+				opt.selected = true;
+			}
+			select.appendChild(opt);
+		});
+	}
+
+	function refreshProducts(select, warehouseId, selectedValue) {
+		const key = warehouseId ? String(warehouseId) : '';
+		const map = key && warehouseProductMap[key] ? warehouseProductMap[key] : products;
+		fillSelect(select, map, selectedValue);
+	refreshSelect2(select);
+		if (!select.options.length) {
+			const info = document.createElement('option');
+			info.value = '';
+			info.textContent = labels.noProducts || '';
+			info.disabled = true;
+			info.selected = true;
+			select.appendChild(info);
+		}
+	}
+
+	function addLine(prefill) {
+		if (!lineBody) return;
+		const row = document.createElement('tr');
+		const index = lineIndex++;
+
+		const tdWarehouse = document.createElement('td');
+		const warehouseSelect = document.createElement('select');
+		warehouseSelect.className = 'js-select2';
+		warehouseSelect.name = 'lines[' + index + '][fk_entrepot]';
+		warehouseSelect.dataset.placeholder = labels.selectProject || '';
+		fillSelect(warehouseSelect, warehouseOptions, prefill && prefill.fk_entrepot ? prefill.fk_entrepot : '');
+		tdWarehouse.appendChild(warehouseSelect);
+		row.appendChild(tdWarehouse);
+		initSelect2(warehouseSelect);
+
+		const tdProduct = document.createElement('td');
+		const productSelect = document.createElement('select');
+		productSelect.className = 'js-select2';
+		productSelect.name = 'lines[' + index + '][fk_product]';
+		productSelect.dataset.placeholder = labels.selectProject || '';
+		refreshProducts(productSelect, warehouseSelect.value, prefill && prefill.fk_product ? prefill.fk_product : '');
+		warehouseSelect.addEventListener('change', function () {
+			refreshProducts(productSelect, warehouseSelect.value, productSelect.value);
+		});
+		tdProduct.appendChild(productSelect);
+		row.appendChild(tdProduct);
+		initSelect2(productSelect);
+
+		const tdArea = document.createElement('td');
+		const areaInput = document.createElement('input');
+		areaInput.type = 'number';
+		areaInput.step = '0.0001';
+		areaInput.className = 'line-area';
+		areaInput.name = 'lines[' + index + '][area_ha]';
+		const areaValue = prefill && prefill.area_ha !== undefined ? prefill.area_ha : (qtyInput ? qtyInput.value : '');
+		areaInput.value = areaValue;
+		areaInput.dataset.auto = (prefill && prefill.area_ha !== '') ? '0' : '1';
+		areaInput.addEventListener('input', function () {
+			areaInput.dataset.auto = '0';
+			updateTotal();
+		});
+		tdArea.appendChild(areaInput);
+		row.appendChild(tdArea);
+
+		const tdDose = document.createElement('td');
+		const doseInput = document.createElement('input');
+		doseInput.type = 'number';
+		doseInput.step = '0.0001';
+		doseInput.name = 'lines[' + index + '][dose]';
+		doseInput.value = prefill && prefill.dose ? prefill.dose : '';
+		doseInput.addEventListener('input', updateTotal);
+		tdDose.appendChild(doseInput);
+		row.appendChild(tdDose);
+
+		const tdUnit = document.createElement('td');
+		const unitSelect = document.createElement('select');
+		unitSelect.name = 'lines[' + index + '][dose_unit]';
+		['L/ha', 'kg/ha'].forEach(function (unit) {
+			const opt = document.createElement('option');
+			opt.value = unit;
+			opt.textContent = unit;
+			unitSelect.appendChild(opt);
+		});
+		if (prefill && prefill.dose_unit) {
+			unitSelect.value = prefill.dose_unit;
+		}
+		tdUnit.appendChild(unitSelect);
+		row.appendChild(tdUnit);
+
+		const tdTotal = document.createElement('td');
+		const totalInput = document.createElement('input');
+		totalInput.type = 'number';
+		totalInput.step = '0.0001';
+		totalInput.readOnly = true;
+		totalInput.name = 'lines[' + index + '][total_qty]';
+		totalInput.value = prefill && prefill.total_qty ? prefill.total_qty : '';
+		tdTotal.appendChild(totalInput);
+		row.appendChild(tdTotal);
+
+		const tdNote = document.createElement('td');
+		const noteInput = document.createElement('textarea');
+		noteInput.name = 'lines[' + index + '][note]';
+		noteInput.rows = 2;
+		noteInput.textContent = prefill && prefill.note ? prefill.note : '';
+		tdNote.appendChild(noteInput);
+		row.appendChild(tdNote);
+
+		const tdAction = document.createElement('td');
+		const removeBtn = document.createElement('button');
+		removeBtn.type = 'button';
+		removeBtn.className = 'line-remove';
+		removeBtn.textContent = '−';
+		removeBtn.addEventListener('click', function () {
+			if (select2Available) {
+				if (window.jQuery(warehouseSelect).hasClass('select2-hidden-accessible')) {
+					window.jQuery(warehouseSelect).select2('destroy');
+				}
+				if (window.jQuery(productSelect).hasClass('select2-hidden-accessible')) {
+					window.jQuery(productSelect).select2('destroy');
+				}
+			}
+			row.remove();
+		});
+		tdAction.appendChild(removeBtn);
+		row.appendChild(tdAction);
+
+		function updateTotal() {
+			const area = parseFloat(areaInput.value) || 0;
+			const dose = parseFloat(doseInput.value) || 0;
+			totalInput.value = area && dose ? (area * dose).toFixed(4) : '';
+		}
+
+		updateTotal();
+		lineBody.appendChild(row);
+	}
+
+	if (projectSelect) {
+		projectSelect.addEventListener('change', function () {
+			setProject(projectSelect.value, { forceArea: true });
+		});
+	}
+
+	if (projectFilter && projectSelect) {
+		projectFilter.addEventListener('input', function () {
+			const term = projectFilter.value.toLowerCase();
+			let matchId = null;
+			Array.from(projectSelect.options).forEach(function (option) {
+				if (!option.value) {
+					return;
+				}
+				const match = option.text.toLowerCase().includes(term);
+				option.style.display = match ? '' : 'none';
+				if (match && matchId === null) {
+					matchId = option.value;
+				}
+			});
+			if (matchId !== null) {
+				setProject(matchId, { forceArea: true });
+			}
+		});
+	}
+
+	if (qtyInput) {
+		qtyInput.addEventListener('input', function () {
+			areaManual = true;
+			syncArea();
+		});
+	}
+
+	if (addLineButton) {
+		addLineButton.addEventListener('click', function () {
+			addLine();
+		});
+	}
+
+	document.querySelectorAll('.js-select2').forEach(function (node) {
+		initSelect2(node);
+	});
+
+	prefillLines.forEach(function (line) {
+		addLine(line);
+	});
+	if (!prefillLines.length) {
+		addLine();
+	}
+
+	if (projectSelect && projectSelect.value) {
+		setProject(projectSelect.value, { forceArea: true });
+	} else if (talhaoHidden && talhaoHidden.value) {
+		updateTalhao(talhaoHidden.value, {});
+	} else {
+		updateTalhao(0, {});
+	}
+});
+JS;
+
+print '<script>'.$js.'</script>';
+
+llxFooter();
+$db->close();
+
+
+
+
+
+
+
