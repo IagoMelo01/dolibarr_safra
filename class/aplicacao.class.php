@@ -1319,9 +1319,14 @@ class Aplicacao extends CommonObject
                 $taskId = (int) $this->fk_task;
                 $task = new Task($this->db);
                 if ($taskId > 0 && $task->fetch($taskId) > 0) {
-                        // keep
+                        // keep existing link
                 } else {
-                        $taskId = 0;
+                        $taskId = $this->findExistingTaskId();
+                        if ($taskId > 0 && $task->fetch($taskId) > 0) {
+                                $this->fk_task = $taskId;
+                        } else {
+                                $taskId = 0;
+                        }
                 }
 
                 if ($taskId === 0) {
@@ -1411,6 +1416,42 @@ class Aplicacao extends CommonObject
                 if (!$this->db->query($sql)) {
                         dol_syslog(__METHOD__.' failed to bind task '.$taskId.' to application '.$appId.': '.$this->db->lasterror(), LOG_WARNING);
                 }
+        }
+
+        /**
+         * Try to find an already existing task linked to this application.
+         *
+         * @return int Task identifier or 0 if not found
+         */
+        protected function findExistingTaskId()
+        {
+                if (empty($this->id)) {
+                        return 0;
+                }
+
+                $appId = (int) $this->id;
+
+                $sql = 'SELECT rowid FROM '.MAIN_DB_PREFIX."projet_task WHERE fk_aplicacao = ".$appId.' ORDER BY rowid DESC';
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        $obj = $this->db->fetch_object($resql);
+                        $this->db->free($resql);
+                        if ($obj && !empty($obj->rowid)) {
+                                return (int) $obj->rowid;
+                        }
+                }
+
+                $sql = 'SELECT fk_object FROM '.MAIN_DB_PREFIX."projet_task_extrafields WHERE options_fk_aplicacao = ".$appId.' ORDER BY fk_object DESC';
+                $resql = $this->db->query($sql);
+                if ($resql) {
+                        $obj = $this->db->fetch_object($resql);
+                        $this->db->free($resql);
+                        if ($obj && !empty($obj->fk_object)) {
+                                return (int) $obj->fk_object;
+                        }
+                }
+
+                return 0;
         }
 
         /**
@@ -1609,6 +1650,16 @@ class Aplicacao extends CommonObject
                                 $this->db->rollback();
                                 return -1;
                         }
+                }
+
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX."safra_aplicacao_resource WHERE fk_aplicacao = ".((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->error = $this->db->lasterror();
+                        if (!empty($revertedOperations) && $user instanceof User) {
+                                $this->rollbackStockOperations($user, $revertedOperations);
+                        }
+                        $this->db->rollback();
+                        return -1;
                 }
 
                 $this->unlinkTask();
