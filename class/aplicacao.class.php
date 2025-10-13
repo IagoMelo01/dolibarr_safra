@@ -566,6 +566,21 @@ class Aplicacao extends CommonObject
 
                         $key = $productId.':'.$warehouseId;
 
+                        if (!isset($summary[$key])) {
+                                $summary[$key] = array(
+                                        'fk_product' => $productId,
+                                        'fk_entrepot' => $warehouseId,
+                                        'qty' => 0.0,
+                                        'labels' => array(),
+                                );
+                        } else {
+                                if (empty($summary[$key]['fk_entrepot']) && $warehouseId > 0) {
+                                        $summary[$key]['fk_entrepot'] = $warehouseId;
+                                }
+                        }
+
+                        $summary[$key]['qty'] += abs($qty);
+
                         if ($label !== '') {
                                 $summary[$key]['labels'][$label] = true;
                         }
@@ -1294,7 +1309,11 @@ class Aplicacao extends CommonObject
                         $this->fetchResources();
                 }
 
-                $label = !empty($this->ref) ? $langs->trans('SafraAplicacaoTaskLabel', $this->ref) : $langs->trans('SafraAplicacaoTaskLabelNoRef');
+                $refLabel = trim((string) $this->ref);
+                if ($refLabel === '') {
+                        $refLabel = '#'.((int) $this->id);
+                }
+                $label = 'aplicacao - '.$refLabel;
                 $description = $this->buildTaskDescription();
 
                 $taskId = (int) $this->fk_task;
