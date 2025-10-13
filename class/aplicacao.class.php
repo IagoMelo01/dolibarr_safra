@@ -1652,6 +1652,16 @@ class Aplicacao extends CommonObject
                         }
                 }
 
+                $sql = 'DELETE FROM '.MAIN_DB_PREFIX."safra_aplicacao_line WHERE fk_aplicacao = ".((int) $this->id);
+                if (!$this->db->query($sql)) {
+                        $this->error = $this->db->lasterror();
+                        if (!empty($revertedOperations) && $user instanceof User) {
+                                $this->rollbackStockOperations($user, $revertedOperations);
+                        }
+                        $this->db->rollback();
+                        return -1;
+                }
+
                 $sql = 'DELETE FROM '.MAIN_DB_PREFIX."safra_aplicacao_resource WHERE fk_aplicacao = ".((int) $this->id);
                 if (!$this->db->query($sql)) {
                         $this->error = $this->db->lasterror();
