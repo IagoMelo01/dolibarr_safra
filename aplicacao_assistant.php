@@ -35,18 +35,32 @@ $warehouseEntityFilter = trim(getEntity('stock'));
 if ($warehouseEntityFilter === '') {
     $warehouseEntityFilter = (string) ((int) $conf->entity);
 }
-$warehousesSql='SELECT rowid, ref, description, lieu FROM '.MAIN_DB_PREFIX."entrepot".' WHERE entity IN ('.$warehouseEntityFilter.') ORDER BY ref ASC';
+$warehouseColumns=array('description'=>safraColumnExists($db,'entrepot','description'));
+$warehouseColumns['label']=safraColumnExists($db,'entrepot','label');
+$warehouseColumns['lieu']=safraColumnExists($db,'entrepot','lieu');
+$warehouseSelectFields=array('rowid','ref');
+foreach(array('description','label','lieu') as $col){
+    if(!empty($warehouseColumns[$col])) $warehouseSelectFields[]=$col;
+}
+$warehousesSql='SELECT '.implode(', ',$warehouseSelectFields).' FROM '.MAIN_DB_PREFIX."entrepot".' WHERE entity IN ('.$warehouseEntityFilter.') ORDER BY ref ASC';
 $warehousesError=null;
+$warehouseColumnsUsed=$warehouseSelectFields;
 $rw=$db->query($warehousesSql);
 if($rw){
     while($ow=$db->fetch_object($rw)){
         $parts=array();
         $ref=trim((string) $ow->ref);
-        $lieu=trim((string) $ow->lieu);
-        $lib=trim((string) $ow->description);
+        $candidates=array();
+        if(!empty($warehouseColumns['lieu'])) $candidates[] = trim((string) $ow->lieu);
+        if(!empty($warehouseColumns['label'])) $candidates[] = trim((string) $ow->label);
+        if(!empty($warehouseColumns['description'])) $candidates[] = trim((string) $ow->description);
         if($ref!=='') $parts[]=$ref;
-        if($lieu!=='' && $lieu!==$ref) $parts[]=$lieu;
-        elseif($lib!=='' && $lib!==$ref) $parts[]=$lib;
+        foreach($candidates as $cand){
+            if($cand!=='' && $cand!==$ref){
+                $parts[]=$cand;
+                break;
+            }
+        }
         if(empty($parts)) $parts[]='#'.(int)$ow->rowid;
         $warehouses[(int)$ow->rowid]=implode(' - ', $parts);
     }
@@ -124,6 +138,7 @@ if($__debug){
         'warehouses_first' => array_slice($warehouses,0,10,true),
         'warehouses_sql' => $warehousesSql,
         'warehouses_error' => $warehousesError,
+        'warehouses_fields' => $warehouseSelectFields,
         'vehicles_count' => count($vehicles),
         'vehicles_first' => array_slice($vehicles,0,10,true),
         'implements_count' => count($implements),
@@ -273,13 +288,15 @@ document.addEventListener('DOMContentLoaded',function(){
   const warehouses=<?php echo $warehousesJson?:'{}'; ?>;
   const defaultWarehouses=<?php echo $defaultWarehousesJson?:'{}'; ?>;
   const DEBUG = <?php echo (int) GETPOST('debug','int'); ?>;
+  const searchPlaceholder = <?php echo json_encode($langs->trans('Search') ?: 'Digite para filtrar'); ?>;
   function fillProducts(sel){ sel.innerHTML='';
     const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
     Object.keys(allProducts||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=allProducts[k]; sel.appendChild(o); });
   }
+  const warehousePlaceholder = <?php echo json_encode($langs->trans('SelectWarehouse') ?: $langs->trans('Select') ?: 'Selecione um armazém'); ?>;
   function fillWarehouses(sel){
     sel.innerHTML='';
-    const ph=document.createElement('option'); ph.value=''; ph.textContent='-'; sel.appendChild(ph);
+    const ph=document.createElement('option'); ph.value=''; ph.textContent=warehousePlaceholder; ph.dataset.placeholder='1'; sel.appendChild(ph);
     Object.keys(warehouses||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=warehouses[k]; sel.appendChild(o); });
   }
   function selectFirstNonEmpty(sel){
@@ -296,6 +313,23 @@ document.addEventListener('DOMContentLoaded',function(){
 
     sel.value=v;
 
+}
+
+function enhanceSelectWithSearch(selectEl, placeholderText, dropdownContext){
+    if(!(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2)) return;
+    const $sel = window.jQuery(selectEl);
+    if($sel.data('select2')) return;
+    const opts = {
+        width: 'resolve',
+        allowClear: true
+    };
+    if(placeholderText){
+        opts.placeholder = placeholderText;
+    }
+    if(dropdownContext){
+        opts.dropdownParent = window.jQuery(dropdownContext);
+    }
+    $sel.select2(opts);
 }
 
 function createLineField(labelText, element, sizeClass){
@@ -352,6 +386,7 @@ function ensureWarehouseOption(selectEl, warehouseId){
     const warehouseSelect=document.createElement('select');
     warehouseSelect.className='flat minwidth200';
     fillWarehouses(warehouseSelect);
+    warehouseSelect.dataset.user='';
 
     const warehouseHidden=document.createElement('input');
     warehouseHidden.type='hidden';
@@ -376,7 +411,13 @@ function ensureWarehouseOption(selectEl, warehouseId){
 
     const removeField=document.createElement('div');
     removeField.className='safra-line-field auto safra-line-remove';
-    const rm=document.createElement('button'); rm.type='button'; rm.className='button'; rm.textContent='-'; rm.addEventListener('click',()=>row.remove());
+    const rm=document.createElement('button'); rm.type='button'; rm.className='button'; rm.textContent='-'; rm.addEventListener('click',()=>{
+      if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
+        const $p = window.jQuery(pUI); if($p.data('select2')) $p.select2('destroy');
+        const $w = window.jQuery(warehouseSelect); if($w.data('select2')) $w.select2('destroy');
+      }
+      row.remove();
+    });
     removeField.appendChild(rm);
 
     row.appendChild(productField);
@@ -390,14 +431,31 @@ function ensureWarehouseOption(selectEl, warehouseId){
     function rec(){ it.value=((parseFloat(ia.value)||0)*(parseFloat(id.value)||0)).toFixed(4); }
     ia.addEventListener('input',rec); id.addEventListener('input',rec); rec();
 
+    function setWarehouseValue(value, markUser){
+      const stringValue = value ? String(value) : '';
+      if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2 && window.jQuery(warehouseSelect).data('select2')){
+        window.jQuery(warehouseSelect).val(stringValue || null).trigger('change');
+      } else {
+        warehouseSelect.value = stringValue;
+      }
+      warehouseHidden.value = stringValue && stringValue !== '0' ? stringValue : '0';
+      warehouseSelect.dataset.user = markUser ? '1' : '';
+    }
+
+    function resetWarehouseSelection(){
+      setWarehouseValue('', false);
+    }
+
     function applyDefaultWarehouse(productId){
-      const def = defaultWarehouses && defaultWarehouses[String(productId)];
-      if(!def) return;
+      const key = productId ? String(productId) : '';
+      const def = key && defaultWarehouses ? defaultWarehouses[key] : null;
+      if(!def){
+        resetWarehouseSelection();
+        return;
+      }
       if(warehouseSelect.dataset.user === '1') return;
       ensureWarehouseOption(warehouseSelect, def);
-      warehouseSelect.value = String(def);
-      warehouseHidden.value = String(def);
-      warehouseSelect.dataset.user = '';
+      setWarehouseValue(def, false);
     }
 
     pUI.addEventListener('change',()=>{
@@ -407,10 +465,25 @@ function ensureWarehouseOption(selectEl, warehouseId){
       rec();
     });
 
+    if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
+      window.jQuery(pUI).on('select2:select select2:clear',()=>{
+        pHidden.value = pUI.value || '';
+        warehouseSelect.dataset.user = '';
+        applyDefaultWarehouse(pHidden.value);
+        rec();
+      });
+    }
+
     warehouseSelect.addEventListener('change',()=>{
       warehouseHidden.value = warehouseSelect.value || '0';
       warehouseSelect.dataset.user = warehouseSelect.value && warehouseSelect.value !== '0' ? '1' : '';
     });
+    if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
+      window.jQuery(warehouseSelect).on('select2:select select2:clear',()=>{
+        warehouseHidden.value = warehouseSelect.value || '0';
+        warehouseSelect.dataset.user = warehouseSelect.value && warehouseSelect.value !== '0' ? '1' : '';
+      });
+    }
 
     let initialWarehouse = null;
     if(pref && pref.fk_entrepot){
@@ -423,14 +496,14 @@ function ensureWarehouseOption(selectEl, warehouseId){
 
     if(initialWarehouse){
       ensureWarehouseOption(warehouseSelect, initialWarehouse);
-      warehouseSelect.value = initialWarehouse;
-      warehouseHidden.value = initialWarehouse;
+      setWarehouseValue(initialWarehouse, true);
     } else {
       applyDefaultWarehouse(pHidden.value);
       warehouseHidden.value = warehouseSelect.value || '0';
     }
 
     body.appendChild(row);
+    enhanceSelectWithSearch(pUI, searchPlaceholder, row);
     if(DEBUG){ try { console.log('DEBUG product options', pUI.options.length); } catch(e){} }
     idx++;
   }

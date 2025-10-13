@@ -615,7 +615,12 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
                                 print dolGetButtonAction('', $langs->trans('SafraAplicacaoViewTask'), 'view', $taskUrl, '', 1);
                         }
                         if ($object->status != $object::STATUS_VALIDATED) {
-                                print dolGetButtonAction('', $langs->trans('SafraAplicacaoComplete'), 'default', $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=complete&token='.newToken(), '', $permissiontoadd);
+                                $completeUrl = $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=complete&token='.newToken();
+                                if ($permissiontoadd) {
+                                        print '<a class="butAction" href="'.dol_escape_htmltag($completeUrl).'">'.$langs->trans('SafraAplicacaoComplete').'</a>';
+                                } else {
+                                        print '<span class="butActionRefused classfortooltip" title="'.dol_escape_htmltag($langs->trans('NotEnoughPermissions')).'">'.$langs->trans('SafraAplicacaoComplete').'</span>';
+                                }
                         }
 
                         // Send
