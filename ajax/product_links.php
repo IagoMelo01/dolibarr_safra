@@ -46,6 +46,13 @@ $term = trim(GETPOST('term', 'restricthtml'));
 if ($term === '') {
     $term = trim(GETPOST('q', 'restricthtml'));
 }
+if ($term !== '') {
+    $decodeFlags = ENT_QUOTES;
+    if (defined('ENT_HTML5')) {
+        $decodeFlags |= ENT_HTML5;
+    }
+    $term = trim(html_entity_decode($term, $decodeFlags, 'UTF-8'));
+}
 $page = GETPOSTINT('page');
 $limit = GETPOSTINT('limit');
 
