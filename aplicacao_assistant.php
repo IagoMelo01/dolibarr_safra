@@ -211,7 +211,7 @@ llxHeader('', $langs->trans('Aplicacao').' - '.$langs->trans('New'));
 <div id="lines-body" class="safra-lines"></div>
 </section>
 <section class="safra-card"><h3><?php echo $langs->trans('SafraAplicacaoResources'); ?></h3><div class="safra-grid"><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourceVehicle'); ?></label><select name="vehicles[]" multiple class="js-select2"><?php foreach($vehicles as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourceImplement'); ?></label><select name="implements[]" multiple class="js-select2"><?php foreach($implements as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourcePerson'); ?></label><select name="persons[]" multiple class="js-select2"><?php foreach($persons as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div></div></section>
-<section class="safra-card"><h3><?php echo $langs->trans('SafraAplicacaoCaldaObservation'); ?></h3><div class="safra-field"><label for="calda_observacao"><?php echo $langs->trans('Notes'); ?></label><textarea name="calda_observacao" id="calda_observacao" rows="4"><?php echo $prefill? dol_escape_htmltag($prefill->calda_observacao):''; ?></textarea></div></section>
+<section class="safra-card" id="calda-observation-card"><h3><?php echo $langs->trans('SafraAplicacaoCaldaObservation'); ?></h3><div class="safra-field"><label for="calda_observacao"><?php echo $langs->trans('Notes'); ?></label><textarea name="calda_observacao" id="calda_observacao" rows="4"><?php echo $prefill? dol_escape_htmltag($prefill->calda_observacao):''; ?></textarea></div></section>
 <div class="safra-actions"><a class="button" href="<?php echo dol_buildpath('/safra/aplicacao_list.php',1); ?>"><?php echo $langs->trans('Cancel'); ?></a><button type="submit" class="button button-save"><?php echo $langs->trans('Create'); ?></button></div>
 </form></div>
 <script>
@@ -370,6 +370,18 @@ function ensureWarehouseOption(selectEl, warehouseId){
 }
 
 const operationTypeSelect = document.getElementById('operation_type');
+const caldaButton = document.getElementById('btn-calda');
+const caldaSection = document.getElementById('calda-observation-card');
+
+function toggleCaldaVisibility(){
+    const isAplicacao = !operationTypeSelect || operationTypeSelect.value === 'aplicacao';
+    if(caldaButton){
+        caldaButton.style.display = isAplicacao ? '' : 'none';
+    }
+    if(caldaSection){
+        caldaSection.style.display = isAplicacao ? '' : 'none';
+    }
+}
 
 function getDefaultMovementForOperation(){
     return (operationTypeSelect && operationTypeSelect.value === 'colheita') ? '0' : '1';
@@ -604,16 +616,17 @@ function applyMovementDefaultsToLines(){
   ?>;
   if(prefillLines.length){ prefillLines.forEach(l=>addLine(l)); } else { addLine(); }
 
+  const onOperationTypeChange = function(){
+    applyMovementDefaultsToLines();
+    toggleCaldaVisibility();
+  };
   if(operationTypeSelect){
-    operationTypeSelect.addEventListener('change', function(){
-      applyMovementDefaultsToLines();
-    });
+    operationTypeSelect.addEventListener('change', onOperationTypeChange);
     if(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2){
-      window.jQuery(operationTypeSelect).on('select2:select select2:clear', function(){
-        applyMovementDefaultsToLines();
-      });
+      window.jQuery(operationTypeSelect).on('select2:select select2:clear', onOperationTypeChange);
     }
   }
+  toggleCaldaVisibility();
   // Prefill resources selections
   <?php
     if($prefill && !empty($prefill->resources)){
@@ -685,7 +698,9 @@ function applyMovementDefaultsToLines(){
     });
   }
 
-  document.getElementById('btn-calda').addEventListener('click', openCalda);
+  if(caldaButton){
+    caldaButton.addEventListener('click', openCalda);
+  }
   backdrop.addEventListener('click', closeCalda);
   document.getElementById('calda-cancel').addEventListener('click', closeCalda);
   document.getElementById('calda-rate').addEventListener('input', computeCalda);

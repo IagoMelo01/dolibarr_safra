@@ -1846,20 +1846,22 @@ class modSafra extends DolibarrModules
                                'user' => 2,
                        );
 
-                       $this->menu[$r++] = array(
-                               'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
-                               'type' => 'left',
-                               'titre' => 'SafraMenuNew'.$labelKey,
-                               'mainmenu' => 'safra',
-                               'leftmenu' => 'safra_'.$code.'_new',
-                               'url' => $newUrl,
-                               'langs' => 'safra@safra',
-                               'position' => 1000 + $r,
-                               'enabled' => 'isModEnabled("safra")',
-                               'perms' => '$user->hasRight("safra", "'.$code.'", "write")',
-                               'target' => '',
-                               'user' => 2,
-                       );
+                       if (!in_array($code, array('ndvi', 'ndmi', 'ndwi', 'swir', 'evi'), true)) {
+                               $this->menu[$r++] = array(
+                                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
+                                       'type' => 'left',
+                                       'titre' => 'SafraMenuNew'.$labelKey,
+                                       'mainmenu' => 'safra',
+                                       'leftmenu' => 'safra_'.$code.'_new',
+                                       'url' => $newUrl,
+                                       'langs' => 'safra@safra',
+                                       'position' => 1000 + $r,
+                                       'enabled' => 'isModEnabled("safra")',
+                                       'perms' => '$user->hasRight("safra", "'.$code.'", "write")',
+                                       'target' => '',
+                                       'user' => 2,
+                               );
+                       }
                }
 
                // Imports profiles provided by this module
