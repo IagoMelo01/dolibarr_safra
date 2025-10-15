@@ -1,7 +1,7 @@
 <?php
 /* Copyright (C) 2004-2018  Laurent Destailleur     <eldy@users.sourceforge.net>
  * Copyright (C) 2018-2019  Nicolas ZABOURI         <info@inovea-conseil.com>
- * Copyright (C) 2019-2020  Frédéric France         <frederic.france@netlogic.fr>
+ * Copyright (C) 2019-2020  FrÃ©dÃ©ric France         <frederic.france@netlogic.fr>
  * Copyright (C) 2024 SuperAdmin
  *
  * This program is free software; you can redistribute it and/or modify
@@ -179,7 +179,10 @@ class modSafra extends DolibarrModules
 		// Some keys to add into the overwriting translation tables
 		/*$this->overwrite_translation = array(
 			'en_US:ParentCompany'=>'Parent company or reseller',
-			'fr_FR:ParentCompany'=>'Maison mère ou revendeur'
+                );
+	                $this->tabs[] = array(
+                        'data' => 'product:+safra_product_cultivar:SafraProductCultivarTab:safra@safra:$user->hasRight(\'safra\', \'cultivar\', \'read\'):/safra/product_safra_links.php?id=__ID__&type=cultivar'
+			'fr_FR:ParentCompany'=>'Maison mÃ¨re ou revendeur'
 		)*/
 
 		if (!isModEnabled("safra")) {
@@ -804,7 +807,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra',
 			 'type' => 'left',
-			 'titre' => 'Talhão',
+			 'titre' => 'TalhÃ£o',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'talhao',
 			 'url' => '/safra/talhao_list.php',
@@ -820,7 +823,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=talhao',
 			 'type' => 'left',
-			 'titre' => 'Lista Talhão',
+			 'titre' => 'Lista TalhÃ£o',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_talhao_list',
 			 'url' => '/safra/talhao_list.php',
@@ -836,7 +839,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=talhao',
 			 'type' => 'left',
-			 'titre' => 'Novo Talhão',
+			 'titre' => 'Novo TalhÃ£o',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_talhao_new',
 			 'url' => '/safra/talhao_card.php?action=create',
@@ -852,7 +855,7 @@ class modSafra extends DolibarrModules
                 $this->menu[$r++]=array(
                          'fk_menu' => 'fk_mainmenu=safra',
                          'type' => 'left',
-                         'titre' => 'Análises de Satélite',
+                         'titre' => 'AnÃ¡lises de SatÃ©lite',
                          'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
                          'mainmenu' => 'safra',
                          'leftmenu' => 'ndvi',
@@ -1736,7 +1739,7 @@ class modSafra extends DolibarrModules
                        'user' => 2,
                );
 
-               // Operações
+               // OperaÃ§Ãµes
                $this->menu[$r++] = array(
                        'fk_menu' => 'fk_mainmenu=safra',
                        'type' => 'left',
@@ -1920,8 +1923,8 @@ class modSafra extends DolibarrModules
 
 
 
-		// $r1 = $extrafields->addExtraField('fk_talhao', 'Talhão', 'link', 10, 11, null);
-		// $result1=$extrafields->addExtraField('fk_talhao', "Talhão", 'link', 10,  null, 'project', 0, 0, null, array('options' => array("Talhao:custom/safra/class/talhao.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
+		// $r1 = $extrafields->addExtraField('fk_talhao', 'TalhÃ£o', 'link', 10, 11, null);
+		// $result1=$extrafields->addExtraField('fk_talhao', "TalhÃ£o", 'link', 10,  null, 'project', 0, 0, null, array('options' => array("Talhao:custom/safra/class/talhao.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 		// $result2=$extrafields->addExtraField('fk_cultura', "Cultura", 'link', 11,  null, 'project', 0, 0, null, array('options' => array("Cultura:custom/safra/class/cultura.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 		// $result3=$extrafields->addExtraField('fk_cultivar', "Cultivar", 'link', 12,  null, 'project', 0, 0, null, array('options' => array("Cultivar:custom/safra/class/cultivar.class.php"=>null)), 1, '', 1, '', '', '', '', '$conf->safra->enabled', 0, 1);
 
@@ -1929,16 +1932,16 @@ class modSafra extends DolibarrModules
 			// Adicionar extrafield para referenciar Cultura
 			$extrafields->addExtraField(
 				'fk_cultura',                            // Nome do campo
-				'Cultura',                               // Rótulo do campo
+				'Cultura',                               // RÃ³tulo do campo
 				'link',                               // Tipo do campo (sellist para criar uma lista)
-				101,                                       // Posição
+				101,                                       // PosiÃ§Ã£o
 				'',                                      // Tamanho
-				'projet',                               // Módulo/elemento (project)
-				0,                                       // Campo não único
-				1,                                       // Não obrigatório
-				'',                                      // Valor padrão
-				array('options' => array("Cultura:safra/class/cultura.class.php:1"=>null)), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
-				1,                                        // Sempre editável
+				'projet',                               // MÃ³dulo/elemento (project)
+				0,                                       // Campo nÃ£o Ãºnico
+				1,                                       // NÃ£o obrigatÃ³rio
+				'',                                      // Valor padrÃ£o
+				array('options' => array("Cultura:safra/class/cultura.class.php:1"=>null)), // ParÃ¢metros para fazer o link (Tabela:Campo a Exibir:Campo de ReferÃªncia)
+				1,                                        // Sempre editÃ¡vel
 				'',
 				'isModEnabled("safra")'
 
@@ -1949,45 +1952,45 @@ class modSafra extends DolibarrModules
 			// Adicionar extrafield para referenciar Cultivar
 			$extrafields->addExtraField(
 				'fk_cultivar',                           // Nome do campo
-				'Cultivar',                              // Rótulo do campo
+				'Cultivar',                              // RÃ³tulo do campo
 				'link',                               // Tipo do campo (sellist)
-				102,                                       // Posição
+				102,                                       // PosiÃ§Ã£o
 				'',                                      // Tamanho
-				'projet',                               // Módulo/elemento (project)
-				0,                                       // Campo não único
-				0,                                       // Não obrigatório
-				'',                                      // Valor padrão
-				// array('options' => "llx_safra_cultivar:label:rowid"), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
-				array('options' => array("Cultivar:safra/class/cultivar.class.php:1"=>null)), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
-				1,                                        // Sempre editável
+				'projet',                               // MÃ³dulo/elemento (project)
+				0,                                       // Campo nÃ£o Ãºnico
+				0,                                       // NÃ£o obrigatÃ³rio
+				'',                                      // Valor padrÃ£o
+				// array('options' => "llx_safra_cultivar:label:rowid"), // ParÃ¢metros para fazer o link (Tabela:Campo a Exibir:Campo de ReferÃªncia)
+				array('options' => array("Cultivar:safra/class/cultivar.class.php:1"=>null)), // ParÃ¢metros para fazer o link (Tabela:Campo a Exibir:Campo de ReferÃªncia)
+				1,                                        // Sempre editÃ¡vel
 				'',
-				'isModEnabled("safra")'                                        // Sempre editável
+				'isModEnabled("safra")'                                        // Sempre editÃ¡vel
 			);
 
 
 
-			// Adicionar extrafield para referenciar Talhão
+			// Adicionar extrafield para referenciar TalhÃ£o
 			$extrafields->addExtraField(
 				'fk_talhao',                             // Nome do campo
-				'Talhão',                                // Rótulo do campo
+				'TalhÃ£o',                                // RÃ³tulo do campo
 				'link',                               // Tipo do campo (sellist)
-				100,                                       // Posição
+				100,                                       // PosiÃ§Ã£o
 				'',                                      // Tamanho
-				'projet',                               // Módulo/elemento (project)
-				0,                                       // Campo não único
-				1,                                       // Não obrigatório
-				'',                                      // Valor padrão
-				array('options' => array("Talhao:safra/class/talhao.class.php:1"=>null)), // Parâmetros para fazer o link (Tabela:Campo a Exibir:Campo de Referência)
-				1,                                        // Sempre editável
+				'projet',                               // MÃ³dulo/elemento (project)
+				0,                                       // Campo nÃ£o Ãºnico
+				1,                                       // NÃ£o obrigatÃ³rio
+				'',                                      // Valor padrÃ£o
+				array('options' => array("Talhao:safra/class/talhao.class.php:1"=>null)), // ParÃ¢metros para fazer o link (Tabela:Campo a Exibir:Campo de ReferÃªncia)
+				1,                                        // Sempre editÃ¡vel
 				'',
-				'isModEnabled("safra")'                                        // Sempre editável
+				'isModEnabled("safra")'                                        // Sempre editÃ¡vel
 			);
 
 
-		// Adicionar extrafield para vincular Aplica��o �s tarefas
+		// Adicionar extrafield para vincular Aplicação às tarefas
 		$extrafields->addExtraField(
 			'fk_aplicacao',
-			'Aplica��o',
+			'Aplicação',
 			'link',
 			150,
 			'',
