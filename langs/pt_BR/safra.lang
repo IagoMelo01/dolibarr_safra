@@ -316,6 +316,7 @@ ProdutoFormuladoStatusDisabledShort = Inativo
 IngredienteAtivo = Ingrediente ativo
 SafraLinkCultivarCheckbox = Vincular cultivares da Safra
 SafraLinkCultivarHelp = Selecione um ou mais cultivares da Safra para associar a este produto.
+SafraLinkCultivarPlaceholder = Pesquise cultivares pelo código ou nome
 SafraProductCultivarTab = Cultivares da Safra
 SafraProductLinkTitleCultivar = Cultivares Safra
 ModoAcao = Modo de ação

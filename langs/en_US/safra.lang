@@ -335,6 +335,7 @@ SafraLinkTecnicoCheckbox = Link Safra technical products
 SafraLinkTecnicoHelp = Select one or more Safra technical products to associate with this product.
 SafraLinkCultivarCheckbox = Link Safra cultivars
 SafraLinkCultivarHelp = Select one or more Safra cultivars to associate with this product.
+SafraLinkCultivarPlaceholder = Search cultivars by code or name
 SafraProductLinkSchemaError = Unable to prepare Safra product linking tables.
 SafraProductLinkSaveError = Unable to save Safra product links.
 SafraProductLinkRemoved = Link removed successfully.
