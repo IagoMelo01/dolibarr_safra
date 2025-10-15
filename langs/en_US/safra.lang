@@ -402,7 +402,7 @@ ZoneamentoCultivoLabel=System
 SafraAplicacaoAreaHa = Applied area (ha)
 SafraAplicacaoDate = Application date
 SafraAplicacaoCaldaObservation = Spray mixture notes
-SafraAplicacaoTaskProducts = Products to apply
+SafraAplicacaoTaskProducts = Activity details
 SafraAplicacaoTaskLabel = Application %s
 SafraAplicacaoTaskLabelNoRef = Application
 SafraAplicacaoResourceVehicle = Vehicles
@@ -436,6 +436,12 @@ TankCapacity = Tank capacity (L)
 AreaPerTank = Area per tank
 QuantityPerTank = Quantity per tank
 SaveAsNote = Save as note
+SafraCaldaNoteHeader = Mixture calculation:
+SafraCaldaNoteRate = - Rate: %s L/ha
+SafraCaldaNoteTank = - Tank: %s L
+SafraCaldaNoteArea = - Area per tank: %s ha
+SafraCaldaNoteItemsHeader = - Inputs per tank:
+SafraCaldaNoteItem =   * %s: %s
 
 
 SafraOperationType = Activity type

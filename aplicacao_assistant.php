@@ -195,7 +195,7 @@ if($coltal){
 $projectTalhaoJson=json_encode((object)$projectTalhaoMap, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
 llxHeader('', $langs->trans('Aplicacao').' - '.$langs->trans('New'));
 ?>
-<style>.safra-shell{max-width:1100px;margin:0 auto;padding:18px 16px 40px}.safra-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 18px rgba(15,23,42,.08);padding:18px;margin:0 0 16px}.safra-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.safra-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.safra-field label{font-size:12px;text-transform:uppercase;color:#64748b}.safra-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.select2-container{width:100%!important}.safra-lines{display:flex;flex-direction:column;gap:12px}.safra-lines-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.safra-lines-legend{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:8px}.safra-line-row{display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.safra-line-field{display:flex;flex-direction:column;gap:6px;flex:1 1 calc(50% - 12px)}.safra-line-field.full{flex-basis:100%}.safra-line-field.half{flex:1 1 calc(50% - 12px)}.safra-line-field.third{flex:1 1 calc(33.333% - 12px)}.safra-line-field.quarter{flex:1 1 calc(25% - 12px)}.safra-line-field.auto{flex:0 0 auto;align-self:flex-end}.safra-line-field label{font-size:11px;text-transform:uppercase;color:#475569}.safra-line-remove{display:flex;align-items:flex-end}.safra-line-remove button{padding:6px 10px;line-height:1}.safra-line-row input[type=number]{width:100%}</style></style>
+<style>.safra-shell{max-width:1100px;margin:0 auto;padding:18px 16px 40px}.safra-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 18px rgba(15,23,42,.08);padding:18px;margin:0 0 16px}.safra-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.safra-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.safra-field label{font-size:12px;text-transform:uppercase;color:#64748b}.safra-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.select2-container{width:100%!important}.safra-lines{display:flex;flex-direction:column;gap:12px}.safra-lines-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.safra-lines-legend{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:8px}.safra-line-row{display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.safra-line-field{display:flex;flex-direction:column;gap:6px;flex:1 1 calc(50% - 12px)}.safra-line-field.full{flex-basis:100%}.safra-line-field.half{flex:1 1 calc(50% - 12px)}.safra-line-field.third{flex:1 1 calc(33.333% - 12px)}.safra-line-field.quarter{flex:1 1 calc(25% - 12px)}.safra-line-field.auto{flex:0 0 auto;align-self:flex-end}.safra-line-field label{font-size:11px;text-transform:uppercase;color:#475569}.safra-line-remove{display:flex;align-items:flex-end}.safra-line-remove button{padding:6px 10px;line-height:1}.safra-line-row input[type=number]{width:100%}.safra-lines-footer{display:flex;justify-content:flex-end;margin-top:12px}</style></style>
 <div class="safra-shell">
 <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
 <input type="hidden" name="token" value="<?php echo newToken(); ?>">
@@ -206,9 +206,10 @@ llxHeader('', $langs->trans('Aplicacao').' - '.$langs->trans('New'));
 <section class="safra-card"><h2><?php echo $langs->trans('Project'); ?></h2><div class="safra-field"><label for="fk_project"><?php echo $langs->trans('Project'); ?></label><?php echo $projectSelectHtml; ?></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoTalhao'); ?></label><div id="talhao-info" class="opacitymedium"><?php echo $langs->trans('SafraAplicacaoTalhaoNotLinked'); ?></div></div></section>
 <section class="safra-card"><h2><?php echo $langs->trans('SafraAplicacaoTaskProducts'); ?></h2><div class="safra-field"><label for="ref"><?php echo $langs->trans('Ref'); ?> *</label><input type="text" name="ref" id="ref" required value="<?php echo $prefill? dol_escape_htmltag($prefill->ref):''; ?>"></div><div class="safra-field"><label for="operation_type"><?php echo $langs->trans('SafraOperationType'); ?></label><?php echo $operationTypeHtml; ?></div><div class="safra-field"><label for="qty"><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></label><input type="number" step="0.0001" name="qty" id="qty" value="<?php echo $prefill? price2num($prefill->qty,'4'): '0'; ?>"></div><div class="safra-field"><label for="date_application"><?php echo $langs->trans('SafraAplicacaoDate'); ?></label><input type="date" name="date_application" id="date_application" value="<?php echo ($prefill && !empty($prefill->date_application)) ? dol_print_date($prefill->date_application,'dayrfc') : '' ; ?>"></div><div class="safra-field"><label for="description"><?php echo $langs->trans('Description'); ?></label><textarea name="description" id="description" rows="3"><?php echo $prefill? dol_escape_htmltag($prefill->description):''; ?></textarea></div></section>
 <section class="safra-card">
-<div class="safra-lines-toolbar"><h3 style="margin:0;"><?php echo $langs->trans('Products'); ?></h3><div style="display:flex;gap:8px;align-items:center;"><button type="button" id="btn-calda" class="button"><?php echo $langs->trans('SafraAplicacaoCaldaCalculation') ?: 'Cálculo de calda'; ?></button><button type="button" id="add-line" class="button"><?php echo $langs->trans('Add'); ?></button></div></div>
+<div class="safra-lines-toolbar"><h3 style="margin:0;"><?php echo $langs->trans('Products'); ?></h3><div style="display:flex;gap:8px;align-items:center;"><button type="button" id="btn-calda" class="button"><?php echo $langs->trans('SafraAplicacaoCaldaCalculation') ?: 'Cálculo de calda'; ?></button></div></div>
 <div class="safra-lines-legend"><span><?php echo $langs->trans('Product'); ?></span><span><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></span><span><?php echo $langs->trans('Dose'); ?></span><span><?php echo $langs->trans('Unit'); ?></span><span><?php echo $langs->trans('Total'); ?></span><span><?php echo $langs->trans('SafraLineMovement'); ?></span><span><?php echo $langs->trans('Warehouse'); ?></span></div>
 <div id="lines-body" class="safra-lines"></div>
+<div class="safra-lines-footer"><button type="button" id="add-line" class="button"><?php echo $langs->trans('Add'); ?></button></div>
 </section>
 <section class="safra-card"><h3><?php echo $langs->trans('SafraAplicacaoResources'); ?></h3><div class="safra-grid"><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourceVehicle'); ?></label><select name="vehicles[]" multiple class="js-select2"><?php foreach($vehicles as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourceImplement'); ?></label><select name="implements[]" multiple class="js-select2"><?php foreach($implements as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourcePerson'); ?></label><select name="persons[]" multiple class="js-select2"><?php foreach($persons as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div></div></section>
 <section class="safra-card" id="calda-observation-card"><h3><?php echo $langs->trans('SafraAplicacaoCaldaObservation'); ?></h3><div class="safra-field"><label for="calda_observacao"><?php echo $langs->trans('Notes'); ?></label><textarea name="calda_observacao" id="calda_observacao" rows="4"><?php echo $prefill? dol_escape_htmltag($prefill->calda_observacao):''; ?></textarea></div></section>
@@ -297,6 +298,14 @@ document.addEventListener('DOMContentLoaded',function(){
   const warehouses=<?php echo $warehousesJson?:'{}'; ?>;
   const defaultWarehouses=<?php echo $defaultWarehousesJson?:'{}'; ?>;
   const DEBUG = <?php echo (int) GETPOST('debug','int'); ?>;
+  const caldaNoteTexts = <?php echo json_encode(array(
+      'header' => $langs->trans('SafraCaldaNoteHeader'),
+      'rate' => $langs->trans('SafraCaldaNoteRate'),
+      'tank' => $langs->trans('SafraCaldaNoteTank'),
+      'area' => $langs->trans('SafraCaldaNoteArea'),
+      'itemsHeader' => $langs->trans('SafraCaldaNoteItemsHeader'),
+      'item' => $langs->trans('SafraCaldaNoteItem'),
+  ), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
   const searchPlaceholder = <?php echo json_encode($langs->trans('Search') ?: 'Digite para filtrar'); ?>;
   function fillProducts(sel){ sel.innerHTML='';
     const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
@@ -678,6 +687,16 @@ function applyMovementDefaultsToLines(){
   function getRows(){ return Array.from(document.getElementById('lines-body').querySelectorAll('.safra-line-row')); }
   function textOfSelected(sel){ const o=sel && sel.options && sel.selectedIndex>=0 ? sel.options[sel.selectedIndex] : null; return o? o.text.trim(): ''; }
 
+  function formatCaldaText(template, values){
+    if(!template) return '';
+    const arr = Array.isArray(values) ? values : [values];
+    let result = template;
+    arr.forEach(function(val){
+      result = result.replace('%s', val);
+    });
+    return result;
+  }
+
   function computeCalda(){
     const rate = parseFloat(document.getElementById('calda-rate').value||'0')||0; // L/ha
     const tank = parseFloat(document.getElementById('calda-tank').value||'0')||0; // L
@@ -708,20 +727,41 @@ function applyMovementDefaultsToLines(){
   document.getElementById('calda-save').addEventListener('click', function(){
     const rate = parseFloat(document.getElementById('calda-rate').value||'0')||0;
     const tank = parseFloat(document.getElementById('calda-tank').value||'0')||0;
-    const area = document.getElementById('calda-area').textContent;
-    let text = 'Cálculo de calda:\n';
-    text += '- Taxa: '+rate.toFixed(2)+' L/ha\n';
-    text += '- Tanque: '+tank.toFixed(2)+' L\n';
-    text += '- Área por tanque: '+area+' ha\n';
-    text += '- Insumos por tanque:\n';
+    const areaDisplay = document.getElementById('calda-area').textContent;
+
+    const lines = [];
+    if(caldaNoteTexts && caldaNoteTexts.header){
+      lines.push(caldaNoteTexts.header);
+    }
+    const rateLine = formatCaldaText(caldaNoteTexts && caldaNoteTexts.rate, rate.toFixed(2));
+    if(rateLine){ lines.push(rateLine); }
+    const tankLine = formatCaldaText(caldaNoteTexts && caldaNoteTexts.tank, tank.toFixed(2));
+    if(tankLine){ lines.push(tankLine); }
+    const areaLine = formatCaldaText(caldaNoteTexts && caldaNoteTexts.area, areaDisplay);
+    if(areaLine){ lines.push(areaLine); }
+
+    const items = [];
     document.querySelectorAll('#calda-items li').forEach(function(li){
       const spans = li.querySelectorAll('span');
       const label = spans[0] ? spans[0].textContent.trim() : '';
       const qtyText = spans[1] ? spans[1].textContent.trim() : '';
-      if(label && qtyText){ text += '  * '+label+': '+qtyText+'\n'; }
+      if(label && qtyText){
+        items.push(formatCaldaText(caldaNoteTexts && caldaNoteTexts.item, [label, qtyText]));
+      }
     });
-    const obs = document.getElementById('calda_observacao');
-    obs.value = (obs.value ? (obs.value+"\n\n") : '') + text;
+
+    const itemsHeader = caldaNoteTexts && caldaNoteTexts.itemsHeader ? caldaNoteTexts.itemsHeader : '';
+    if((itemsHeader && itemsHeader.length) || items.length){
+      if(lines.length){ lines.push(''); }
+      if(itemsHeader){ lines.push(itemsHeader); }
+      items.forEach(function(line){ if(line){ lines.push(line); } });
+    }
+
+    const text = lines.join('\n');
+    if(text){
+      const obs = document.getElementById('calda_observacao');
+      obs.value = (obs.value ? (obs.value+"\n\n") : '') + text;
+    }
     closeCalda();
   });
 });
