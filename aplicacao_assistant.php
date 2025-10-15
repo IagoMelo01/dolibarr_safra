@@ -28,6 +28,14 @@ function safraSmartPairs(DoliDB $db,$table){
     $res=$db->query($sql); if($res){ while($o=$db->fetch_object($res)){ $id=(int)$o->rowid; $parts=array('#'.$id); if(!empty($o->ref)) $parts[]=$o->ref; if(!empty($o->label)) $parts[]=$o->label; $map[$id]=trim(implode(' - ',$parts)); } $db->free($res);} 
     return $map;
 }
+
+function safraTransRaw($langs)
+{
+    $args = func_get_args();
+    $langs = array_shift($args);
+    $method = method_exists($langs, 'transnoentitiesnoconv') ? 'transnoentitiesnoconv' : 'transnoentities';
+    return call_user_func_array(array($langs, $method), $args);
+}
 // data
 $products=array(); $defaultWarehouses=array(); $r=$db->query('SELECT rowid, ref, label, fk_default_warehouse FROM '.MAIN_DB_PREFIX."product".' WHERE entity IN ('.getEntity('product').') ORDER BY ref ASC LIMIT 500'); if($r){ while($o=$db->fetch_object($r)){ $l=$o->ref; if($o->label)$l.=' - '.$o->label; $products[(int)$o->rowid]=$l; if(!empty($o->fk_default_warehouse)) $defaultWarehouses[(int)$o->rowid]=(int)$o->fk_default_warehouse;} $db->free($r);} 
 $warehouses=array();
@@ -248,15 +256,15 @@ document.addEventListener('DOMContentLoaded',function(){
       hid.value=String(d.talhao_id);
       const t=d.talhao,p=[];
       p.push(t.url?('<a href="'+t.url+'" target="_blank" rel="noopener">'+(t.label||'')+'</a>'):(t.label||''));
-      if(t.area) p.push('<?php echo dol_escape_js($langs->trans('SafraAplicacaoTalhaoAreaFormat','%s')); ?>'.replace('%s',Number(t.area).toFixed(2)));
-      if(t.municipio) p.push('<?php echo dol_escape_js($langs->trans('SafraAplicacaoTalhaoMunicipioFormat','%s')); ?>'.replace('%s',t.municipio));
+      if(t.area) p.push('<?php echo dol_escape_js(safraTransRaw($langs, 'SafraAplicacaoTalhaoAreaFormat', '%s')); ?>'.replace('%s',Number(t.area).toFixed(2)));
+      if(t.municipio) p.push('<?php echo dol_escape_js(safraTransRaw($langs, 'SafraAplicacaoTalhaoMunicipioFormat', '%s')); ?>'.replace('%s',t.municipio));
       tal.innerHTML=p.join('<br>');
       talhaoArea = Number(t.area||0) || 0;
       if(qty && (!qty.value || Number(qty.value)===0)) qty.value=talhaoArea.toFixed(4);
       try { document.querySelectorAll('input').forEach(function(inp){ if(!inp.name) return; if(inp.name.indexOf('[area_ha]')>-1){ const v=parseFloat(inp.value||'0')||0; if(v===0 && talhaoArea>0){ inp.value = talhaoArea.toFixed(4); inp.dispatchEvent(new Event('input')); } } }); } catch(e) {}
     } else {
       hid.value='';
-      tal.textContent='<?php echo dol_escape_js($langs->trans('SafraAplicacaoTalhaoNotLinked')); ?>';
+      tal.textContent='<?php echo dol_escape_js(safraTransRaw($langs, 'SafraAplicacaoTalhaoNotLinked')); ?>';
     }
   }
 
@@ -299,19 +307,19 @@ document.addEventListener('DOMContentLoaded',function(){
   const defaultWarehouses=<?php echo $defaultWarehousesJson?:'{}'; ?>;
   const DEBUG = <?php echo (int) GETPOST('debug','int'); ?>;
   const caldaNoteTexts = <?php echo json_encode(array(
-      'header' => $langs->trans('SafraCaldaNoteHeader'),
-      'rate' => $langs->trans('SafraCaldaNoteRate'),
-      'tank' => $langs->trans('SafraCaldaNoteTank'),
-      'area' => $langs->trans('SafraCaldaNoteArea'),
-      'itemsHeader' => $langs->trans('SafraCaldaNoteItemsHeader'),
-      'item' => $langs->trans('SafraCaldaNoteItem'),
+      'header' => safraTransRaw($langs, 'SafraCaldaNoteHeader'),
+      'rate' => safraTransRaw($langs, 'SafraCaldaNoteRate'),
+      'tank' => safraTransRaw($langs, 'SafraCaldaNoteTank'),
+      'area' => safraTransRaw($langs, 'SafraCaldaNoteArea'),
+      'itemsHeader' => safraTransRaw($langs, 'SafraCaldaNoteItemsHeader'),
+      'item' => safraTransRaw($langs, 'SafraCaldaNoteItem'),
   ), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
-  const searchPlaceholder = <?php echo json_encode($langs->trans('Search') ?: 'Digite para filtrar'); ?>;
+  const searchPlaceholder = <?php echo json_encode(safraTransRaw($langs, 'Search') ?: 'Digite para filtrar'); ?>;
   function fillProducts(sel){ sel.innerHTML='';
     const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
     Object.keys(allProducts||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=allProducts[k]; sel.appendChild(o); });
   }
-  const warehousePlaceholder = <?php echo json_encode($langs->trans('SelectWarehouse') ?: $langs->trans('Select') ?: 'Selecione um armazém'); ?>;
+  const warehousePlaceholder = <?php echo json_encode(safraTransRaw($langs, 'SelectWarehouse') ?: safraTransRaw($langs, 'Select') ?: 'Selecione um armazém'); ?>;
   function fillWarehouses(sel){
     sel.innerHTML='';
     const ph=document.createElement('option'); ph.value=''; ph.textContent=warehousePlaceholder; ph.dataset.placeholder='1'; sel.appendChild(ph);
@@ -464,21 +472,21 @@ function applyMovementDefaultsToLines(){
     movementSelect.name='lines_flat['+idx+'][movement]';
     movementSelect.className='flat minwidth120';
     [
-      ['1', <?php echo json_encode($langs->trans('SafraLineMovementConsume')); ?>],
-      ['0', <?php echo json_encode($langs->trans('SafraLineMovementReceive')); ?>]
+      ['1', <?php echo json_encode(safraTransRaw($langs, 'SafraLineMovementConsume')); ?>],
+      ['0', <?php echo json_encode(safraTransRaw($langs, 'SafraLineMovementReceive')); ?>]
     ].forEach(function(pair){ const opt=document.createElement('option'); opt.value=pair[0]; opt.textContent=pair[1]; movementSelect.appendChild(opt); });
 
-    const productField=createLineField(<?php echo json_encode($langs->trans('Product')); ?>, pUI, 'full');
+    const productField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Product')); ?>, pUI, 'full');
     productField.appendChild(pHidden);
 
-    const warehouseField=createLineField(<?php echo json_encode($langs->trans('Warehouse')); ?>, warehouseSelect, 'half');
+    const warehouseField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Warehouse')); ?>, warehouseSelect, 'half');
     warehouseField.appendChild(warehouseHidden);
 
-    const areaField=createLineField(<?php echo json_encode($langs->trans('SafraAplicacaoAreaHa')); ?>, ia, 'half');
-    const doseField=createLineField(<?php echo json_encode($langs->trans('Dose')); ?>, id, 'half');
-    const unitField=createLineField(<?php echo json_encode($langs->trans('Unit')); ?>, iu, 'quarter');
-    const totalField=createLineField(<?php echo json_encode($langs->trans('Total')); ?>, it, 'quarter');
-    const movementField=createLineField(<?php echo json_encode($langs->trans('SafraLineMovement')); ?>, movementSelect, 'quarter');
+    const areaField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'SafraAplicacaoAreaHa')); ?>, ia, 'half');
+    const doseField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Dose')); ?>, id, 'half');
+    const unitField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Unit')); ?>, iu, 'quarter');
+    const totalField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Total')); ?>, it, 'quarter');
+    const movementField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'SafraLineMovement')); ?>, movementSelect, 'quarter');
 
     const removeField=document.createElement('div');
     removeField.className='safra-line-field auto safra-line-remove';
