@@ -42,7 +42,10 @@ if (empty($user->rights->produit->lire)) {
 }
 
 $type = GETPOST('type', 'aZ09');
-$term = trim(GETPOST('term', 'alphanohtml'));
+$term = trim(GETPOST('term', 'restricthtml'));
+if ($term === '') {
+    $term = trim(GETPOST('q', 'restricthtml'));
+}
 $page = GETPOSTINT('page');
 $limit = GETPOSTINT('limit');
 
@@ -76,7 +79,8 @@ if ($type === SafraProductLink::TYPE_FORMULADO) {
 } elseif ($type === SafraProductLink::TYPE_CULTIVAR) {
     $permissionOk = !empty($user->rights->safra->cultivar->read);
     if ($permissionOk) {
-        $sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX.'safra_cultivar WHERE status = 1';
+        $sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX."safra_cultivar WHERE status = 1 AND "
+            . getEntity('safra_cultivar', 1);
     }
 }
 
