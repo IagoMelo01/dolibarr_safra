@@ -10,6 +10,7 @@ CREATE TABLE llx_safra_aplicacao_line (
         dose_unit varchar(10),
         area_ha double,
         total_qty double,
+        movement integer DEFAULT 1,
         note text,
         date_creation datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=innodb;

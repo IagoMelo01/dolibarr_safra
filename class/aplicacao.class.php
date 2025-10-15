@@ -65,9 +65,51 @@ class Aplicacao extends CommonObject
 	public $picto = 'fa-fill-drip';
 
 
-	const STATUS_DRAFT = 0;
-	const STATUS_VALIDATED = 1;
-	const STATUS_CANCELED = 9;
+        const STATUS_DRAFT = 0;
+        const STATUS_VALIDATED = 1;
+        const STATUS_CANCELED = 9;
+
+        public const OPERATION_APPLICATION = 'aplicacao';
+        public const OPERATION_PREPARO_SOLO = 'preparo_solo';
+        public const OPERATION_TRATAMENTO_SEMENTE = 'tratamento_semente';
+        public const OPERATION_PLANTIO = 'plantio';
+        public const OPERATION_FERTILIZACAO = 'fertilizacao';
+        public const OPERATION_COLHEITA = 'colheita';
+        public const OPERATION_OUTRO = 'outro';
+
+        protected static $operationTypeLabels = array(
+                self::OPERATION_PREPARO_SOLO => 'SafraOperationTypePreparoSolo',
+                self::OPERATION_TRATAMENTO_SEMENTE => 'SafraOperationTypeTratamentoSemente',
+                self::OPERATION_PLANTIO => 'SafraOperationTypePlantio',
+                self::OPERATION_FERTILIZACAO => 'SafraOperationTypeFertilizacao',
+                self::OPERATION_APPLICATION => 'SafraOperationTypeAplicacao',
+                self::OPERATION_COLHEITA => 'SafraOperationTypeColheita',
+                self::OPERATION_OUTRO => 'SafraOperationTypeOutro',
+        );
+
+        public static function getOperationTypeMap()
+        {
+                return self::$operationTypeLabels;
+        }
+
+        public static function getOperationTypeLabelByCode($code, Translate $langs = null)
+        {
+                $code = (string) $code;
+                if (!isset(self::$operationTypeLabels[$code])) {
+                        return $code;
+                }
+
+                if ($langs instanceof Translate) {
+                        return $langs->trans(self::$operationTypeLabels[$code]);
+                }
+
+                global $langs;
+                if ($langs instanceof Translate) {
+                        return $langs->trans(self::$operationTypeLabels[$code]);
+                }
+
+                return self::$operationTypeLabels[$code];
+        }
 
 	/**
 	 *  'type' field format:
@@ -120,6 +162,7 @@ class Aplicacao extends CommonObject
                 "qty" => array("type"=>"double(28,8)", "label"=>"SafraAplicacaoAreaHa", "enabled"=>"1", 'position'=>45, 'notnull'=>0, "visible"=>"1", "default"=>"0", "isameasure"=>"1", "css"=>"maxwidth75imp", "validate"=>"1",),
                 "fk_soc" => array("type"=>"integer:Societe:societe/class/societe.class.php:1:((status:=:1) AND (entity:IN:__SHARED_ENTITIES__))", "label"=>"ThirdParty", "picto"=>"company", "enabled"=>"isModEnabled('societe')", 'position'=>50, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "help"=>"OrganizationEventLinkToThirdParty", "validate"=>"1",),
                 "fk_project" => array("type"=>"integer:Project:projet/class/project.class.php:1", "label"=>"Project", "picto"=>"project", "enabled"=>"isModEnabled('project')", 'position'=>52, 'notnull'=>-1, "visible"=>"1", "index"=>"1", "css"=>"maxwidth500 widthcentpercentminusxx", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
+                "operation_type" => array("type"=>"select", "label"=>"SafraOperationType", "enabled"=>"1", 'position'=>52, 'notnull'=>1, "visible"=>"1", "default"=>self::OPERATION_APPLICATION, "arrayofkeyval"=>array(), "css"=>"maxwidth250"),
                 "fk_task" => array("type"=>"integer:Task:projet/class/task.class.php:1", "label"=>"Task", "picto"=>"projecttask", "enabled"=>"isModEnabled('project')", 'position'=>53, 'notnull'=>-1, "visible"=>"-2", "index"=>"1", "csslist"=>"tdoverflowmax150"),
                 "date_application" => array("type"=>"date", "label"=>"SafraAplicacaoDate", "enabled"=>"1", 'position'=>54, 'notnull'=>0, "visible"=>"1", "validate"=>"1"),
                 "description" => array("type"=>"text", "label"=>"Description", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"3", "validate"=>"1",),
@@ -142,6 +185,7 @@ class Aplicacao extends CommonObject
         public $qty;
         public $fk_soc;
         public $fk_project;
+        public $operation_type;
         public $fk_task;
         public $date_application;
         public $description;
@@ -209,9 +253,13 @@ class Aplicacao extends CommonObject
 
                 self::ensureDatabaseSchema($db);
 
+                if (isset($this->fields['operation_type'])) {
+                        $this->fields['operation_type']['arrayofkeyval'] = self::$operationTypeLabels;
+                }
+
                 if (!getDolGlobalInt('MAIN_SHOW_TECHNICAL_ID') && isset($this->fields['rowid']) && !empty($this->fields['ref'])) {
-			$this->fields['rowid']['visible'] = 0;
-		}
+                        $this->fields['rowid']['visible'] = 0;
+                }
 		if (!isModEnabled('multicompany') && isset($this->fields['entity'])) {
 			$this->fields['entity']['enabled'] = 0;
 		}
@@ -391,7 +439,7 @@ class Aplicacao extends CommonObject
                 $this->lines = array();
                 if (empty($this->id)) return 0;
 
-                $sql = 'SELECT rowid, fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note'
+                $sql = 'SELECT rowid, fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, movement, note'
                     .' FROM '.MAIN_DB_PREFIX.$this->table_element_line
                     .' WHERE '.$this->fk_element.' = '.((int) $this->id)
                     .' ORDER BY rowid ASC';
@@ -411,6 +459,7 @@ class Aplicacao extends CommonObject
                                 $line->dose_unit = (string) $obj->dose_unit;
                                 $line->area_ha = (float) $obj->area_ha;
                                 $line->total_qty = (float) $obj->total_qty;
+                                $line->movement = isset($obj->movement) ? (int) $obj->movement : 1;
                                 $line->note = (string) $obj->note;
                                 $this->lines[] = $line;
                         }
@@ -530,22 +579,30 @@ class Aplicacao extends CommonObject
         protected function summarizeLinesForStock(array $lines, User $user = null, &$missingWarehouse = false)
         {
                 $summary = array();
+                $defaultMovement = $this->getDefaultMovementForOperation();
                 foreach ($lines as $line) {
                         $productId = 0;
                         $warehouseId = 0;
                         $qty = 0.0;
                         $label = '';
+                        $movement = $defaultMovement;
 
                         if (is_object($line)) {
                                 $productId = empty($line->fk_product) ? 0 : (int) $line->fk_product;
                                 $warehouseId = empty($line->fk_entrepot) ? 0 : (int) $line->fk_entrepot;
                                 $qty = isset($line->total_qty) ? (float) $line->total_qty : 0.0;
                                 $label = isset($line->label) ? trim((string) $line->label) : '';
+                                if (isset($line->movement)) {
+                                        $movement = (int) $line->movement ? 1 : 0;
+                                }
                         } else {
                                 $productId = empty($line['fk_product']) ? 0 : (int) $line['fk_product'];
                                 $warehouseId = empty($line['fk_entrepot']) ? 0 : (int) $line['fk_entrepot'];
                                 $qty = isset($line['total_qty']) ? (float) $line['total_qty'] : 0.0;
                                 $label = !empty($line['label']) ? trim((string) $line['label']) : '';
+                                if (isset($line['movement'])) {
+                                        $movement = (int) $line['movement'] ? 1 : 0;
+                                }
                         }
 
                         if ($productId <= 0) {
@@ -564,13 +621,14 @@ class Aplicacao extends CommonObject
                                 continue;
                         }
 
-                        $key = $productId.':'.$warehouseId;
+                        $key = $productId.':'.$warehouseId.':'.$movement;
 
                         if (!isset($summary[$key])) {
                                 $summary[$key] = array(
                                         'fk_product' => $productId,
                                         'fk_entrepot' => $warehouseId,
                                         'qty' => 0.0,
+                                        'movement' => $movement,
                                         'labels' => array(),
                                 );
                         } else {
@@ -587,6 +645,11 @@ class Aplicacao extends CommonObject
                 }
 
                 return $summary;
+        }
+
+        protected function getDefaultMovementForOperation()
+        {
+                return ($this->operation_type === self::OPERATION_COLHEITA) ? 0 : 1;
         }
 
         protected function resolveWarehouseIdForProduct($productId, User $user = null)
@@ -625,7 +688,7 @@ class Aplicacao extends CommonObject
         }
 
         /**
-         * Apply stock movements based on provided summary (all movements are decreases).
+         * Apply stock movements based on provided summary.
          *
          * @param User  $user     Current user
          * @param array $summary  Summary built with summarizeLinesForStock
@@ -641,12 +704,15 @@ class Aplicacao extends CommonObject
                 global $langs;
                 $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
 
+                $operationLabel = self::getOperationTypeLabelByCode($this->operation_type, $langs);
+
                 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
                 foreach ($summary as $key => $item) {
                         $productId = (int) $item['fk_product'];
                         $warehouseId = (int) $item['fk_entrepot'];
                         $qty = (float) $item['qty'];
+                        $movement = isset($item['movement']) ? (int) $item['movement'] : 1;
 
                         if ($productId <= 0 || $qty <= 0) {
                                 continue;
@@ -668,12 +734,12 @@ class Aplicacao extends CommonObject
                                 return -1;
                         }
 
-                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id);
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id, $operationLabel);
                         if (!empty($item['labels'])) {
                                 $label .= ' - '.implode(', ', array_slice(array_keys($item['labels']), 0, 3));
                         }
 
-                        $res = $product->correct_stock($user, $warehouseId, $qty, 1, $label, 0, '', $this->element, $this->id);
+                        $res = $product->correct_stock($user, $warehouseId, $qty, $movement, $label, 0, '', $this->element, $this->id);
                         if ($res <= 0) {
                                 $this->error = $product->error ?: $product->errors;
                                 $this->rollbackStockOperations($user, $applied);
@@ -683,7 +749,7 @@ class Aplicacao extends CommonObject
                         $applied[] = array(
                                 'fk_product' => $productId,
                                 'fk_entrepot' => $warehouseId,
-                                'movement' => 1,
+                                'movement' => $movement,
                                 'qty' => $qty,
                         );
                 }
@@ -700,12 +766,15 @@ class Aplicacao extends CommonObject
                 global $langs;
                 $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
 
+                $operationLabel = self::getOperationTypeLabelByCode($this->operation_type, $langs);
+
                 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
                 foreach ($summary as $item) {
                         $productId = (int) $item['fk_product'];
                         $warehouseId = (int) $item['fk_entrepot'];
                         $qty = (float) $item['qty'];
+                        $movement = isset($item['movement']) ? (int) $item['movement'] : 1;
 
                         if ($productId <= 0 || $qty <= 0) {
                                 continue;
@@ -725,8 +794,13 @@ class Aplicacao extends CommonObject
                                 return -1;
                         }
 
-                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id).' (delete)';
-                        $res = $product->correct_stock($user, $warehouseId, $qty, 0, $label, 0, '', $this->element, $this->id);
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id, $operationLabel).' (delete)';
+                        if (!empty($item['labels'])) {
+                                $label .= ' - '.implode(', ', array_slice(array_keys($item['labels']), 0, 3));
+                        }
+
+                        $rollbackMovement = $movement === 1 ? 0 : 1;
+                        $res = $product->correct_stock($user, $warehouseId, $qty, $rollbackMovement, $label, 0, '', $this->element, $this->id);
                         if ($res <= 0) {
                                 $this->error = $product->error ?: $product->errors;
                                 $this->rollbackStockOperations($user, $applied);
@@ -736,7 +810,7 @@ class Aplicacao extends CommonObject
                         $applied[] = array(
                                 'fk_product' => $productId,
                                 'fk_entrepot' => $warehouseId,
-                                'movement' => 0,
+                                'movement' => $rollbackMovement,
                                 'qty' => $qty,
                         );
                 }
@@ -763,6 +837,8 @@ class Aplicacao extends CommonObject
 
                 global $langs;
                 $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
+
+                $operationLabel = self::getOperationTypeLabelByCode($this->operation_type, $langs);
 
                 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
@@ -799,7 +875,7 @@ class Aplicacao extends CommonObject
                                 return -1;
                         }
 
-                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id);
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id, $operationLabel);
                         $labels = array();
                         if (!empty($item['labels'])) {
                                 $labels = array_keys($item['labels']);
@@ -810,7 +886,19 @@ class Aplicacao extends CommonObject
                                 $label .= ' - '.implode(', ', array_slice($labels, 0, 3));
                         }
 
-                        $movement = ($delta > 0) ? 1 : 0;
+                        $baseMovement = 1;
+                        if (isset($newSummary[$key]['movement'])) {
+                                $baseMovement = (int) $newSummary[$key]['movement'];
+                        } elseif (isset($oldSummary[$key]['movement'])) {
+                                $baseMovement = (int) $oldSummary[$key]['movement'];
+                        }
+
+                        if ($delta > 0) {
+                                $movement = $baseMovement;
+                        } else {
+                                $movement = $baseMovement === 1 ? 0 : 1;
+                        }
+
                         $qty = abs($delta);
 
                         $res = $product->correct_stock($user, $warehouseId, $qty, $movement, $label, 0, '', $this->element, $this->id);
@@ -848,6 +936,8 @@ class Aplicacao extends CommonObject
                 global $langs;
                 $langs->loadLangs(array('safra@safra', 'stocks', 'product'));
 
+                $operationLabel = self::getOperationTypeLabelByCode($this->operation_type, $langs);
+
                 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
                 foreach (array_reverse($operations) as $operation) {
@@ -866,7 +956,7 @@ class Aplicacao extends CommonObject
                         }
 
                         $rollbackMovement = $movement === 1 ? 0 : 1;
-                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id).' (rollback)';
+                        $label = $langs->trans('SafraAplicacaoStockMovementLabel', $this->ref ?: $this->id, $operationLabel).' (rollback)';
                         $product->correct_stock($user, $warehouseId, $qty, $rollbackMovement, $label, 0, '', $this->element, $this->id);
                 }
         }
@@ -915,16 +1005,22 @@ class Aplicacao extends CommonObject
                         $doseUnit = isset($line['dose_unit']) ? substr(trim((string) $line['dose_unit']), 0, 10) : '';
                         $areaHa = isset($line['area_ha']) ? (float) $line['area_ha'] : 0;
                         $totalQty = isset($line['total_qty']) ? (float) $line['total_qty'] : ($dose * $areaHa);
+                        if (isset($line['movement'])) {
+                                $movement = (int) $line['movement'];
+                        } else {
+                                $movement = $this->getDefaultMovementForOperation();
+                        }
+                        $movement = $movement ? 1 : 0;
                         $note = isset($line['note']) ? trim((string) $line['note']) : '';
 
                         if ($fkProduct <= 0 && empty($label)) {
                                 continue;
                         }
 
-                        $totalApplied += $totalQty;
+                        $totalApplied += abs($totalQty);
 
                         $sql = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element_line
-                                .' ('.$this->fk_element.', fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, note) VALUES (';
+                                .' ('.$this->fk_element.', fk_product, fk_produto_formulado, fk_produtotecnico, fk_entrepot, label, dose, dose_unit, area_ha, total_qty, movement, note) VALUES (';
                         $sql .= ((int) $this->id).', ';
                         $sql .= ($fkProduct > 0 ? (int) $fkProduct : 'NULL').', ';
                         $sql .= ($fkFormulado > 0 ? (int) $fkFormulado : 'NULL').', ';
@@ -935,6 +1031,7 @@ class Aplicacao extends CommonObject
                         $sql .= "'".$this->db->escape($doseUnit)."'".', ';
                         $sql .= ((float) $areaHa).', ';
                         $sql .= ((float) $totalQty).', ';
+                        $sql .= ((int) $movement).', ';
                         $sql .= "'".$this->db->escape($note)."'".')';
 
                         if (!$this->db->query($sql)) {
@@ -1013,11 +1110,15 @@ class Aplicacao extends CommonObject
                 $mainTable = MAIN_DB_PREFIX.'safra_aplicacao';
                 $info = $db->DDLDescTable($mainTable, $mainTable);
                 $hasFkTask = false;
+                $hasOperationType = false;
                 if (is_array($info)) {
                         foreach ($info as $fieldInfo) {
                                 if (!empty($fieldInfo['field']) && $fieldInfo['field'] === 'fk_task') {
                                         $hasFkTask = true;
                                         break;
+                                }
+                                if (!empty($fieldInfo['field']) && $fieldInfo['field'] === 'operation_type') {
+                                        $hasOperationType = true;
                                 }
                         }
                 }
@@ -1026,6 +1127,13 @@ class Aplicacao extends CommonObject
                         $sql = 'ALTER TABLE '.$mainTable.' ADD COLUMN fk_task integer AFTER fk_project';
                         if (!$db->query($sql)) {
                                 dol_syslog(__METHOD__.' failed to add fk_task column: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                if (!$hasOperationType) {
+                        $sql = 'ALTER TABLE '.$mainTable." ADD COLUMN operation_type varchar(32) NOT NULL DEFAULT '".self::OPERATION_APPLICATION."' AFTER fk_project";
+                        if (!$db->query($sql)) {
+                                dol_syslog(__METHOD__.' failed to add operation_type column: '.$db->lasterror(), LOG_WARNING);
                         }
                 }
 
@@ -1043,6 +1151,7 @@ class Aplicacao extends CommonObject
                                 .'dose_unit varchar(10), '
                                 .'area_ha double, '
                                 .'total_qty double, '
+                                .'movement integer DEFAULT 1, '
                                 .'note text, '
                                 .'date_creation datetime NOT NULL DEFAULT CURRENT_TIMESTAMP'
                                 .') ENGINE=innodb;';
@@ -1054,6 +1163,23 @@ class Aplicacao extends CommonObject
                                 $db->query('ALTER TABLE '.$lineTable.' ADD CONSTRAINT llx_safra_aplicacao_line_fk_aplicacao FOREIGN KEY (fk_aplicacao) REFERENCES '.MAIN_DB_PREFIX.'safra_aplicacao(rowid)');
                         } else {
                                 dol_syslog(__METHOD__.' failed to create safra_aplicacao_line: '.$db->lasterror(), LOG_WARNING);
+                        }
+                }
+
+                $lineInfo = $db->DDLDescTable($lineTable, $lineTable);
+                $hasMovement = false;
+                if (is_array($lineInfo)) {
+                        foreach ($lineInfo as $fieldInfo) {
+                                if (!empty($fieldInfo['field']) && $fieldInfo['field'] === 'movement') {
+                                        $hasMovement = true;
+                                        break;
+                                }
+                        }
+                }
+                if (!$hasMovement) {
+                        $sql = 'ALTER TABLE '.$lineTable.' ADD COLUMN movement integer DEFAULT 1 AFTER total_qty';
+                        if (!$db->query($sql)) {
+                                dol_syslog(__METHOD__.' failed to add movement column: '.$db->lasterror(), LOG_WARNING);
                         }
                 }
 
@@ -1130,6 +1256,11 @@ class Aplicacao extends CommonObject
 
                 $output = array();
 
+                $operationLabel = self::getOperationTypeLabelByCode($this->operation_type, $langs);
+                if (!empty($operationLabel)) {
+                        $output[] = $langs->trans('SafraOperationType').': '.$operationLabel;
+                }
+
                 if (!empty($this->label)) {
                         $output[] = $langs->trans('Label').': '.dol_escape_htmltag($this->label);
                 }
@@ -1171,6 +1302,8 @@ class Aplicacao extends CommonObject
                                 if (!empty($line->area_ha)) {
                                         $doseParts[] = $langs->trans('SafraAplicacaoAreaHa').': '.price2num($line->area_ha, 4);
                                 }
+                                $movementKey = ((int) $line->movement === 1) ? 'SafraLineMovementConsume' : 'SafraLineMovementProduce';
+                                $doseParts[] = $langs->trans($movementKey);
 
                                 $output[] = '- '.($lineLabel !== '' ? $lineLabel : $langs->trans('Product')).(!empty($doseParts) ? ' ('.implode(', ', $doseParts).')' : '');
                         }
@@ -1313,7 +1446,11 @@ class Aplicacao extends CommonObject
                 if ($refLabel === '') {
                         $refLabel = '#'.((int) $this->id);
                 }
-                $label = 'aplicacao - '.$refLabel;
+                $operationLabel = trim(self::getOperationTypeLabelByCode($this->operation_type, $langs));
+                if ($operationLabel === '' || $operationLabel === null) {
+                        $operationLabel = $langs->trans('Aplicacao');
+                }
+                $label = $operationLabel.' - '.$refLabel;
                 $description = $this->buildTaskDescription();
 
                 $taskId = (int) $this->fk_task;
