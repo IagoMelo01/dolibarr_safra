@@ -137,6 +137,16 @@ $operationTypeList = Aplicacao::getOperationTypeList($langs);
 $selectedOperationType = $prefill ? Aplicacao::normalizeOperationType($prefill->operation_type) : Aplicacao::normalizeOperationType(GETPOST('operation_type','alpha'));
 if (!isset($operationTypeList[$selectedOperationType])) { $selectedOperationType = Aplicacao::OPERATION_APLICACAO; }
 $operationTypeHtml = $form->selectarray('operation_type', $operationTypeList, $selectedOperationType, 0, 0, 0, '', 0, 0, 0, '', 'minwidth200');
+$operationAreaLabels = array(
+    Aplicacao::OPERATION_PREPARO => safraTransRaw($langs, 'SafraOperationAreaPreparo'),
+    Aplicacao::OPERATION_TRATAMENTO => safraTransRaw($langs, 'SafraOperationAreaTratamento'),
+    Aplicacao::OPERATION_PLANTIO => safraTransRaw($langs, 'SafraOperationAreaPlantio'),
+    Aplicacao::OPERATION_FERTILIZACAO => safraTransRaw($langs, 'SafraOperationAreaFertilizacao'),
+    Aplicacao::OPERATION_APLICACAO => safraTransRaw($langs, 'SafraOperationAreaAplicacao'),
+    Aplicacao::OPERATION_COLHEITA => safraTransRaw($langs, 'SafraOperationAreaColheita'),
+    Aplicacao::OPERATION_OUTRO => safraTransRaw($langs, 'SafraOperationAreaOutro'),
+);
+$initialAreaLabel = isset($operationAreaLabels[$selectedOperationType]) ? $operationAreaLabels[$selectedOperationType] : safraTransRaw($langs, 'SafraAplicacaoAreaHa');
 $productsJson=json_encode((object)$products, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
 $warehousesJson=json_encode((object)$warehouses, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
 $defaultWarehousesJson=json_encode((object)$defaultWarehouses, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
@@ -212,10 +222,10 @@ llxHeader('', $langs->trans('Aplicacao').' - '.$langs->trans('New'));
 <input type="hidden" id="ajax-project-talhao-url" value="<?php echo dol_escape_htmltag($ajaxTalhaoUrl); ?>">
 <input type="hidden" name="talhao_id" id="talhao_id" value="<?php echo (int)GETPOST('talhao_id','int'); ?>">
 <section class="safra-card"><h2><?php echo $langs->trans('Project'); ?></h2><div class="safra-field"><label for="fk_project"><?php echo $langs->trans('Project'); ?></label><?php echo $projectSelectHtml; ?></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoTalhao'); ?></label><div id="talhao-info" class="opacitymedium"><?php echo $langs->trans('SafraAplicacaoTalhaoNotLinked'); ?></div></div></section>
-<section class="safra-card"><h2><?php echo $langs->trans('SafraAplicacaoTaskProducts'); ?></h2><div class="safra-field"><label for="ref"><?php echo $langs->trans('Ref'); ?> *</label><input type="text" name="ref" id="ref" required value="<?php echo $prefill? dol_escape_htmltag($prefill->ref):''; ?>"></div><div class="safra-field"><label for="operation_type"><?php echo $langs->trans('SafraOperationType'); ?></label><?php echo $operationTypeHtml; ?></div><div class="safra-field"><label for="qty"><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></label><input type="number" step="0.0001" name="qty" id="qty" value="<?php echo $prefill? price2num($prefill->qty,'4'): '0'; ?>"></div><div class="safra-field"><label for="date_application"><?php echo $langs->trans('SafraAplicacaoDate'); ?></label><input type="date" name="date_application" id="date_application" value="<?php echo ($prefill && !empty($prefill->date_application)) ? dol_print_date($prefill->date_application,'dayrfc') : '' ; ?>"></div><div class="safra-field"><label for="description"><?php echo $langs->trans('Description'); ?></label><textarea name="description" id="description" rows="3"><?php echo $prefill? dol_escape_htmltag($prefill->description):''; ?></textarea></div></section>
+<section class="safra-card"><h2><?php echo $langs->trans('SafraAplicacaoTaskProducts'); ?></h2><div class="safra-field"><label for="ref"><?php echo $langs->trans('Ref'); ?> *</label><input type="text" name="ref" id="ref" required value="<?php echo $prefill? dol_escape_htmltag($prefill->ref):''; ?>"></div><div class="safra-field"><label for="operation_type"><?php echo $langs->trans('SafraOperationType'); ?></label><?php echo $operationTypeHtml; ?></div><div class="safra-field"><label for="qty" id="qty-label" data-role="area-label"><?php echo dol_escape_htmltag($initialAreaLabel); ?></label><input type="number" step="0.0001" name="qty" id="qty" value="<?php echo $prefill? price2num($prefill->qty,'4'): '0'; ?>"></div><div class="safra-field"><label for="date_application"><?php echo $langs->trans('SafraAplicacaoDate'); ?></label><input type="date" name="date_application" id="date_application" value="<?php echo ($prefill && !empty($prefill->date_application)) ? dol_print_date($prefill->date_application,'dayrfc') : '' ; ?>"></div><div class="safra-field"><label for="description"><?php echo $langs->trans('Description'); ?></label><textarea name="description" id="description" rows="3"><?php echo $prefill? dol_escape_htmltag($prefill->description):''; ?></textarea></div></section>
 <section class="safra-card">
 <div class="safra-lines-toolbar"><h3 style="margin:0;"><?php echo $langs->trans('Products'); ?></h3><div style="display:flex;gap:8px;align-items:center;"><button type="button" id="btn-calda" class="button"><?php echo $langs->trans('SafraAplicacaoCaldaCalculation') ?: 'Cálculo de calda'; ?></button></div></div>
-<div class="safra-lines-legend"><span><?php echo $langs->trans('Product'); ?></span><span><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></span><span><?php echo $langs->trans('Dose'); ?></span><span><?php echo $langs->trans('Unit'); ?></span><span><?php echo $langs->trans('Total'); ?></span><span><?php echo $langs->trans('SafraLineMovement'); ?></span><span><?php echo $langs->trans('Warehouse'); ?></span></div>
+<div class="safra-lines-legend"><span><?php echo $langs->trans('Product'); ?></span><span data-role="area-label"><?php echo dol_escape_htmltag($initialAreaLabel); ?></span><span data-role="dose-legend"><?php echo $langs->trans('Dose'); ?></span><span data-role="unit-legend"><?php echo $langs->trans('Unit'); ?></span><span><?php echo $langs->trans('Total'); ?></span><span><?php echo $langs->trans('SafraLineMovement'); ?></span><span><?php echo $langs->trans('Warehouse'); ?></span></div>
 <div id="lines-body" class="safra-lines"></div>
 <div class="safra-lines-footer"><button type="button" id="add-line" class="button"><?php echo $langs->trans('Add'); ?></button></div>
 </section>
@@ -315,6 +325,10 @@ document.addEventListener('DOMContentLoaded',function(){
       'item' => safraTransRaw($langs, 'SafraCaldaNoteItem'),
   ), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
   const searchPlaceholder = <?php echo json_encode(safraTransRaw($langs, 'Search') ?: 'Digite para filtrar'); ?>;
+  const operationAreaLabels = <?php echo json_encode($operationAreaLabels, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
+  const defaultAreaLabel = <?php echo json_encode($initialAreaLabel, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
+  const aplicacaoOperationCode = <?php echo json_encode(Aplicacao::OPERATION_APLICACAO); ?>;
+  const colheitaOperationCode = <?php echo json_encode(Aplicacao::OPERATION_COLHEITA); ?>;
   function fillProducts(sel){ sel.innerHTML='';
     const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
     Object.keys(allProducts||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=allProducts[k]; sel.appendChild(o); });
@@ -358,17 +372,33 @@ function enhanceSelectWithSearch(selectEl, placeholderText, dropdownContext){
     $sel.select2(opts);
 }
 
-function createLineField(labelText, element, sizeClass){
+function createLineField(labelText, element, sizeClass, role){
 
     const wrap=document.createElement('div');
 
     wrap.className='safra-line-field '+(sizeClass||'');
+    if(role){
+        wrap.dataset.role = role+'-field';
+    }
 
     const lbl=document.createElement('label');
 
     lbl.textContent=labelText;
+    if(role === 'area'){
+        lbl.dataset.role = 'area-label';
+    } else if(role === 'dose'){
+        lbl.dataset.role = 'dose-label';
+    } else if(role === 'unit'){
+        lbl.dataset.role = 'unit-label';
+    } else if(role === 'total'){
+        lbl.dataset.role = 'total-label';
+    }
 
     wrap.appendChild(lbl);
+
+    if(role){
+        element.dataset.role = role+'-input';
+    }
 
     wrap.appendChild(element);
 
@@ -390,8 +420,12 @@ const operationTypeSelect = document.getElementById('operation_type');
 const caldaButton = document.getElementById('btn-calda');
 const caldaSection = document.getElementById('calda-observation-card');
 
+function isAplicacaoOperation(){
+    return !operationTypeSelect || operationTypeSelect.value === aplicacaoOperationCode;
+}
+
 function toggleCaldaVisibility(){
-    const isAplicacao = !operationTypeSelect || operationTypeSelect.value === 'aplicacao';
+    const isAplicacao = isAplicacaoOperation();
     if(caldaButton){
         caldaButton.style.display = isAplicacao ? '' : 'none';
     }
@@ -401,7 +435,7 @@ function toggleCaldaVisibility(){
 }
 
 function getDefaultMovementForOperation(){
-    return (operationTypeSelect && operationTypeSelect.value === 'colheita') ? '0' : '1';
+    return (operationTypeSelect && operationTypeSelect.value === colheitaOperationCode) ? '0' : '1';
 }
 
 function setMovementValue(selectEl, value, markUser){
@@ -429,6 +463,52 @@ function applyMovementDefaultsToLines(){
         }
         setMovementValue(selectEl, defaultMovement, false);
     });
+}
+
+function getCurrentOperationAreaLabel(){
+    const op = operationTypeSelect ? operationTypeSelect.value : aplicacaoOperationCode;
+    if(operationAreaLabels && Object.prototype.hasOwnProperty.call(operationAreaLabels, op) && operationAreaLabels[op]){
+        return operationAreaLabels[op];
+    }
+    return defaultAreaLabel || '';
+}
+
+function updateAreaLabels(){
+    const labelText = getCurrentOperationAreaLabel();
+    document.querySelectorAll('[data-role="area-label"]').forEach(function(node){
+        if(node){
+            node.textContent = labelText;
+        }
+    });
+}
+
+function recalculateLineTotals(){
+    document.querySelectorAll('.safra-line-row').forEach(function(row){
+        if(typeof row._safraRecalc === 'function'){
+            row._safraRecalc();
+        }
+    });
+}
+
+function updateDoseSections(){
+    const isAplicacao = isAplicacaoOperation();
+    const displayValue = isAplicacao ? '' : 'none';
+    document.querySelectorAll('[data-role="dose-field"]').forEach(function(node){ node.style.display = displayValue; });
+    document.querySelectorAll('[data-role="dose-legend"]').forEach(function(node){ node.style.display = displayValue; });
+    document.querySelectorAll('[data-role="unit-field"]').forEach(function(node){ node.style.display = displayValue; });
+    document.querySelectorAll('[data-role="unit-legend"]').forEach(function(node){ node.style.display = displayValue; });
+    document.querySelectorAll('[data-role="total-input"]').forEach(function(input){
+        if(isAplicacao){
+            input.readOnly = true;
+            input.setAttribute('readonly', 'readonly');
+        } else {
+            input.readOnly = false;
+            input.removeAttribute('readonly');
+        }
+    });
+    if(isAplicacao){
+        recalculateLineTotals();
+    }
 }
 
   let idx=0;
@@ -482,10 +562,10 @@ function applyMovementDefaultsToLines(){
     const warehouseField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Warehouse')); ?>, warehouseSelect, 'half');
     warehouseField.appendChild(warehouseHidden);
 
-    const areaField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'SafraAplicacaoAreaHa')); ?>, ia, 'half');
-    const doseField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Dose')); ?>, id, 'half');
-    const unitField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Unit')); ?>, iu, 'quarter');
-    const totalField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Total')); ?>, it, 'quarter');
+    const areaField=createLineField(<?php echo json_encode($initialAreaLabel, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>, ia, 'half', 'area');
+    const doseField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Dose')); ?>, id, 'half', 'dose');
+    const unitField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Unit')); ?>, iu, 'quarter', 'unit');
+    const totalField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'Total')); ?>, it, 'quarter', 'total');
     const movementField=createLineField(<?php echo json_encode(safraTransRaw($langs, 'SafraLineMovement')); ?>, movementSelect, 'quarter');
 
     const removeField=document.createElement('div');
@@ -508,8 +588,16 @@ function applyMovementDefaultsToLines(){
     row.appendChild(movementField);
     row.appendChild(removeField);
 
-    function rec(){ it.value=((parseFloat(ia.value)||0)*(parseFloat(id.value)||0)).toFixed(4); }
+    function rec(){
+      if(!isAplicacaoOperation()){
+        return;
+      }
+      const areaVal = parseFloat(ia.value||'0')||0;
+      const doseVal = parseFloat(id.value||'0')||0;
+      it.value=(areaVal*doseVal).toFixed(4);
+    }
     ia.addEventListener('input',rec); id.addEventListener('input',rec); rec();
+    row._safraRecalc = rec;
 
     function setWarehouseValue(value, markUser){
       const stringValue = value ? String(value) : '';
@@ -607,6 +695,8 @@ function applyMovementDefaultsToLines(){
     body.appendChild(row);
     enhanceSelectWithSearch(pUI, searchPlaceholder, row);
     if(DEBUG){ try { console.log('DEBUG product options', pUI.options.length); } catch(e){} }
+    updateAreaLabels();
+    updateDoseSections();
     idx++;
   }
 
@@ -634,6 +724,8 @@ function applyMovementDefaultsToLines(){
   if(prefillLines.length){ prefillLines.forEach(l=>addLine(l)); } else { addLine(); }
 
   const onOperationTypeChange = function(){
+    updateAreaLabels();
+    updateDoseSections();
     applyMovementDefaultsToLines();
     toggleCaldaVisibility();
   };

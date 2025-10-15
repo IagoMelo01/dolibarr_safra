@@ -400,6 +400,13 @@ ZoneamentoCultivoLabel=System
 # Application assistant
 #
 SafraAplicacaoAreaHa = Applied area (ha)
+SafraOperationAreaPreparo = Prepared area (ha)
+SafraOperationAreaTratamento = Treated area (ha)
+SafraOperationAreaPlantio = Planted area (ha)
+SafraOperationAreaFertilizacao = Fertilized area (ha)
+SafraOperationAreaAplicacao = Applied area (ha)
+SafraOperationAreaColheita = Harvested area (ha)
+SafraOperationAreaOutro = Worked area (ha)
 SafraAplicacaoDate = Application date
 SafraAplicacaoCaldaObservation = Spray mixture notes
 SafraAplicacaoTaskProducts = Activity details

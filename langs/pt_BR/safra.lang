@@ -404,6 +404,13 @@ ZoneamentoCultivoLabel=Sistema
 # Assistente de aplicação
 #
 SafraAplicacaoAreaHa = Área aplicada (ha)
+SafraOperationAreaPreparo = Área preparada (ha)
+SafraOperationAreaTratamento = Área tratada (ha)
+SafraOperationAreaPlantio = Área plantada (ha)
+SafraOperationAreaFertilizacao = Área fertilizada (ha)
+SafraOperationAreaAplicacao = Área aplicada (ha)
+SafraOperationAreaColheita = Área colhida (ha)
+SafraOperationAreaOutro = Área trabalhada (ha)
 SafraAplicacaoDate = Data da aplicação
 SafraAplicacaoCaldaObservation = Observações da calda
 SafraAplicacaoTaskProducts = Dados da atividade
