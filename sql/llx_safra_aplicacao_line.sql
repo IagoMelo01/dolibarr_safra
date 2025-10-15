@@ -11,5 +11,6 @@ CREATE TABLE llx_safra_aplicacao_line (
         area_ha double,
         total_qty double,
         note text,
+        movement integer NOT NULL DEFAULT 1,
         date_creation datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=innodb;

@@ -12,6 +12,7 @@ class SafraProductLink
 {
     public const TYPE_FORMULADO = 'formulado';
     public const TYPE_TECNICO = 'tecnico';
+    public const TYPE_CULTIVAR = 'cultivar';
 
     /**
      * Cached copy of the last posted selections so different hooks can reuse the
@@ -50,6 +51,15 @@ class SafraProductLink
             ."  UNIQUE KEY uk_product_tecnico (fk_product, fk_produtotecnico),\n"
             ."  INDEX idx_spt_product (fk_product),\n"
             ."  INDEX idx_spt_tecnico (fk_produtotecnico)\n"
+            .') ENGINE=innodb',
+            'CREATE TABLE IF NOT EXISTS '.$prefix."safra_product_cultivar (\n"
+            ."  rowid INT AUTO_INCREMENT PRIMARY KEY,\n"
+            ."  fk_product INT NOT NULL,\n"
+            ."  fk_cultivar INT NOT NULL,\n"
+            ."  date_link DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n"
+            ."  UNIQUE KEY uk_product_cultivar (fk_product, fk_cultivar),\n"
+            ."  INDEX idx_spc_product (fk_product),\n"
+            ."  INDEX idx_spc_cultivar (fk_cultivar)\n"
             .') ENGINE=innodb',
         );
 
@@ -92,6 +102,10 @@ class SafraProductLink
             self::TYPE_TECNICO => array(
                 'checkbox' => 'safra_link_enable_tecnico',
                 'select' => 'safra_link_produtostecnicos',
+            ),
+            self::TYPE_CULTIVAR => array(
+                'checkbox' => 'safra_link_enable_cultivar',
+                'select' => 'safra_link_cultivares',
             ),
         );
 
@@ -172,6 +186,12 @@ class SafraProductLink
                 .' INNER JOIN '.MAIN_DB_PREFIX.'safra_produtostecnicos AS pt ON pt.rowid = l.fk_produtotecnico'
                 .' WHERE l.fk_product = '.$productId
                 .' ORDER BY pt.ref ASC';
+        } elseif ($type === self::TYPE_CULTIVAR) {
+            $sql = 'SELECT l.rowid, l.fk_cultivar AS target_id, c.ref, c.label'
+                .' FROM '.MAIN_DB_PREFIX.'safra_product_cultivar AS l'
+                .' INNER JOIN '.MAIN_DB_PREFIX.'safra_cultivar AS c ON c.rowid = l.fk_cultivar'
+                .' WHERE l.fk_product = '.$productId
+                .' ORDER BY c.ref ASC';
         } else {
             return array();
         }
@@ -231,6 +251,9 @@ class SafraProductLink
         } elseif ($type === self::TYPE_TECNICO) {
             $table = MAIN_DB_PREFIX.'safra_product_produtostecnico';
             $field = 'fk_produtotecnico';
+        } elseif ($type === self::TYPE_CULTIVAR) {
+            $table = MAIN_DB_PREFIX.'safra_product_cultivar';
+            $field = 'fk_cultivar';
         } else {
             return false;
         }
@@ -288,6 +311,8 @@ class SafraProductLink
             $table = MAIN_DB_PREFIX.'safra_product_formulado';
         } elseif ($type === self::TYPE_TECNICO) {
             $table = MAIN_DB_PREFIX.'safra_product_produtostecnico';
+        } elseif ($type === self::TYPE_CULTIVAR) {
+            $table = MAIN_DB_PREFIX.'safra_product_cultivar';
         } else {
             return false;
         }
@@ -321,6 +346,9 @@ class SafraProductLink
                 .' WHERE status = 1';
         } elseif ($type === self::TYPE_TECNICO) {
             $sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX.'safra_produtostecnicos'
+                .' WHERE status = 1';
+        } elseif ($type === self::TYPE_CULTIVAR) {
+            $sql = 'SELECT rowid, ref, label FROM '.MAIN_DB_PREFIX.'safra_cultivar'
                 .' WHERE status = 1';
         } else {
             return array();
@@ -368,6 +396,8 @@ class SafraProductLink
             $table = MAIN_DB_PREFIX.'safra_produto_formulado';
         } elseif ($type === self::TYPE_TECNICO) {
             $table = MAIN_DB_PREFIX.'safra_produtostecnicos';
+        } elseif ($type === self::TYPE_CULTIVAR) {
+            $table = MAIN_DB_PREFIX.'safra_cultivar';
         } else {
             return null;
         }

@@ -91,6 +91,13 @@ if ($type === SafraProductLink::TYPE_FORMULADO) {
         $title = $langs->trans('SafraProductLinkTitleTecnico');
         $tabCode = 'safra_product_tecnico';
         $cardUrlPattern = '/safra/produtostecnicos_card.php?id=%d';
+} elseif ($type === SafraProductLink::TYPE_CULTIVAR) {
+        if (empty($user->rights->safra->cultivar->read)) {
+                accessforbidden();
+        }
+        $title = $langs->trans('SafraProductLinkTitleCultivar');
+        $tabCode = 'safra_product_cultivar';
+        $cardUrlPattern = '/safra/cultivar_card.php?id=%d';
 } else {
         accessforbidden();
 }
@@ -115,7 +122,8 @@ if ($action === 'unlink') {
         $rowid = GETPOST('rowid', 'int');
         if ($rowid > 0) {
                 $allowed = ($type === SafraProductLink::TYPE_FORMULADO && !empty($user->rights->safra->produtoformulado->write))
-                        || ($type === SafraProductLink::TYPE_TECNICO && !empty($user->rights->safra->produtostecnicos->write));
+                        || ($type === SafraProductLink::TYPE_TECNICO && !empty($user->rights->safra->produtostecnicos->write))
+                        || ($type === SafraProductLink::TYPE_CULTIVAR && !empty($user->rights->safra->cultivar->write));
                 if (!$allowed) {
                         accessforbidden();
                 }
@@ -182,7 +190,8 @@ if (empty($links)) {
 
                 $button = '';
                 $allowed = ($type === SafraProductLink::TYPE_FORMULADO && !empty($user->rights->safra->produtoformulado->write))
-                        || ($type === SafraProductLink::TYPE_TECNICO && !empty($user->rights->safra->produtostecnicos->write));
+                        || ($type === SafraProductLink::TYPE_TECNICO && !empty($user->rights->safra->produtostecnicos->write))
+                        || ($type === SafraProductLink::TYPE_CULTIVAR && !empty($user->rights->safra->cultivar->write));
                 if ($allowed) {
                         $button = dolGetButtonAction(
                                 $langs->trans('Delete'),
