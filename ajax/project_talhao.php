@@ -47,16 +47,38 @@ if (safraAjaxColumnExists($db, 'projet_extrafields', 'fk_talhao')) {
     $col = 'options_fk_talhao';
 }
 
+$colCultivar = '';
+if (safraAjaxColumnExists($db, 'projet_extrafields', 'fk_cultivar')) {
+    $colCultivar = 'fk_cultivar';
+} elseif (safraAjaxColumnExists($db, 'projet_extrafields', 'options_fk_cultivar')) {
+    $colCultivar = 'options_fk_cultivar';
+}
+
 $talhaoId = 0;
-if ($col !== '') {
-    $sql = 'SELECT '.$col.' as talhao_id FROM '.$db->prefix().'projet_extrafields WHERE fk_object='.(int) $projectId.' LIMIT 1';
-    $resql = $db->query($sql);
-    if ($resql) {
-        $obj = $db->fetch_object($resql);
-        if ($obj) {
-            $talhaoId = (int) $obj->talhao_id;
+$cultivarId = 0;
+if ($col !== '' || $colCultivar !== '') {
+    $fields = array();
+    if ($col !== '') {
+        $fields[] = $col.' as talhao_id';
+    }
+    if ($colCultivar !== '') {
+        $fields[] = $colCultivar.' as cultivar_id';
+    }
+    if (!empty($fields)) {
+        $sql = 'SELECT '.implode(', ', $fields).' FROM '.$db->prefix().'projet_extrafields WHERE fk_object='.(int) $projectId.' LIMIT 1';
+        $resql = $db->query($sql);
+        if ($resql) {
+            $obj = $db->fetch_object($resql);
+            if ($obj) {
+                if (isset($obj->talhao_id)) {
+                    $talhaoId = (int) $obj->talhao_id;
+                }
+                if (isset($obj->cultivar_id)) {
+                    $cultivarId = (int) $obj->cultivar_id;
+                }
+            }
+            $db->free($resql);
         }
-        $db->free($resql);
     }
 }
 
@@ -82,5 +104,30 @@ if ($talhaoId > 0) {
     }
 }
 
-echo json_encode(array('success' => true, 'talhao_id' => $talhaoId, 'talhao' => $talhao));
+$cultivar = null;
+if ($cultivarId > 0) {
+    $sqlCultivar = 'SELECT rowid, ref, label FROM '.$db->prefix().'safra_cultivar WHERE rowid='.(int) $cultivarId.' LIMIT 1';
+    $rsc = $db->query($sqlCultivar);
+    if ($rsc) {
+        $oc = $db->fetch_object($rsc);
+        if ($oc) {
+            $labelParts = array();
+            if (!empty($oc->ref)) {
+                $labelParts[] = $oc->ref;
+            }
+            if (!empty($oc->label)) {
+                $labelParts[] = $oc->label;
+            }
+            $cultivar = array(
+                'id' => (int) $oc->rowid,
+                'ref' => $oc->ref,
+                'label' => trim(implode(' - ', $labelParts)),
+                'url' => dol_buildpath('/safra/cultivar_card.php', 1).'?id='.(int) $oc->rowid,
+            );
+        }
+        $db->free($rsc);
+    }
+}
+
+echo json_encode(array('success' => true, 'talhao_id' => $talhaoId, 'talhao' => $talhao, 'cultivar_id' => $cultivarId, 'cultivar' => $cultivar));
 exit;

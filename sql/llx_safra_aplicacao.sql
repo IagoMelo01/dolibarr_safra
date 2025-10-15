@@ -23,6 +23,7 @@ CREATE TABLE llx_safra_aplicacao(
         qty real,
         fk_soc integer,
         fk_project integer,
+        operation_type varchar(32) NOT NULL DEFAULT 'aplicacao',
         fk_task integer,
         date_application date,
         description text,

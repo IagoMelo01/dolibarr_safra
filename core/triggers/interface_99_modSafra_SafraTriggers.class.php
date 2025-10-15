@@ -540,6 +540,14 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                         }
                 }
 
+                if (isset($selections[SafraProductLink::TYPE_CULTIVAR]) && !empty($user->rights->safra->cultivar->write)) {
+                        $handled = true;
+                        if (!SafraProductLink::replaceLinks($this->db, $object->id, SafraProductLink::TYPE_CULTIVAR, $selections[SafraProductLink::TYPE_CULTIVAR]['ids'])) {
+                                setEventMessages($langs->trans('SafraProductLinkSaveError'), null, 'errors');
+                                $hasError = true;
+                        }
+                }
+
                 if ($hasError) {
                         return -1;
                 }

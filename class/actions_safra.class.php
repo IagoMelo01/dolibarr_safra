@@ -245,11 +245,61 @@ class ActionsSafra extends CommonHookActions
                                                 (bool) $tecnicoEnabled
                                         );
                                 }
+
+                                if (!empty($user->rights->safra->cultivar->read)) {
+                                        $cultivarSelection = array();
+                                        $cultivarEnabled = null;
+
+                                        if (isset($postedSelections[SafraProductLink::TYPE_CULTIVAR])) {
+                                                $cultivarSelection = $postedSelections[SafraProductLink::TYPE_CULTIVAR]['ids'];
+                                                $cultivarEnabled = $postedSelections[SafraProductLink::TYPE_CULTIVAR]['enabled'] ? 1 : 0;
+                                        } else {
+                                                $cultivarSelection = GETPOST('safra_link_cultivares', 'array:int');
+                                                if (!is_array($cultivarSelection)) {
+                                                        $cultivarSelection = array();
+                                                }
+
+                                                if (GETPOSTISSET('safra_link_enable_cultivar_present')) {
+                                                        $cultivarEnabled = GETPOSTISSET('safra_link_enable_cultivar') ? 1 : 0;
+                                                }
+                                        }
+
+                                        if ((int) $object->id > 0 && $cultivarEnabled === null && empty($cultivarSelection)) {
+                                                $cultivarSelection = SafraProductLink::fetchLinkedIds($db, $object->id, SafraProductLink::TYPE_CULTIVAR);
+                                                $cultivarEnabled = count($cultivarSelection) > 0 ? 1 : 0;
+                                        }
+
+                                        if ($cultivarEnabled === null) {
+                                                $cultivarEnabled = !empty($cultivarSelection) ? 1 : 0;
+                                        }
+
+                                        $options = SafraProductLink::fetchAvailableOptions($db, SafraProductLink::TYPE_CULTIVAR);
+                                        foreach ($cultivarSelection as $selectedId) {
+                                                if (!isset($options[$selectedId])) {
+                                                        $label = SafraProductLink::fetchOptionLabel($db, SafraProductLink::TYPE_CULTIVAR, $selectedId);
+                                                        if ($label !== null) {
+                                                                $options[$selectedId] = $label;
+                                                        }
+                                                }
+                                        }
+
+                                        ksort($options);
+
+                                        $productRows[] = $this->renderProductLinkRow(
+                                                'safra_link_enable_cultivar',
+                                                'safra_link_cultivares',
+                                                $langs->trans('SafraLinkCultivarCheckbox'),
+                                                $langs->trans('SafraLinkCultivarHelp'),
+                                                $options,
+                                                $cultivarSelection,
+                                                (bool) $cultivarEnabled
+                                        );
+                                }
                         }
 
                         if (!empty($productRows)) {
                                 $this->resprints .= implode('', $productRows);
-                                $this->resprints .= '<script>jQuery(function($){function safraToggleLinkRow(cb,container){var checked=$(cb).is(\':checked\');$(container).toggle(checked);}safraToggleLinkRow("#safra_link_enable_formulado","#safra_link_formulados_container");safraToggleLinkRow("#safra_link_enable_tecnico","#safra_link_produtostecnicos_container");$("#safra_link_enable_formulado").on("change",function(){safraToggleLinkRow(this,"#safra_link_formulados_container");});$("#safra_link_enable_tecnico").on("change",function(){safraToggleLinkRow(this,"#safra_link_produtostecnicos_container");});if($.fn.select2){$(".safra-select2").select2({width:"resolve"});}});</script>';
+                                $this->resprints .= '<script>jQuery(function($){function safraToggleLinkRow(cb,container){var checked=$(cb).is(\':checked\');$(container).toggle(checked);}safraToggleLinkRow("#safra_link_enable_formulado","#safra_link_formulados_container");safraToggleLinkRow("#safra_link_enable_tecnico","#safra_link_produtostecnicos_container");safraToggleLinkRow("#safra_link_enable_cultivar","#safra_link_cultivares_container");$("#safra_link_enable_formulado").on("change",function(){safraToggleLinkRow(this,"#safra_link_formulados_container");});$("#safra_link_enable_tecnico").on("change",function(){safraToggleLinkRow(this,"#safra_link_produtostecnicos_container");});$("#safra_link_enable_cultivar").on("change",function(){safraToggleLinkRow(this,"#safra_link_cultivares_container");});if($.fn.select2){$(".safra-select2").select2({width:"resolve"});}});</script>';
                         }
                 }
 

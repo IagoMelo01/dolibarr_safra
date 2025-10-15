@@ -483,6 +483,7 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
                 print '<th class="right">'.$langs->trans('Dose').'</th>';
                 print '<th class="right">'.$langs->trans('Unit').'</th>';
                 print '<th class="right">'.$langs->trans('Total').'</th>';
+                print '<th class="center">'.$langs->trans('SafraLineMovementLabel').'</th>';
                 print '<th>'.$langs->trans('Warehouse').'</th>';
                 print '<th>'.$langs->trans('Notes').'</th>';
                 print '</tr>';
@@ -549,6 +550,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
                         print '<td class="right">'.price2num($line->dose, '4').'</td>';
                         print '<td class="right">'.dol_escape_htmltag($line->dose_unit).'</td>';
                         print '<td class="right">'.price2num($line->total_qty, '4').'</td>';
+                        $movementKey = ((int) $line->movement === 1) ? 'SafraLineMovementConsume' : 'SafraLineMovementProduce';
+                        print '<td class="center">'.$langs->trans($movementKey).'</td>';
                         print '<td>'.$warehouseLabel.'</td>';
                         print '<td>'.dol_escape_htmltag($line->note).'</td>';
                         print '</tr>';

@@ -13,6 +13,10 @@ $langs->loadLangs(array('safra@safra','projects','products','stocks'));
 $form=new Form($db); $formProject=new FormProjets($db);
 $action=GETPOST('action','aZ09');
 $editId=GETPOST('id','int');
+$operationTypes = array();
+foreach (Aplicacao::getOperationTypeMap() as $code => $labelKey) {
+    $operationTypes[$code] = $langs->trans($labelKey);
+}
 function safraTableExists(DoliDB $db,$t){$i=$db->DDLDescTable(MAIN_DB_PREFIX.$t,$t);return is_array($i);} 
 function safraColumnExists(DoliDB $db,$t,$c){ $sql="SHOW COLUMNS FROM ".$db->prefix().$t." LIKE '".$db->escape($c)."'"; $r=$db->query($sql); if($r){ $ok=($db->num_rows($r)>0); $db->free($r); return $ok;} return false; }
 function safraPairs(DoliDB $db,$t,$f,$w=''){ $o=array(); $fs=array('rowid'); foreach($f as $a=>$c)$fs[]=$c.' AS '.$a; $sql='SELECT '.implode(', ',$fs).' FROM '.MAIN_DB_PREFIX.$t; if($w)$sql.=' WHERE '.$w; $sql.=' ORDER BY '.$f['ref'].' ASC'; $r=$db->query($sql); if($r){ while($x=$db->fetch_object($r)){ $l=$x->ref; if(!empty($x->label))$l.=' - '.$x->label; $o[(int)$x->rowid]=$l;} $db->free($r);} return $o; }
@@ -71,15 +75,40 @@ if($rw){
 $vehicles=safraSmartPairs($db,'frota_veiculo');
 $implements=safraSmartPairs($db,'frota_implemento');
 $persons=array(); $r=$db->query('SELECT rowid, firstname, lastname, login FROM '.MAIN_DB_PREFIX."user WHERE statut=1 ORDER BY lastname"); if($r){ while($o=$db->fetch_object($r)){ $l=trim($o->firstname.' '.$o->lastname); if($l==='')$l=$o->login; $persons[(int)$o->rowid]=$l;} $db->free($r);} 
+
+$productCultivarMap = array();
+if (safraTableExists($db, 'safra_product_cultivar')) {
+    $sql = 'SELECT fk_product, fk_cultivar FROM '.MAIN_DB_PREFIX.'safra_product_cultivar'
+        .' WHERE fk_product > 0 AND fk_cultivar > 0';
+    $resCult = $db->query($sql);
+    if ($resCult) {
+        while ($row = $db->fetch_object($resCult)) {
+            $pid = (int) $row->fk_product;
+            $cid = (int) $row->fk_cultivar;
+            if ($pid > 0 && $cid > 0) {
+                if (!isset($productCultivarMap[$pid])) {
+                    $productCultivarMap[$pid] = array();
+                }
+                $productCultivarMap[$pid][$cid] = $cid;
+            }
+        }
+        $db->free($resCult);
+    }
+}
+foreach ($productCultivarMap as $pid => $cultivars) {
+    $productCultivarMap[$pid] = array_values($cultivars);
+}
 // save (create or update)
 if($action==='save'){
     $tok = GETPOST('token','alphanohtml');
     if(empty($tok) || !isset($_SESSION['newtoken']) || $tok !== $_SESSION['newtoken']) accessforbidden('Bad token');
     $ref=trim(GETPOST('ref','alphanohtml')); $fkProject=GETPOST('fk_project','int'); $talhao=GETPOST('talhao_id','int'); $area=(double)str_replace(',','.',GETPOST('qty','alpha')); $ds=trim(GETPOST('date_application','alpha')); $dt=$ds?dol_stringtotime($ds.' 00:00:00'):null; $desc=GETPOST('description','restricthtml'); $calda=GETPOST('calda_observacao','restricthtml');
+    $opTypeRaw = trim(GETPOST('operation_type','alphanohtml'));
+    $operationType = array_key_exists($opTypeRaw, $operationTypes) ? $opTypeRaw : Aplicacao::OPERATION_APPLICATION;
     $errs=array(); if($ref==='')$errs[]=$langs->trans('ErrorFieldRequired',$langs->trans('Ref')); if($fkProject<=0)$errs[]=$langs->trans('ErrorFieldRequired',$langs->trans('Project')); if($talhao<=0)$errs[]=$langs->trans('ErrorFieldRequired',$langs->trans('SafraAplicacaoTalhao')); if(!empty($errs)){ setEventMessages('', $errs,'errors'); } else {
         $app=new Aplicacao($db);
         $isEdit = GETPOST('id','int')>0 && $app->fetch(GETPOST('id','int'))>0;
-        $app->ref=$ref; $app->fk_project=$fkProject; $app->qty=$area; $app->date_application=$dt?:null; $app->description=$desc; $app->calda_observacao=$calda; if(!$isEdit){ $app->status=Aplicacao::STATUS_DRAFT; }
+        $app->ref=$ref; $app->fk_project=$fkProject; $app->operation_type=$operationType; $app->qty=$area; $app->date_application=$dt?:null; $app->description=$desc; $app->calda_observacao=$calda; if(!$isEdit){ $app->status=Aplicacao::STATUS_DRAFT; }
         $rc = $isEdit ? $app->update($user) : $app->create($user);
         if($rc>0){
             $ary=array(); $postedLines=(array)GETPOST('lines_flat','array'); if(empty($postedLines) && !empty($_POST['lines_flat']) && is_array($_POST['lines_flat'])) { $postedLines = $_POST['lines_flat']; }
@@ -90,6 +119,8 @@ if($action==='save'){
                 $u=$ln['dose_unit']??'';
                 $t=(double)str_replace(',','.',$ln['total_qty']??'0');
                 $wh=(int)($ln['fk_entrepot']??0);
+                $movement = isset($ln['movement']) ? (int)$ln['movement'] : 1;
+                $movement = $movement ? 1 : 0;
                 if($t==0 && $a>0 && $dose>=0){ $t=$a*$dose; }
                 if($pid>0){
                     $ary[]=array(
@@ -99,6 +130,7 @@ if($action==='save'){
                         'dose_unit'=>$u,
                         'area_ha'=>$a,
                         'total_qty'=>$t,
+                        'movement'=>$movement,
                         'label'=>($products[$pid]??'')
                     );
                 }
@@ -119,6 +151,15 @@ if($action==='save'){
 }
 // selects and json
 $prefill = null; if($editId>0){ $tmp=new Aplicacao($db); if($tmp->fetch($editId)>0){ $prefill=$tmp; } }
+$operationTypeSelected = Aplicacao::OPERATION_APPLICATION;
+if($prefill && !empty($prefill->operation_type) && array_key_exists($prefill->operation_type, $operationTypes)){
+    $operationTypeSelected = $prefill->operation_type;
+} else {
+    $opFromPost = trim(GETPOST('operation_type','alphanohtml'));
+    if(array_key_exists($opFromPost, $operationTypes)){
+        $operationTypeSelected = $opFromPost;
+    }
+}
 $projectSelectHtml=$formProject->select_projects_list(-1, ($prefill? (int)$prefill->fk_project : GETPOST('fk_project','int')), 'fk_project', 24, 0, 1, 0, 0, 0, 0, '', 1, 0, 'fk_project', 'minwidth300 js-select2');
 $productsJson=json_encode((object)$products, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
 $warehousesJson=json_encode((object)$warehouses, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
@@ -149,44 +190,121 @@ if($__debug){
     print '</details>';
 }
 
-// Build a local map Project -> Talhao to avoid AJAX dependency
-$projectTalhaoMap=array();
-$coltal='';
-$rescol=$db->query("SHOW COLUMNS FROM ".$db->prefix()."projet_extrafields LIKE 'fk_talhao'");
-if($rescol && $db->num_rows($rescol)>0){ $coltal='fk_talhao'; $db->free($rescol);} else {
-  $rescol2=$db->query("SHOW COLUMNS FROM ".$db->prefix()."projet_extrafields LIKE 'options_fk_talhao'");
-  if($rescol2 && $db->num_rows($rescol2)>0){ $coltal='options_fk_talhao'; $db->free($rescol2);} }
-if($coltal){
-  $sql='SELECT p.rowid as pid, ef.'.$coltal.' as talhao_id, t.ref, t.label, t.area, m.label as municipio_label'
-      .' FROM '.$db->prefix().'projet as p'
-      .' LEFT JOIN '.$db->prefix().'projet_extrafields as ef ON ef.fk_object=p.rowid'
-      .' LEFT JOIN '.$db->prefix().'safra_talhao as t ON t.rowid = ef.'.$coltal
-      .' LEFT JOIN '.$db->prefix().'safra_municipio as m ON m.rowid = t.municipio'
-      .' WHERE p.entity IN ('.getEntity('project').')';
-  $rs=$db->query($sql);
-  if($rs){
-    while($o=$db->fetch_object($rs)){
-      $pid=(int)$o->pid; $tid=(int)$o->talhao_id; if($pid<=0) continue;
-      if($tid>0){
-        $projectTalhaoMap[$pid]=array(
-          'talhao_id'=>$tid,
-          'talhao'=>array(
-            'id'=>$tid,
-            'label'=>trim(($o->ref? $o->ref.' - ':'').($o->label?:'')),
-            'area'=>(float)$o->area,
-            'municipio'=>$o->municipio_label,
-            'url'=>dol_buildpath('/safra/talhao_card.php',1).'?id='.$tid,
-          )
+// Build a local map Project -> Talhao/Cultivar to avoid AJAX dependency
+$projectTalhaoMap = array();
+$projectCultivarMap = array();
+$coltal = '';
+$rescol = $db->query("SHOW COLUMNS FROM ".$db->prefix()."projet_extrafields LIKE 'fk_talhao'");
+if ($rescol && $db->num_rows($rescol) > 0) {
+    $coltal = 'fk_talhao';
+    $db->free($rescol);
+} else {
+    $rescol2 = $db->query("SHOW COLUMNS FROM ".$db->prefix()."projet_extrafields LIKE 'options_fk_talhao'");
+    if ($rescol2 && $db->num_rows($rescol2) > 0) {
+        $coltal = 'options_fk_talhao';
+        $db->free($rescol2);
+    }
+}
+
+$colCultivar = '';
+$rescolC = $db->query("SHOW COLUMNS FROM ".$db->prefix()."projet_extrafields LIKE 'fk_cultivar'");
+if ($rescolC && $db->num_rows($rescolC) > 0) {
+    $colCultivar = 'fk_cultivar';
+    $db->free($rescolC);
+} else {
+    $rescolC2 = $db->query("SHOW COLUMNS FROM ".$db->prefix()."projet_extrafields LIKE 'options_fk_cultivar'");
+    if ($rescolC2 && $db->num_rows($rescolC2) > 0) {
+        $colCultivar = 'options_fk_cultivar';
+        $db->free($rescolC2);
+    }
+}
+
+$selectFields = array('p.rowid as pid');
+if ($coltal) {
+    $selectFields[] = 'ef.'.$coltal.' as talhao_id';
+    $selectFields[] = 't.ref as talhao_ref';
+    $selectFields[] = 't.label as talhao_label';
+    $selectFields[] = 't.area as talhao_area';
+    $selectFields[] = 'm.label as municipio_label';
+}
+if ($colCultivar) {
+    $selectFields[] = 'ef.'.$colCultivar.' as cultivar_id';
+    $selectFields[] = 'c.ref as cultivar_ref';
+    $selectFields[] = 'c.label as cultivar_label';
+}
+
+$sql = 'SELECT '.implode(', ', $selectFields)
+    .' FROM '.$db->prefix().'projet as p'
+    .' LEFT JOIN '.$db->prefix().'projet_extrafields as ef ON ef.fk_object = p.rowid';
+if ($coltal) {
+    $sql .= ' LEFT JOIN '.$db->prefix().'safra_talhao as t ON t.rowid = ef.'.$coltal;
+    $sql .= ' LEFT JOIN '.$db->prefix().'safra_municipio as m ON m.rowid = t.municipio';
+}
+if ($colCultivar) {
+    $sql .= ' LEFT JOIN '.$db->prefix().'safra_cultivar as c ON c.rowid = ef.'.$colCultivar;
+}
+$sql .= ' WHERE p.entity IN ('.getEntity('project').')';
+
+$rs = $db->query($sql);
+if ($rs) {
+    while ($o = $db->fetch_object($rs)) {
+        $pid = (int) $o->pid;
+        if ($pid <= 0) {
+            continue;
+        }
+
+        $tid = ($coltal && isset($o->talhao_id)) ? (int) $o->talhao_id : 0;
+        $talhaoData = null;
+        if ($coltal && $tid > 0) {
+            $talhaoLabel = trim(($o->talhao_ref ? $o->talhao_ref.' - ' : '').($o->talhao_label ?: ''));
+            $talhaoData = array(
+                'id' => $tid,
+                'label' => $talhaoLabel,
+                'area' => isset($o->talhao_area) ? (float) $o->talhao_area : null,
+                'municipio' => isset($o->municipio_label) ? $o->municipio_label : null,
+                'url' => dol_buildpath('/safra/talhao_card.php', 1).'?id='.$tid,
+            );
+        }
+
+        $cultivarId = ($colCultivar && isset($o->cultivar_id)) ? (int) $o->cultivar_id : 0;
+        $cultivarData = null;
+        if ($cultivarId > 0) {
+            $cultivarLabelParts = array();
+            if (!empty($o->cultivar_ref)) {
+                $cultivarLabelParts[] = $o->cultivar_ref;
+            }
+            if (!empty($o->cultivar_label)) {
+                $cultivarLabelParts[] = $o->cultivar_label;
+            }
+            $cultivarLabel = trim(implode(' - ', $cultivarLabelParts));
+            if ($cultivarLabel === '') {
+                $cultivarLabel = '#'.$cultivarId;
+            }
+            $cultivarData = array(
+                'id' => $cultivarId,
+                'label' => $cultivarLabel,
+                'ref' => $o->cultivar_ref,
+                'url' => dol_buildpath('/safra/cultivar_card.php', 1).'?id='.$cultivarId,
+            );
+            $projectCultivarMap[$pid] = $cultivarId;
+        }
+
+        $projectTalhaoMap[$pid] = array(
+            'talhao_id' => $tid,
+            'talhao' => $talhaoData,
+            'cultivar_id' => $cultivarId,
+            'cultivar' => $cultivarData,
         );
-      }
     }
     $db->free($rs);
-  }
 }
-$projectTalhaoJson=json_encode((object)$projectTalhaoMap, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+
+$projectTalhaoJson = json_encode((object) $projectTalhaoMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$projectCultivarJson = json_encode((object) $projectCultivarMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$productCultivarJson = json_encode((object) $productCultivarMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 llxHeader('', $langs->trans('Aplicacao').' - '.$langs->trans('New'));
 ?>
-<style>.safra-shell{max-width:1100px;margin:0 auto;padding:18px 16px 40px}.safra-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 18px rgba(15,23,42,.08);padding:18px;margin:0 0 16px}.safra-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.safra-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.safra-field label{font-size:12px;text-transform:uppercase;color:#64748b}.safra-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.select2-container{width:100%!important}.safra-lines{display:flex;flex-direction:column;gap:12px}.safra-lines-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.safra-lines-legend{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:8px}.safra-line-row{display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.safra-line-field{display:flex;flex-direction:column;gap:6px;flex:1 1 calc(50% - 12px)}.safra-line-field.full{flex-basis:100%}.safra-line-field.half{flex:1 1 calc(50% - 12px)}.safra-line-field.third{flex:1 1 calc(33.333% - 12px)}.safra-line-field.quarter{flex:1 1 calc(25% - 12px)}.safra-line-field.auto{flex:0 0 auto;align-self:flex-end}.safra-line-field label{font-size:11px;text-transform:uppercase;color:#475569}.safra-line-remove{display:flex;align-items:flex-end}.safra-line-remove button{padding:6px 10px;line-height:1}.safra-line-row input[type=number]{width:100%}</style></style>
+<style>.safra-shell{max-width:1100px;margin:0 auto;padding:18px 16px 40px}.safra-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 18px rgba(15,23,42,.08);padding:18px;margin:0 0 16px}.safra-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.safra-field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}.safra-field label{font-size:12px;text-transform:uppercase;color:#64748b}.safra-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.select2-container{width:100%!important}.safra-lines{display:flex;flex-direction:column;gap:12px}.safra-lines-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.safra-lines-legend{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));font-size:11px;text-transform:uppercase;color:#64748b;margin-bottom:8px}.safra-line-row{display:flex;flex-wrap:wrap;gap:12px;padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}.safra-line-field{display:flex;flex-direction:column;gap:6px;flex:1 1 calc(50% - 12px)}.safra-line-field.full{flex-basis:100%}.safra-line-field.half{flex:1 1 calc(50% - 12px)}.safra-line-field.third{flex:1 1 calc(33.333% - 12px)}.safra-line-field.quarter{flex:1 1 calc(25% - 12px)}.safra-line-field.auto{flex:0 0 auto;align-self:flex-end}.safra-line-field label{font-size:11px;text-transform:uppercase;color:#475569}.safra-line-remove{display:flex;align-items:flex-end}.safra-line-remove button{padding:6px 10px;line-height:1}.safra-line-row input[type=number]{width:100%}.safra-product-filter{background:#fef3c7;border:1px solid #facc15;color:#92400e;padding:8px 12px;border-radius:8px}.hidden{display:none!important}</style></style>
 <div class="safra-shell">
 <form method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
 <input type="hidden" name="token" value="<?php echo newToken(); ?>">
@@ -194,11 +312,13 @@ llxHeader('', $langs->trans('Aplicacao').' - '.$langs->trans('New'));
 <?php if($prefill){ echo '<input type="hidden" name="id" value="'.(int)$prefill->id.'">'; } ?>
 <input type="hidden" id="ajax-project-talhao-url" value="<?php echo dol_escape_htmltag($ajaxTalhaoUrl); ?>">
 <input type="hidden" name="talhao_id" id="talhao_id" value="<?php echo (int)GETPOST('talhao_id','int'); ?>">
-<section class="safra-card"><h2><?php echo $langs->trans('Project'); ?></h2><div class="safra-field"><label for="fk_project"><?php echo $langs->trans('Project'); ?></label><?php echo $projectSelectHtml; ?></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoTalhao'); ?></label><div id="talhao-info" class="opacitymedium"><?php echo $langs->trans('SafraAplicacaoTalhaoNotLinked'); ?></div></div></section>
+<section class="safra-card"><h2><?php echo $langs->trans('Project'); ?></h2><div class="safra-field"><label for="fk_project"><?php echo $langs->trans('Project'); ?></label><?php echo $projectSelectHtml; ?></div><div class="safra-field"><label for="operation_type"><?php echo $langs->trans('SafraOperationType'); ?></label><select name="operation_type" id="operation_type" class="minwidth300">
+<?php foreach($operationTypes as $code=>$label){ $sel = $operationTypeSelected===$code?' selected':''; echo '<option value="'.dol_escape_htmltag($code).'"'.$sel.'>'.dol_escape_htmltag($label)."</option>"; } ?>
+</select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoTalhao'); ?></label><div id="talhao-info" class="opacitymedium"><?php echo $langs->trans('SafraAplicacaoTalhaoNotLinked'); ?></div></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoCultivar'); ?></label><div id="cultivar-info" class="opacitymedium"><?php echo $langs->trans('SafraAplicacaoCultivarNotLinked'); ?></div></div></section>
 <section class="safra-card"><h2><?php echo $langs->trans('SafraAplicacaoTaskProducts'); ?></h2><div class="safra-field"><label for="ref"><?php echo $langs->trans('Ref'); ?> *</label><input type="text" name="ref" id="ref" required value="<?php echo $prefill? dol_escape_htmltag($prefill->ref):''; ?>"></div><div class="safra-field"><label for="qty"><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></label><input type="number" step="0.0001" name="qty" id="qty" value="<?php echo $prefill? price2num($prefill->qty,'4'): '0'; ?>"></div><div class="safra-field"><label for="date_application"><?php echo $langs->trans('SafraAplicacaoDate'); ?></label><input type="date" name="date_application" id="date_application" value="<?php echo ($prefill && !empty($prefill->date_application)) ? dol_print_date($prefill->date_application,'dayrfc') : '' ; ?>"></div><div class="safra-field"><label for="description"><?php echo $langs->trans('Description'); ?></label><textarea name="description" id="description" rows="3"><?php echo $prefill? dol_escape_htmltag($prefill->description):''; ?></textarea></div></section>
 <section class="safra-card">
 <div class="safra-lines-toolbar"><h3 style="margin:0;"><?php echo $langs->trans('Products'); ?></h3><div style="display:flex;gap:8px;align-items:center;"><button type="button" id="btn-calda" class="button"><?php echo $langs->trans('SafraAplicacaoCaldaCalculation') ?: 'Cálculo de calda'; ?></button><button type="button" id="add-line" class="button"><?php echo $langs->trans('Add'); ?></button></div></div>
-<div class="safra-lines-legend"><span><?php echo $langs->trans('Product'); ?></span><span><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></span><span><?php echo $langs->trans('Dose'); ?></span><span><?php echo $langs->trans('Unit'); ?></span><span><?php echo $langs->trans('Total'); ?></span><span><?php echo $langs->trans('Warehouse'); ?></span></div>
+<div class="safra-lines-legend"><span><?php echo $langs->trans('Product'); ?></span><span><?php echo $langs->trans('Warehouse'); ?></span><span><?php echo $langs->trans('SafraAplicacaoAreaHa'); ?></span><span><?php echo $langs->trans('Dose'); ?></span><span><?php echo $langs->trans('Unit'); ?></span><span><?php echo $langs->trans('Total'); ?></span><span><?php echo $langs->trans('SafraLineMovementLabel'); ?></span></div><div id="product-filter-warning" class="safra-product-filter hidden"><?php echo $langs->trans('SafraAplicacaoCultivarNoProducts'); ?></div>
 <div id="lines-body" class="safra-lines"></div>
 </section>
 <section class="safra-card"><h3><?php echo $langs->trans('SafraAplicacaoResources'); ?></h3><div class="safra-grid"><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourceVehicle'); ?></label><select name="vehicles[]" multiple class="js-select2"><?php foreach($vehicles as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourceImplement'); ?></label><select name="implements[]" multiple class="js-select2"><?php foreach($implements as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div><div class="safra-field"><label><?php echo $langs->trans('SafraAplicacaoResourcePerson'); ?></label><select name="persons[]" multiple class="js-select2"><?php foreach($persons as $id=>$lab) echo '<option value="'.$id.'">'.dol_escape_htmltag($lab).'</option>'; ?></select></div></div></section>
@@ -211,6 +331,107 @@ document.addEventListener('DOMContentLoaded',function(){
   function init(n){ try{ if(s2 && n && !window.jQuery(n).hasClass('select2-hidden-accessible')) window.jQuery(n).select2({width:'100%'});}catch(e){}
   }
   document.querySelectorAll('.js-select2').forEach(init);
+
+  const body=document.getElementById('lines-body');
+  const add=document.getElementById('add-line');
+  const allProducts=<?php echo $productsJson?:'{}'; ?>;
+  const warehouses=<?php echo $warehousesJson?:'{}'; ?>;
+  const defaultWarehouses=<?php echo $defaultWarehousesJson?:'{}'; ?>;
+  const DEBUG = <?php echo (int) GETPOST('debug','int'); ?>;
+  const searchPlaceholder = <?php echo json_encode($langs->trans('Search') ?: 'Digite para filtrar'); ?>;
+
+  const productCultivarMap = <?php echo $productCultivarJson ?: '{}'; ?>;
+  const projectCultivarMap = <?php echo $projectCultivarJson ?: '{}'; ?>;
+  let currentCultivarId = 0;
+  const cultivarInfo = document.getElementById('cultivar-info');
+  const cultivarFallbackText = <?php echo json_encode($langs->trans('SafraAplicacaoCultivarNotLinked')); ?>;
+  const productFilterWarning = document.getElementById('product-filter-warning');
+  const noProductMessage = <?php echo json_encode($langs->trans('SafraAplicacaoCultivarNoProducts')); ?>;
+
+  function escapeHtml(str){
+    return String(str || '').replace(/[&<>"']/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]); });
+  }
+
+  function getAllowedProducts(selectedId){
+    const allowed={};
+    const selectedKey=selectedId!=null?String(selectedId):null;
+    const target=currentCultivarId;
+    Object.keys(allProducts||{}).forEach(function(pid){
+      const key=String(pid);
+      const cultivars=productCultivarMap && productCultivarMap[key]?productCultivarMap[key]:null;
+      let permitted=true;
+      if(target && cultivars && cultivars.length){
+        permitted = cultivars.indexOf(target)!==-1 || cultivars.indexOf(String(target))!==-1;
+      }
+      if(permitted){ allowed[key]=allProducts[key]; }
+    });
+    if(selectedKey && allProducts && Object.prototype.hasOwnProperty.call(allProducts, selectedKey) && !Object.prototype.hasOwnProperty.call(allowed, selectedKey)){
+      allowed[selectedKey]=allProducts[selectedKey];
+    }
+    return allowed;
+  }
+
+  function updateProductFilterMessage(){
+    if(!productFilterWarning) return;
+    if(currentCultivarId>0){
+      const allowedCount=Object.keys(getAllowedProducts(null)).length;
+      if(allowedCount===0){
+        productFilterWarning.textContent=noProductMessage;
+        productFilterWarning.classList.remove('hidden');
+        return;
+      }
+    }
+    productFilterWarning.classList.add('hidden');
+  }
+
+  function updateCultivarInfo(id, cultivarData){
+    if(!cultivarInfo) return;
+    if(id>0){
+      const labelText=(cultivarData && cultivarData.label)?cultivarData.label:'#'+id;
+      if(cultivarData && cultivarData.url){
+        cultivarInfo.innerHTML='<a href="'+escapeHtml(cultivarData.url)+'" target="_blank" rel="noopener">'+escapeHtml(labelText)+'</a>';
+      } else {
+        cultivarInfo.textContent=labelText;
+      }
+    } else {
+      cultivarInfo.textContent=cultivarFallbackText;
+    }
+  }
+
+  function enhanceSelectWithSearch(selectEl, placeholderText, dropdownContext){
+    if(!(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2)) return;
+    const $sel = window.jQuery(selectEl);
+    if($sel.data('select2')) return;
+    const opts = {width:'resolve', allowClear:true};
+    if(placeholderText){ opts.placeholder = placeholderText; }
+    if(dropdownContext){ opts.dropdownParent = window.jQuery(dropdownContext); }
+    $sel.select2(opts);
+  }
+
+  function refreshProductSelects(){
+    document.querySelectorAll('select[data-role="product"]').forEach(function(sel){
+      const currentValue=sel.value;
+      if(window.jQuery && window.jQuery.fn && window.jQuery(sel).data('select2')){
+        window.jQuery(sel).select2('destroy');
+      }
+      fillProducts(sel, currentValue);
+      const newValue=(currentValue && sel.querySelector('option[value="'+currentValue+'"]'))?currentValue:'';
+      sel.value=newValue;
+      const hidden=sel.parentElement?sel.parentElement.querySelector('input[type="hidden"][name$="[fk_product]"]'):null;
+      if(hidden){ hidden.value=newValue; }
+      if(newValue!==currentValue){ sel.dispatchEvent(new Event('change')); }
+      enhanceSelectWithSearch(sel, searchPlaceholder, sel.closest('.safra-line-row'));
+    });
+  }
+
+  function applyCultivar(id, cultivarData){
+    const normalized=parseInt(id,10)||0;
+    updateCultivarInfo(normalized, cultivarData||null);
+    const changed=(normalized!==currentCultivarId);
+    currentCultivarId=normalized;
+    if(changed){ refreshProductSelects(); }
+    updateProductFilterMessage();
+  }
 
   const tal=document.getElementById('talhao-info');
   const hid=document.getElementById('talhao_id');
@@ -233,7 +454,8 @@ document.addEventListener('DOMContentLoaded',function(){
   }
 
   let talhaoArea = 0;
-  function setTal(d){
+  function setTal(d, fallbackCultivarId){
+    talhaoArea = 0;
     if(d&&d.talhao&&d.talhao_id){
       hid.value=String(d.talhao_id);
       const t=d.talhao,p=[];
@@ -248,23 +470,34 @@ document.addEventListener('DOMContentLoaded',function(){
       hid.value='';
       tal.textContent='<?php echo dol_escape_js($langs->trans('SafraAplicacaoTalhaoNotLinked')); ?>';
     }
+
+    const cultivarPayload = d && d.cultivar ? d.cultivar : null;
+    let cultivarId = 0;
+    if(d && typeof d.cultivar_id !== 'undefined'){
+      cultivarId = parseInt(d.cultivar_id,10) || 0;
+    }
+    if(!cultivarId && fallbackCultivarId){
+      cultivarId = parseInt(fallbackCultivarId,10) || 0;
+    }
+    applyCultivar(cultivarId, cultivarPayload);
   }
 
   function loadTalhaoForCurrent(){
     const sel=findProjectSelect();
-    if(!sel){ setTal(null); return; }
+    if(!sel){ setTal(null,0); return; }
     const id=parseProjectId(sel.value);
-    if(!id){ setTal(null); return; }
+    if(!id){ setTal(null,0); return; }
+    const fallbackCultivar = projectCultivarMap && projectCultivarMap[id] ? parseInt(projectCultivarMap[id],10) || 0 : 0;
     // Prefer local map to avoid AJAX issues
     if(mapTalhao && mapTalhao[id]){
-      setTal(mapTalhao[id]);
+      setTal(mapTalhao[id], fallbackCultivar);
       return;
     }
     // Fallback to AJAX if not found locally
     fetch(ajax+'?id='+id,{credentials:'same-origin'})
       .then(r=>r.ok?r.json():Promise.reject(new Error('http '+r.status)))
-      .then(function(data){ if(!data||data.success===false){ console.warn('talhao fetch error', data); } setTal(data); })
-      .catch(function(err){ console.warn('talhao fetch failed', err); setTal(null); });
+      .then(function(data){ if(!data||data.success===false){ console.warn('talhao fetch error', data); setTal(null, fallbackCultivar); return; } setTal(data, fallbackCultivar); })
+      .catch(function(err){ console.warn('talhao fetch failed', err); setTal(null, fallbackCultivar); });
   }
 
   const sel=findProjectSelect();
@@ -272,28 +505,22 @@ document.addEventListener('DOMContentLoaded',function(){
     sel.addEventListener('change',loadTalhaoForCurrent);
     // Some select2 setups trigger events only via jQuery
     if(s2 && window.jQuery){
-      window.jQuery(sel).on('select2:select',loadTalhaoForCurrent);
-      window.jQuery(sel).on('change.select2',loadTalhaoForCurrent);
+      window.jQuery(sel).on('select2:select select2:clear change.select2',loadTalhaoForCurrent);
     }
     // Prefill on load
     loadTalhaoForCurrent();
   } else {
-    setTal(null);
+    setTal(null,0);
   }
 
   // Lines / products grid
-  const body=document.getElementById('lines-body');
-  const add=document.getElementById('add-line');
-  const allProducts=<?php echo $productsJson?:'{}'; ?>;
-  const warehouses=<?php echo $warehousesJson?:'{}'; ?>;
-  const defaultWarehouses=<?php echo $defaultWarehousesJson?:'{}'; ?>;
-  const DEBUG = <?php echo (int) GETPOST('debug','int'); ?>;
-  const searchPlaceholder = <?php echo json_encode($langs->trans('Search') ?: 'Digite para filtrar'); ?>;
-  function fillProducts(sel){ sel.innerHTML='';
-    const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
-    Object.keys(allProducts||{}).forEach(function(k){ const o=document.createElement('option'); o.value=k; o.textContent=allProducts[k]; sel.appendChild(o); });
-  }
   const warehousePlaceholder = <?php echo json_encode($langs->trans('SelectWarehouse') ?: $langs->trans('Select') ?: 'Selecione um armazém'); ?>;
+  function fillProducts(sel, selectedId){
+    sel.innerHTML='';
+    const ph=document.createElement('option'); ph.value=''; ph.textContent='\u00A0'; sel.appendChild(ph);
+    const allowed=getAllowedProducts(selectedId);
+    Object.keys(allProducts||{}).forEach(function(k){ if(!Object.prototype.hasOwnProperty.call(allowed,k)) return; const o=document.createElement('option'); o.value=k; o.textContent=allowed[k]; sel.appendChild(o); });
+  }
   function fillWarehouses(sel){
     sel.innerHTML='';
     const ph=document.createElement('option'); ph.value=''; ph.textContent=warehousePlaceholder; ph.dataset.placeholder='1'; sel.appendChild(ph);
@@ -313,23 +540,6 @@ document.addEventListener('DOMContentLoaded',function(){
 
     sel.value=v;
 
-}
-
-function enhanceSelectWithSearch(selectEl, placeholderText, dropdownContext){
-    if(!(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2)) return;
-    const $sel = window.jQuery(selectEl);
-    if($sel.data('select2')) return;
-    const opts = {
-        width: 'resolve',
-        allowClear: true
-    };
-    if(placeholderText){
-        opts.placeholder = placeholderText;
-    }
-    if(dropdownContext){
-        opts.dropdownParent = window.jQuery(dropdownContext);
-    }
-    $sel.select2(opts);
 }
 
 function createLineField(labelText, element, sizeClass){
@@ -361,6 +571,17 @@ function ensureWarehouseOption(selectEl, warehouseId){
 }
 
   let idx=0;
+  const operationTypeSelect = document.getElementById('operation_type');
+  const movementLabels = {
+    consume: <?php echo json_encode($langs->trans('SafraLineMovementConsume')); ?>,
+    produce: <?php echo json_encode($langs->trans('SafraLineMovementProduce')); ?>
+  };
+
+  function getDefaultMovement(){
+    if(operationTypeSelect && operationTypeSelect.value === 'colheita'){ return '0'; }
+    return '1';
+  }
+
   function addLine(pref){
     const row=document.createElement('div');
     row.className='safra-line-row';
@@ -368,7 +589,9 @@ function ensureWarehouseOption(selectEl, warehouseId){
     const pUI=document.createElement('select');
     pUI.id='line_'+idx+'_fk_product_ui';
     pUI.className='flat minwidth300 minwidth100';
-    fillProducts(pUI);
+    pUI.dataset.role='product';
+    const initialProductId = pref && pref.fk_product ? pref.fk_product : null;
+    fillProducts(pUI, initialProductId);
 
     const pHidden=document.createElement('input');
     pHidden.type='hidden';
@@ -408,6 +631,20 @@ function ensureWarehouseOption(selectEl, warehouseId){
     const doseField=createLineField(<?php echo json_encode($langs->trans('Dose')); ?>, id, 'half');
     const unitField=createLineField(<?php echo json_encode($langs->trans('Unit')); ?>, iu, 'quarter');
     const totalField=createLineField(<?php echo json_encode($langs->trans('Total')); ?>, it, 'quarter');
+    const movementSelect=document.createElement('select');
+    movementSelect.name='lines_flat['+idx+'][movement]';
+    movementSelect.className='flat minwidth150';
+    movementSelect.dataset.role='movement';
+    [{value:'1',label:movementLabels.consume},{value:'0',label:movementLabels.produce}].forEach(opt=>{ const o=document.createElement('option'); o.value=opt.value; o.textContent=opt.label; movementSelect.appendChild(o); });
+    movementSelect.dataset.user = (pref && pref.movement!==undefined) ? '1' : '';
+    movementSelect.addEventListener('change',()=>{ movementSelect.dataset.user='1'; });
+    if(pref && pref.movement!==undefined){
+      movementSelect.value = String(pref.movement);
+    }
+    if(!movementSelect.dataset.user){
+      movementSelect.value = getDefaultMovement();
+    }
+    const movementField=createLineField(<?php echo json_encode($langs->trans('SafraLineMovementLabel')); ?>, movementSelect, 'quarter');
 
     const removeField=document.createElement('div');
     removeField.className='safra-line-field auto safra-line-remove';
@@ -426,6 +663,7 @@ function ensureWarehouseOption(selectEl, warehouseId){
     row.appendChild(doseField);
     row.appendChild(unitField);
     row.appendChild(totalField);
+    row.appendChild(movementField);
     row.appendChild(removeField);
 
     function rec(){ it.value=((parseFloat(ia.value)||0)*(parseFloat(id.value)||0)).toFixed(4); }
@@ -510,6 +748,15 @@ function ensureWarehouseOption(selectEl, warehouseId){
 
   add.addEventListener('click', function(){ addLine(); });
 
+  if(operationTypeSelect){
+    operationTypeSelect.addEventListener('change', function(){
+      document.querySelectorAll('select[data-role="movement"]').forEach(function(sel){
+        if(sel.dataset.user === '1'){ return; }
+        sel.value = getDefaultMovement();
+      });
+    });
+  }
+
   const prefillLines = <?php
     if($prefill && !empty($prefill->lines)){
       $arr=array();
@@ -520,7 +767,8 @@ function ensureWarehouseOption(selectEl, warehouseId){
           'dose'=>price2num($ln->dose,'4'),
           'dose_unit'=>$ln->dose_unit,
           'total_qty'=>price2num($ln->total_qty,'4'),
-          'fk_entrepot'=>(int)$ln->fk_entrepot
+          'fk_entrepot'=>(int)$ln->fk_entrepot,
+          'movement'=>(int)$ln->movement
         );
       }
       echo json_encode($arr, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
@@ -529,6 +777,7 @@ function ensureWarehouseOption(selectEl, warehouseId){
     }
   ?>;
   if(prefillLines.length){ prefillLines.forEach(l=>addLine(l)); } else { addLine(); }
+  updateProductFilterMessage();
   // Prefill resources selections
   <?php
     if($prefill && !empty($prefill->resources)){
