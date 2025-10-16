@@ -1,0 +1,135 @@
+-- SQL schema for fv_fiscal module
+
+CREATE TABLE IF NOT EXISTS llx_fv_sefaz_profile (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  socid INTEGER NOT NULL,
+  uf VARCHAR(2) NOT NULL,
+  ambiente VARCHAR(10) NOT NULL,
+  science_auto TINYINT DEFAULT 0,
+  poll_cron INTEGER DEFAULT NULL,
+  include_cnpj_root TINYINT DEFAULT 0,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=innodb;
+
+CREATE INDEX idx_fv_sefaz_profile_socid ON llx_fv_sefaz_profile (socid);
+
+CREATE TABLE IF NOT EXISTS llx_fv_nfe_out (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  socid_emit INTEGER NOT NULL,
+  socid_dest INTEGER DEFAULT NULL,
+  serie VARCHAR(5) NOT NULL,
+  numero VARCHAR(12) NOT NULL,
+  chave VARCHAR(44) DEFAULT NULL,
+  status VARCHAR(30) NOT NULL,
+  ambiente VARCHAR(10) NOT NULL,
+  xml_path VARCHAR(255) DEFAULT NULL,
+  danfe_pdf_path VARCHAR(255) DEFAULT NULL,
+  finalidade VARCHAR(20) DEFAULT NULL,
+  natureza_op VARCHAR(120) DEFAULT NULL,
+  total_prod NUMERIC(16,2) DEFAULT NULL,
+  total_nf NUMERIC(16,2) DEFAULT NULL,
+  dh_emissao DATETIME DEFAULT NULL,
+  dh_autorizacao DATETIME DEFAULT NULL,
+  fk_facture INTEGER DEFAULT NULL,
+  ref_unique VARCHAR(64) NOT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_fv_nfe_out_ref (ref_unique)
+) ENGINE=innodb;
+
+CREATE INDEX idx_fv_nfe_out_emit_dest ON llx_fv_nfe_out (socid_emit, socid_dest);
+CREATE INDEX idx_fv_nfe_out_status ON llx_fv_nfe_out (status);
+
+CREATE TABLE IF NOT EXISTS llx_fv_nfe_out_line (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  fk_nfe_out INTEGER NOT NULL,
+  fk_product INTEGER DEFAULT NULL,
+  descricao VARCHAR(255) NOT NULL,
+  ncm VARCHAR(8) DEFAULT NULL,
+  cfop VARCHAR(4) DEFAULT NULL,
+  cst_csosn VARCHAR(4) DEFAULT NULL,
+  ucom VARCHAR(6) DEFAULT NULL,
+  qcom NUMERIC(16,4) DEFAULT NULL,
+  vuncom NUMERIC(16,6) DEFAULT NULL,
+  vprod NUMERIC(16,2) DEFAULT NULL,
+  vbc_icms NUMERIC(16,2) DEFAULT NULL,
+  vicms NUMERIC(16,2) DEFAULT NULL,
+  vipi NUMERIC(16,2) DEFAULT NULL,
+  vpis NUMERIC(16,2) DEFAULT NULL,
+  vcofins NUMERIC(16,2) DEFAULT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_fv_nfe_out_line_fk (fk_nfe_out)
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_fv_nfe_in (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  socid_emit INTEGER NOT NULL,
+  socid_dest INTEGER NOT NULL,
+  chave VARCHAR(44) NOT NULL,
+  status_manifestacao VARCHAR(40) DEFAULT NULL,
+  xml_path VARCHAR(255) DEFAULT NULL,
+  autorizado_dt DATETIME DEFAULT NULL,
+  ciencia_dt DATETIME DEFAULT NULL,
+  confirmacao_dt DATETIME DEFAULT NULL,
+  desconhecimento_dt DATETIME DEFAULT NULL,
+  operacao_nao_realizada_dt DATETIME DEFAULT NULL,
+  fk_facture_fourn INTEGER DEFAULT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_fv_nfe_in_chave (chave)
+) ENGINE=innodb;
+
+CREATE INDEX idx_fv_nfe_in_socid_dest ON llx_fv_nfe_in (socid_dest);
+
+CREATE TABLE IF NOT EXISTS llx_fv_nfe_event (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  nfe_type ENUM('IN','OUT') NOT NULL,
+  fk_nfe INTEGER NOT NULL,
+  event_type ENUM('CCE','CANCEL','INUT','MANIF') NOT NULL,
+  protocolo VARCHAR(60) DEFAULT NULL,
+  justificativa VARCHAR(255) DEFAULT NULL,
+  xml_path VARCHAR(255) DEFAULT NULL,
+  created_by INTEGER DEFAULT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=innodb;
+
+CREATE INDEX idx_fv_nfe_event_fk ON llx_fv_nfe_event (fk_nfe, nfe_type);
+
+CREATE TABLE IF NOT EXISTS llx_fv_mdfe (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  socid_emit INTEGER NOT NULL,
+  numero VARCHAR(12) NOT NULL,
+  serie VARCHAR(5) NOT NULL,
+  chave VARCHAR(44) NOT NULL,
+  status VARCHAR(30) NOT NULL,
+  xml_path VARCHAR(255) DEFAULT NULL,
+  damdfe_pdf_path VARCHAR(255) DEFAULT NULL,
+  encerrado_dt DATETIME DEFAULT NULL,
+  cancelado_dt DATETIME DEFAULT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_fv_mdfe_chave (chave)
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_fv_batch_export (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('NFE_IN','NFE_OUT','MDFE') NOT NULL,
+  criteria_json TEXT,
+  zip_path VARCHAR(255) DEFAULT NULL,
+  created_by INTEGER DEFAULT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=innodb;
+
+CREATE TABLE IF NOT EXISTS llx_fv_focus_job (
+  rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+  type VARCHAR(30) NOT NULL,
+  ref VARCHAR(64) DEFAULT NULL,
+  method VARCHAR(10) NOT NULL,
+  url VARCHAR(255) NOT NULL,
+  payload_json MEDIUMTEXT,
+  http_code INTEGER DEFAULT NULL,
+  tries INTEGER DEFAULT 0,
+  last_error TEXT,
+  status VARCHAR(20) DEFAULT NULL,
+  tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=innodb;
+
+CREATE INDEX idx_fv_focus_job_status ON llx_fv_focus_job (status);
+
