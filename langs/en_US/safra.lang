@@ -335,6 +335,7 @@ SafraLinkTecnicoCheckbox = Link Safra technical products
 SafraLinkTecnicoHelp = Select one or more Safra technical products to associate with this product.
 SafraLinkCultivarCheckbox = Link Safra cultivars
 SafraLinkCultivarHelp = Select one or more Safra cultivars to associate with this product.
+SafraLinkCultivarPlaceholder = Search cultivars by code or name
 SafraProductLinkSchemaError = Unable to prepare Safra product linking tables.
 SafraProductLinkSaveError = Unable to save Safra product links.
 SafraProductLinkRemoved = Link removed successfully.
@@ -400,9 +401,16 @@ ZoneamentoCultivoLabel=System
 # Application assistant
 #
 SafraAplicacaoAreaHa = Applied area (ha)
+SafraOperationAreaPreparo = Prepared area (ha)
+SafraOperationAreaTratamento = Treated area (ha)
+SafraOperationAreaPlantio = Planted area (ha)
+SafraOperationAreaFertilizacao = Fertilized area (ha)
+SafraOperationAreaAplicacao = Applied area (ha)
+SafraOperationAreaColheita = Harvested area (ha)
+SafraOperationAreaOutro = Worked area (ha)
 SafraAplicacaoDate = Application date
 SafraAplicacaoCaldaObservation = Spray mixture notes
-SafraAplicacaoTaskProducts = Products to apply
+SafraAplicacaoTaskProducts = Activity details
 SafraAplicacaoTaskLabel = Application %s
 SafraAplicacaoTaskLabelNoRef = Application
 SafraAplicacaoResourceVehicle = Vehicles
@@ -436,6 +444,12 @@ TankCapacity = Tank capacity (L)
 AreaPerTank = Area per tank
 QuantityPerTank = Quantity per tank
 SaveAsNote = Save as note
+SafraCaldaNoteHeader = Mixture calculation:
+SafraCaldaNoteRate = - Rate: %s L/ha
+SafraCaldaNoteTank = - Tank: %s L
+SafraCaldaNoteArea = - Area per tank: %s ha
+SafraCaldaNoteItemsHeader = - Inputs per tank:
+SafraCaldaNoteItem =   * %s: %s
 
 
 SafraOperationType = Activity type

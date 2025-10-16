@@ -273,17 +273,17 @@ class ActionsSafra extends CommonHookActions
                                                 $cultivarEnabled = !empty($cultivarSelection) ? 1 : 0;
                                         }
 
-                                        $options = SafraProductLink::fetchAvailableOptions($db, SafraProductLink::TYPE_CULTIVAR);
+                                        $options = array();
                                         foreach ($cultivarSelection as $selectedId) {
-                                                if (!isset($options[$selectedId])) {
-                                                        $label = SafraProductLink::fetchOptionLabel($db, SafraProductLink::TYPE_CULTIVAR, $selectedId);
-                                                        if ($label !== null) {
-                                                                $options[$selectedId] = $label;
-                                                        }
+                                                $label = SafraProductLink::fetchOptionLabel($db, SafraProductLink::TYPE_CULTIVAR, $selectedId);
+                                                if ($label !== null) {
+                                                        $options[$selectedId] = $label;
                                                 }
                                         }
 
-                                        ksort($options);
+                                        if (!empty($options)) {
+                                                ksort($options);
+                                        }
 
                                         $productRows[] = $this->renderProductLinkRow(
                                                 'safra_link_enable_cultivar',
@@ -292,14 +292,21 @@ class ActionsSafra extends CommonHookActions
                                                 $langs->trans('SafraLinkCultivarHelp'),
                                                 $options,
                                                 $cultivarSelection,
-                                                (bool) $cultivarEnabled
+                                                (bool) $cultivarEnabled,
+                                                array(
+                                                        'data-safra-link-type' => 'cultivar',
+                                                        'data-safra-ajax-url' => dol_buildpath('/safra/ajax/product_links.php', 1) . '?type=cultivar',
+                                                        'data-placeholder' => $langs->trans('SafraLinkCultivarPlaceholder'),
+                                                        'data-safra-min-length' => 2,
+                                                        'data-safra-page-size' => 25,
+                                                )
                                         );
                                 }
                         }
 
                         if (!empty($productRows)) {
                                 $this->resprints .= implode('', $productRows);
-                                $this->resprints .= '<script>jQuery(function($){function safraToggleLinkRow(cb,container){var checked=$(cb).is(\':checked\');$(container).toggle(checked);}safraToggleLinkRow("#safra_link_enable_formulado","#safra_link_formulados_container");safraToggleLinkRow("#safra_link_enable_tecnico","#safra_link_produtostecnicos_container");safraToggleLinkRow("#safra_link_enable_cultivar","#safra_link_cultivares_container");$("#safra_link_enable_formulado").on("change",function(){safraToggleLinkRow(this,"#safra_link_formulados_container");});$("#safra_link_enable_tecnico").on("change",function(){safraToggleLinkRow(this,"#safra_link_produtostecnicos_container");});$("#safra_link_enable_cultivar").on("change",function(){safraToggleLinkRow(this,"#safra_link_cultivares_container");});if($.fn.select2){$(".safra-select2").select2({width:"resolve"});}});</script>';
+                                $this->resprints .= '<script>jQuery(function($){function safraToggleLinkRow(cb,container){var checked=$(cb).is(\':checked\');$(container).toggle(checked);}function safraInitSelect2($el){if(!$el.length||!$.fn.select2){return;}var config={width:"resolve"};var placeholder=$el.data("placeholder");if(placeholder){config.placeholder=placeholder;}var allowClear=$el.data("allowClear");if(typeof allowClear!==\'undefined\'){config.allowClear=!!allowClear;}var linkType=$el.data("safraLinkType");if(linkType==="cultivar"){var ajaxUrl=$el.data("safraAjaxUrl");if(ajaxUrl){var minLength=parseInt($el.data("safraMinLength"),10);if(isNaN(minLength)||minLength<0){minLength=0;}if(minLength>0){config.minimumInputLength=minLength;}var pageSize=parseInt($el.data("safraPageSize"),10);if(isNaN(pageSize)||pageSize<1){pageSize=25;}config.ajax={url:ajaxUrl,dataType:"json",delay:250,cache:true,data:function(params){var page=params.page||1;return{term:params.term||"",page:page,limit:pageSize};},processResults:function(data,params){params.page=params.page||1;var results=[];if(data&&data.results){results=data.results;}var more=false;if(data&&data.pagination&&typeof data.pagination.more!==\'undefined\'){more=!!data.pagination.more;}return{results:results,pagination:{more:more}};}};config.escapeMarkup=function(markup){return markup;};config.templateResult=function(item){if(item.loading){return item.text;}return item.text||\'\';};config.templateSelection=function(item){return item.text||item.id;};}}$el.select2(config);}safraToggleLinkRow("#safra_link_enable_formulado","#safra_link_formulados_container");safraToggleLinkRow("#safra_link_enable_tecnico","#safra_link_produtostecnicos_container");safraToggleLinkRow("#safra_link_enable_cultivar","#safra_link_cultivares_container");$("#safra_link_enable_formulado").on("change",function(){safraToggleLinkRow(this,"#safra_link_formulados_container");});$("#safra_link_enable_tecnico").on("change",function(){safraToggleLinkRow(this,"#safra_link_produtostecnicos_container");});$("#safra_link_enable_cultivar").on("change",function(){safraToggleLinkRow(this,"#safra_link_cultivares_container");});$(".safra-select2").each(function(){safraInitSelect2($(this));});});</script>';
                         }
                 }
 
@@ -341,7 +348,7 @@ class ActionsSafra extends CommonHookActions
                 return 0;
         }
 
-        private function renderProductLinkRow($checkboxName, $selectName, $label, $help, array $options, array $selection, $enabled)
+        private function renderProductLinkRow($checkboxName, $selectName, $label, $help, array $options, array $selection, $enabled, array $attributes = array())
         {
                 global $form;
 
@@ -360,7 +367,7 @@ class ActionsSafra extends CommonHookActions
                 $out .= '</td>';
                 $out .= '<td>';
                 $out .= '<div id="' . dol_escape_htmltag($containerId) . '"' . ($enabled ? '' : ' style="display:none"') . '>';
-                $out .= $form->multiselectarray(
+                $selectHtml = $form->multiselectarray(
                         $selectName,
                         $options,
                         $selection,
@@ -372,12 +379,65 @@ class ActionsSafra extends CommonHookActions
                         0,
                         'minwidth300 select2 safra-select2'
                 );
+
+                if (!empty($attributes)) {
+                        $selectHtml = $this->injectSelectAttributes($selectHtml, $attributes);
+                }
+
+                $out .= $selectHtml;
                 $out .= '<div class="opacitymedium small">' . dol_escape_htmltag($help) . '</div>';
                 $out .= '</div>';
                 $out .= '</td>';
                 $out .= '</tr>';
 
                 return $out;
+        }
+
+        private function injectSelectAttributes($html, array $attributes)
+        {
+                if (strpos($html, '<select') === false) {
+                        return $html;
+                }
+
+                $parts = array();
+                foreach ($attributes as $name => $value) {
+                        if ($value === false || $value === null) {
+                                continue;
+                        }
+
+                        $attrName = preg_replace('/[^a-zA-Z0-9_\-:]/', '', (string) $name);
+                        if ($attrName === '') {
+                                continue;
+                        }
+
+                        if ($value === true) {
+                                $parts[] = $attrName;
+                        } else {
+                                $parts[] = $attrName . '="' . dol_escape_htmltag((string) $value) . '"';
+                        }
+                }
+
+                if (empty($parts)) {
+                        return $html;
+                }
+
+                $injection = trim(implode(' ', $parts));
+
+                if ($injection === '') {
+                        return $html;
+                }
+
+                $updated = preg_replace('/<select(\s)/', '<select ' . $injection . '$1', $html, 1);
+                if (is_string($updated) && $updated !== $html) {
+                        return $updated;
+                }
+
+                $fallback = preg_replace('/<select>/', '<select ' . $injection . '>', $html, 1);
+                if (is_string($fallback)) {
+                        return $fallback;
+                }
+
+                return $html;
         }
 
         /**
