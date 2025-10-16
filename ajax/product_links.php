@@ -100,6 +100,13 @@ if ($term !== '') {
     $sql .= " AND (ref LIKE '%".$escaped."%' OR label LIKE '%".$escaped."%')";
 }
 
+if ($type === SafraProductLink::TYPE_CULTIVAR) {
+    dol_syslog(
+        basename(__FILE__).": cultivar search term='".$term."' page=".$page." limit=".$limit." sql=".$sql,
+        LOG_DEBUG
+    );
+}
+
 $sql .= ' ORDER BY ref ASC';
 $sql .= $db->plimit($limit + 1, $offset);
 
@@ -122,6 +129,13 @@ if ($resql) {
         );
     }
     $db->free($resql);
+}
+
+if ($type === SafraProductLink::TYPE_CULTIVAR) {
+    dol_syslog(
+        basename(__FILE__).': cultivar search returned '.count($results).' rows (hasMore='.( $hasMore ? '1' : '0' ).')',
+        LOG_DEBUG
+    );
 }
 
 top_httphead('application/json');
