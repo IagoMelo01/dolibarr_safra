@@ -69,6 +69,8 @@ class Aplicacao extends CommonObject
 
         const STATUS_DRAFT = 0;
         const STATUS_VALIDATED = 1;
+        const STATUS_IN_PROGRESS = 2;
+        const STATUS_COMPLETED = 3;
         const STATUS_CANCELED = 9;
 
         const OPERATION_PREPARO = 'preparo_solo';
@@ -616,6 +618,23 @@ class Aplicacao extends CommonObject
         }
 
         /**
+         * Build a stock summary for current lines.
+         *
+         * @param User|null $user             Current user (used to resolve default warehouses)
+         * @param bool      $missingWarehouse Flag set to true when a line lacks warehouse information
+         *
+         * @return array
+         */
+        public function buildStockSummary(User $user = null, &$missingWarehouse = false)
+        {
+                if (empty($this->lines)) {
+                        $this->fetchLines();
+                }
+
+                return $this->summarizeLinesForStock($this->lines, $user, $missingWarehouse);
+        }
+
+        /**
          * Build stock summary (grouped by product/warehouse) from provided lines.
          *
          * @param array $lines             List of lines (objects or associative arrays)
@@ -1074,7 +1093,7 @@ class Aplicacao extends CommonObject
                 $newSummary = $this->summarizeLinesForStock($lines, $user, $missingWarehouse);
 
                 $appliedStock = array();
-                if ($this->status == self::STATUS_VALIDATED && $user instanceof User) {
+                if ($this->status == self::STATUS_COMPLETED && $user instanceof User) {
                         global $langs;
                         foreach ($newSummary as $item) {
                                 if (empty($item['fk_entrepot'])) {
@@ -1370,6 +1389,42 @@ class Aplicacao extends CommonObject
         }
 
         /**
+         * Mark application as started.
+         *
+         * @param User $user       User triggering the transition
+         * @param int  $notrigger  Skip triggers flag
+         *
+         * @return int <0 if error, >0 success
+         */
+        public function markAsInProgress(User $user, $notrigger = 0)
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra'));
+
+                if (empty($this->id)) {
+                        $this->error = 'NotLoaded';
+                        return -1;
+                }
+
+                if ($this->status == self::STATUS_IN_PROGRESS) {
+                        return 0;
+                }
+
+                if ($this->status != self::STATUS_VALIDATED) {
+                        $this->error = $langs->trans('ErrorSafraActivityInvalidTransitionState', $this->getLibStatut(0));
+                        return -1;
+                }
+
+                $result = $this->setStatusCommon($user, self::STATUS_IN_PROGRESS, $notrigger, 'SAFRA_ACTIVITY_START');
+                if ($result > 0) {
+                        $this->status = self::STATUS_IN_PROGRESS;
+                        $this->syncTask($user);
+                }
+
+                return $result;
+        }
+
+        /**
          * Mark application as completed: close task and consume stock.
          *
          * @param User $user User triggering completion
@@ -1386,8 +1441,13 @@ class Aplicacao extends CommonObject
                         return -1;
                 }
 
-                if ($this->status == self::STATUS_VALIDATED) {
+                if ($this->status == self::STATUS_COMPLETED) {
                         return 0;
+                }
+
+                if (!in_array($this->status, array(self::STATUS_VALIDATED, self::STATUS_IN_PROGRESS), true)) {
+                        $this->error = $langs->trans('ErrorSafraActivityInvalidTransitionState', $this->getLibStatut(0));
+                        return -1;
                 }
 
                 if (empty($this->lines)) {
@@ -1397,7 +1457,7 @@ class Aplicacao extends CommonObject
                 $this->db->begin();
 
                 $missingWarehouse = false;
-                $summary = $this->summarizeLinesForStock($this->lines, $user, $missingWarehouse);
+                $summary = $this->buildStockSummary($user, $missingWarehouse);
                 if ($missingWarehouse) {
                         foreach ($summary as $item) {
                                 if (empty($item['fk_entrepot'])) {
@@ -1414,18 +1474,14 @@ class Aplicacao extends CommonObject
                         return -1;
                 }
 
-                $sql = 'UPDATE '.MAIN_DB_PREFIX.$this->table_element
-                        .' SET status = '.self::STATUS_VALIDATED
-                        .', tms = tms'
-                        .' WHERE rowid = '.((int) $this->id);
-                if (!$this->db->query($sql)) {
-                        $this->error = $this->db->lasterror();
+                $result = $this->setStatusCommon($user, self::STATUS_COMPLETED, 0, 'SAFRA_ACTIVITY_COMPLETE');
+                if ($result <= 0) {
                         $this->rollbackStockOperations($user, $appliedMovements);
                         $this->db->rollback();
                         return -1;
                 }
 
-                $this->status = self::STATUS_VALIDATED;
+                $this->status = self::STATUS_COMPLETED;
 
                 if ($this->syncTask($user) < 0) {
                         $this->rollbackStockOperations($user, $appliedMovements);
@@ -1493,17 +1549,27 @@ class Aplicacao extends CommonObject
                         }
                 }
 
+                $progressMap = array(
+                        self::STATUS_DRAFT => 0,
+                        self::STATUS_VALIDATED => 25,
+                        self::STATUS_IN_PROGRESS => 75,
+                        self::STATUS_COMPLETED => 100,
+                        self::STATUS_CANCELED => 0,
+                );
+
+                $progressValue = isset($progressMap[$this->status]) ? $progressMap[$this->status] : 0;
+
                 if ($taskId === 0) {
                         $task->fk_project = (int) $this->fk_project;
                         $task->label = $label;
                         $task->description = $description;
                         if (!empty($this->date_application)) {
                                 $task->date_start = $this->date_application;
-                                if ($this->status == self::STATUS_VALIDATED) {
-                                        $task->date_end = $this->date_application;
-                                }
                         }
-                        $task->progress = ($this->status == self::STATUS_VALIDATED) ? 100 : 0;
+                        if ($this->status == self::STATUS_COMPLETED) {
+                                $task->date_end = !empty($this->date_application) ? $this->date_application : dol_now();
+                        }
+                        $task->progress = $progressValue;
                         $task->array_options = array('options_fk_aplicacao' => (int) $this->id);
                         $task->fk_aplicacao = (int) $this->id;
                         $res = $task->create($user);
@@ -1524,19 +1590,18 @@ class Aplicacao extends CommonObject
                         $task->fk_aplicacao = (int) $this->id;
                         if (!empty($this->date_application)) {
                                 $task->date_start = $this->date_application;
-                                if ($this->status == self::STATUS_VALIDATED) {
-                                        $task->date_end = $this->date_application;
-                                } elseif ((int) $task->progress >= 100) {
-                                        $task->date_end = null;
-                                }
+                        } elseif ($this->status >= self::STATUS_IN_PROGRESS && empty($task->date_start)) {
+                                $task->date_start = dol_now();
                         }
-                        if ($this->status == self::STATUS_VALIDATED) {
-                                $task->progress = 100;
-                                if (empty($task->date_end)) {
-                                        $task->date_end = !empty($this->date_application) ? $this->date_application : dol_now();
-                                }
-                        } elseif ((int) $task->progress >= 100) {
-                                $task->progress = 0;
+                        $task->progress = $progressValue;
+
+                        if ($this->status == self::STATUS_COMPLETED) {
+                                $task->date_end = !empty($this->date_application) ? $this->date_application : dol_now();
+                        } elseif ($this->status == self::STATUS_IN_PROGRESS) {
+                                $task->date_end = null;
+                        } elseif ($this->status == self::STATUS_VALIDATED && $task->date_end && $task->date_end < $task->date_start) {
+                                $task->date_end = null;
+                        } elseif (!in_array($this->status, array(self::STATUS_COMPLETED), true)) {
                                 $task->date_end = null;
                         }
 
@@ -1800,7 +1865,7 @@ class Aplicacao extends CommonObject
 
                 $summary = $this->summarizeLinesForStock($this->lines, $user);
                 $revertedOperations = array();
-                if ($this->status == self::STATUS_VALIDATED && $user instanceof User) {
+                if ($this->status == self::STATUS_COMPLETED && $user instanceof User) {
                         $langs->loadLangs(array('safra@safra'));
                         foreach ($summary as $item) {
                                 if (empty($item['fk_entrepot'])) {
@@ -1886,10 +1951,17 @@ class Aplicacao extends CommonObject
 		$error = 0;
 
 		// Protection
-		if ($this->status == self::STATUS_VALIDATED) {
-			dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
-			return 0;
-		}
+                if ($this->status != self::STATUS_DRAFT) {
+                        if ($this->status == self::STATUS_VALIDATED) {
+                                dol_syslog(get_class($this)."::validate action abandonned: already validated", LOG_WARNING);
+                                return 0;
+                        }
+
+                        $this->error = $langs->trans('ErrorSafraActivityInvalidTransitionState', $this->getLibStatut(0));
+                        dol_syslog(get_class($this)."::validate forbidden from status ".$this->status, LOG_WARNING);
+
+                        return -1;
+                }
 
 		/* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra', 'aplicacao', 'write'))
 		 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra', 'aplicacao_advance', 'validate')))
@@ -2010,15 +2082,23 @@ class Aplicacao extends CommonObject
 	 *  @param	int		$notrigger		1=Does not execute triggers, 0=Execute triggers
 	 *	@return	int						Return integer <0 if KO, >0 if OK
 	 */
-	public function setDraft($user, $notrigger = 0)
-	{
-		// Protection
-		if ($this->status <= self::STATUS_DRAFT) {
-			return 0;
-		}
+        public function setDraft($user, $notrigger = 0)
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra'));
 
-		/* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','write'))
-		 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','safra_advance','validate'))))
+                // Protection
+                if ($this->status <= self::STATUS_DRAFT) {
+                        return 0;
+                }
+
+                if ($this->status >= self::STATUS_IN_PROGRESS) {
+                        $this->error = $langs->trans('ErrorSafraActivityInvalidTransitionState', $this->getLibStatut(0));
+                        return -1;
+                }
+
+                /* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','write'))
+                 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','safra_advance','validate'))))
 		 {
 		 $this->error='Permission denied';
 		 return -1;
@@ -2040,28 +2120,36 @@ class Aplicacao extends CommonObject
 	 *  @param	int		$notrigger		1=Does not execute triggers, 0=Execute triggers
 	 *	@return	int						Return integer <0 if KO, 0=Nothing done, >0 if OK
 	 */
-	public function cancel($user, $notrigger = 0)
-	{
-		// Protection
-		if ($this->status != self::STATUS_VALIDATED) {
-			return 0;
-		}
+        public function cancel($user, $notrigger = 0)
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra'));
 
-		/* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','write'))
-		 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','safra_advance','validate'))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
+                // Protection
+                if ($this->status == self::STATUS_CANCELED) {
+                        return 0;
+                }
 
-		$result = $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SAFRA_MYOBJECT_CANCEL');
-		if ($result > 0) {
-			$this->status = self::STATUS_CANCELED;
-			$this->syncTask($user);
-		}
+                if (!in_array($this->status, array(self::STATUS_VALIDATED, self::STATUS_IN_PROGRESS), true)) {
+                        $this->error = $langs->trans('ErrorSafraActivityInvalidTransitionState', $this->getLibStatut(0));
+                        return -1;
+                }
 
-		return $result;
-	}
+                /* if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','write'))
+                 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','safra_advance','validate'))))
+                 {
+                 $this->error='Permission denied';
+                 return -1;
+                 }*/
+
+                $result = $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SAFRA_ACTIVITY_CANCEL');
+                if ($result > 0) {
+                        $this->status = self::STATUS_CANCELED;
+                        $this->syncTask($user);
+                }
+
+                return $result;
+        }
 
 	/**
 	 *	Set back to validated status
@@ -2070,28 +2158,36 @@ class Aplicacao extends CommonObject
 	 *  @param	int		$notrigger		1=Does not execute triggers, 0=Execute triggers
 	 *	@return	int						Return integer <0 if KO, 0=Nothing done, >0 if OK
 	 */
-	public function reopen($user, $notrigger = 0)
-	{
-		// Protection
-		if ($this->status == self::STATUS_VALIDATED) {
-			return 0;
-		}
+        public function reopen($user, $notrigger = 0)
+        {
+                global $langs;
+                $langs->loadLangs(array('safra@safra'));
 
-		/*if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','write'))
-		 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','safra_advance','validate'))))
-		 {
-		 $this->error='Permission denied';
-		 return -1;
-		 }*/
+                // Protection
+                if ($this->status == self::STATUS_VALIDATED) {
+                        return 0;
+                }
 
-		$result = $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SAFRA_MYOBJECT_REOPEN');
-		if ($result > 0) {
-			$this->status = self::STATUS_VALIDATED;
-			$this->syncTask($user);
-		}
+                if ($this->status != self::STATUS_CANCELED) {
+                        $this->error = $langs->trans('ErrorSafraActivityInvalidTransitionState', $this->getLibStatut(0));
+                        return -1;
+                }
 
-		return $result;
-	}
+                /*if (! ((!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','write'))
+                 || (getDolGlobalInt('MAIN_USE_ADVANCED_PERMS') && $user->hasRight('safra','safra_advance','validate'))))
+                 {
+                 $this->error='Permission denied';
+                 return -1;
+                 }*/
+
+                $result = $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SAFRA_ACTIVITY_REOPEN');
+                if ($result > 0) {
+                        $this->status = self::STATUS_VALIDATED;
+                        $this->syncTask($user);
+                }
+
+                return $result;
+        }
 
 	/**
 	 * getTooltipContentArray
@@ -2325,25 +2421,36 @@ class Aplicacao extends CommonObject
 			return '';
 		}
 
-		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
-			global $langs;
-			//$langs->load("safra@safra");
-			$this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-			$this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
-			$this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('Enabled');
-			$this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('Disabled');
-		}
+                if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
+                        global $langs;
+                        $langs->load('safra@safra');
 
-		$statusType = 'status'.$status;
-		//if ($status == self::STATUS_VALIDATED) $statusType = 'status1';
-		if ($status == self::STATUS_CANCELED) {
-			$statusType = 'status6';
-		}
+                        $this->labelStatus[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
+                        $this->labelStatus[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('SafraActivityStatusValidated');
+                        $this->labelStatus[self::STATUS_IN_PROGRESS] = $langs->transnoentitiesnoconv('SafraActivityStatusInProgress');
+                        $this->labelStatus[self::STATUS_COMPLETED] = $langs->transnoentitiesnoconv('SafraActivityStatusCompleted');
+                        $this->labelStatus[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('SafraActivityStatusCanceled');
 
-		return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);
-	}
+                        $this->labelStatusShort[self::STATUS_DRAFT] = $langs->transnoentitiesnoconv('Draft');
+                        $this->labelStatusShort[self::STATUS_VALIDATED] = $langs->transnoentitiesnoconv('SafraActivityStatusValidated');
+                        $this->labelStatusShort[self::STATUS_IN_PROGRESS] = $langs->transnoentitiesnoconv('SafraActivityStatusInProgress');
+                        $this->labelStatusShort[self::STATUS_COMPLETED] = $langs->transnoentitiesnoconv('SafraActivityStatusCompleted');
+                        $this->labelStatusShort[self::STATUS_CANCELED] = $langs->transnoentitiesnoconv('SafraActivityStatusCanceled');
+                }
+
+                $statusType = 'status'.$status;
+                if ($status == self::STATUS_VALIDATED) {
+                        $statusType = 'status3';
+                } elseif ($status == self::STATUS_IN_PROGRESS) {
+                        $statusType = 'status4';
+                } elseif ($status == self::STATUS_COMPLETED) {
+                        $statusType = 'status6';
+                } elseif ($status == self::STATUS_CANCELED) {
+                        $statusType = 'status9';
+                }
+
+                return dolGetStatus($this->labelStatus[$status], $this->labelStatusShort[$status], '', $statusType, $mode);
+        }
 
 	/**
 	 *	Load the info information in the object
