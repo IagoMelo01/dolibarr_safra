@@ -30,6 +30,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 
 /**
  * Class for Aplicacao
+ *
+ * @deprecated use {@see SfActivity} instead.
  */
 class Aplicacao extends CommonObject
 {
@@ -105,6 +107,23 @@ class Aplicacao extends CommonObject
                 }
 
                 return $map;
+        }
+
+        /**
+         * Factory helper maintained for backwards compatibility.
+         *
+         * @deprecated Use new SfActivity() instead.
+         *
+         * @param DoliDB $db
+         * @return SfActivity
+         */
+        public static function factory(DoliDB $db)
+        {
+                dol_syslog(__METHOD__.' is deprecated, instantiate SfActivity directly.', LOG_WARNING);
+
+                require_once __DIR__.'/SfActivity.class.php';
+
+                return new SfActivity($db);
         }
 
         /**
