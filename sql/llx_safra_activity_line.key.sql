@@ -1,0 +1,5 @@
+ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_activity (fk_activity);
+ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_product (fk_product);
+ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_formulated (fk_formulated_product);
+ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_technical (fk_technical_product);
+ALTER TABLE llx_safra_activity_line ADD CONSTRAINT llx_safra_activity_line_fk_activity FOREIGN KEY (fk_activity) REFERENCES llx_safra_activity(rowid);
