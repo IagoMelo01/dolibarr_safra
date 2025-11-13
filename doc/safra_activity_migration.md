@@ -76,26 +76,41 @@ Timeline:
 
 ## Migration and compatibility checklist
 
-1. **Database migration**
-   - Rename existing tables (`RENAME TABLE llx_safra_aplicacao TO llx_safra_activity`, same for lines).
-   - Apply column renames using `ALTER TABLE` statements provided in the migration script.
-   - Create SQL views with the legacy names during the transition period.
-   - Rebuild indexes using the new key scripts to ensure query plans remain efficient.
+### Pre-deployment preparation
 
-2. **PHP layer**
-   - Introduce `SfActivity` class mapping to the new table names while keeping `Aplicacao` extending/aliasing for backwards compatibility.
-   - Update Data Transfer Objects and repositories to prefer the new naming while still hydrating legacy fields for integrations that expect them.
+1. **Freeze changes** – Enable Dolibarr maintenance mode and coordinate a quiet window so no Aplicação records are created during the upgrade.
+2. **Back up assets** – Capture a full database dump and archive the `documents/` directory to preserve generated PDFs.
+3. **Validate prerequisites** – Confirm the Safra module package contains the SQL migrations `20241005_add_activity_tables.sql` and `20241007_migrate_application_to_activity.sql`.
 
-3. **Integrations and APIs**
-   - Review REST endpoints and hooks that expose `aplicacao` payloads; publish a changelog describing the renamed attributes (`operation_type` → `activity_type`, etc.).
-   - Provide sample payloads with both the old and new keys to aid consumers during migration.
+### Deployment execution
 
-4. **Front-end and translations**
-   - Duplicate translation keys and UI labels, ensuring toggles or compatibility layers supply the correct wording depending on module configuration.
-   - Adjust JavaScript helpers and templates to read both the legacy and new field names to avoid breaking cached bundles.
+1. Upload the refreshed Safra package and open `custom/safra/upgrade.php` as an administrator.
+2. Review the pre-checks, then trigger the assistant to execute the Activity migration scripts sequentially.
+3. Monitor the on-screen log; resolve any SQL error before leaving maintenance mode.
 
-5. **Quality gates**
-   - Extend PHPUnit/functional tests to cover the aliasing factories and SQL views.
-   - Add schema validation to the deployment pipeline so environments failing to rename columns are detected early.
+### Post-deployment validation
 
-Following this checklist will allow the Safra module to adopt the neutral “Activity” terminology while maintaining compatibility with existing deployments and integrations.
+1. Compare row counts between `llx_safra_activity` and the legacy Aplicação views to verify parity.
+2. Check that `llx_stock_mouvement.origintype` values now reference `safra_activity`, confirming downstream stock synchronisation.
+3. Call the REST endpoint `GET /api/index.php/sfactivities?limit=5` and ensure payloads include both modern (`activity_type`) and legacy (`operation_type`) keys.
+
+### Compatibility watchlist
+
+1. Audit Dolibarr logs for trigger emissions (`SAFRA_ACTIVITY_*`) during the first usage hours; integrators should not observe duplicate events.
+2. Notify partners that the compatibility views `llx_safra_aplicacao` and `llx_safra_aplicacao_line` are read-only shims slated for removal after two releases.
+3. Track custom SQL reports still bound to the legacy views and plan their refactoring before the deprecation window closes.
+
+### Rollback drill
+
+1. If parity checks fail, restore the database backup captured pre-upgrade.
+2. Re-deploy the previous Safra package and clear Dolibarr caches.
+3. Reopen access only after listing Aplicação records and invoking the legacy REST alias (`GET /api/index.php/aplicacoes`) to confirm normal behaviour.
+
+Following this expanded checklist keeps migration, compatibility and rollback actions in sync across operations, QA and integration partners.
+
+## Integrator communication pack
+
+- **REST endpoints** – The canonical resource is `/sfactivities` while `/aplicacoes` remains an alias; the API automatically mirrors key fields so payloads expose both legacy and modern attribute names (`activity_type`, `date_activity`, `mixture_note`).
+- **Workflow triggers** – Activity lifecycle events emit `SAFRA_ACTIVITY_CREATE`, `SAFRA_ACTIVITY_VALIDATE`, `SAFRA_ACTIVITY_START`, `SAFRA_ACTIVITY_DONE`, `SAFRA_ACTIVITY_CANCEL` and `SAFRA_ACTIVITY_DELETE`, replacing the former `MYOBJECT_*` hook usage.
+- **Compatibility views** – `llx_safra_aplicacao` and `llx_safra_aplicacao_line` now wrap the Activity tables, allowing SQL consumers to transition gradually while new development targets the renamed schema directly.
+- **Rollback expectations** – Restoring from backup reverts tables and constants; after rollback, purge the compatibility views introduced by the migration scripts to avoid stale aliases lingering in older deployments.
