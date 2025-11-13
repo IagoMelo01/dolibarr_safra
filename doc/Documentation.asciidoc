@@ -636,7 +636,6 @@ __DATA_SPECIFICATION__
 |*colheita*|Read Colheita object of Safra , Create/Update Colheita object of Safra , Delete Colheita object of Safra , 
 |*evento*|Read Evento object of Safra , Create/Update Evento object of Safra , Delete Evento object of Safra , 
 |*recomendacaoadubo*|Read RecomendacaoAdubo object of Safra , Create/Update RecomendacaoAdubo object of Safra , Delete RecomendacaoAdubo object of Safra , 
-|*aplicacao*|Read Aplicacao object of Safra , Create/Update Aplicacao object of Safra , Delete Aplicacao object of Safra , 
 |*municipio*|Read Municipio object of Safra , Create/Update Municipio object of Safra , Delete Municipio object of Safra , 
 
 |===
