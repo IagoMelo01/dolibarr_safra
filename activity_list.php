@@ -40,6 +40,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/price.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 dol_include_once('/safra/class/SfActivity.class.php');
+dol_include_once('/safra/lib/safra_rights.lib.php');
 
 global $langs, $db, $conf, $user;
 
@@ -56,7 +57,7 @@ $limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
 $sortorder = GETPOST('sortorder', 'aZ09comma');
 if (empty($sortfield)) {
-    $sortfield = 't.date_activity DESC';
+    $sortfield = 't.date_activity';
 }
 if (empty($sortorder)) {
     $sortorder = 'DESC';
@@ -92,9 +93,9 @@ $form = new Form($db);
 $formcompany = new FormCompany($db);
 $formproject = new FormProjets($db);
 
-$permissiontoread = $user->rights['safra']['aplicacao']['read'] ?? 1;
-$permissiontoadd = $user->rights['safra']['aplicacao']['write'] ?? 1;
-$permissiontodelete = $user->rights['safra']['aplicacao']['delete'] ?? 1;
+$permissiontoread = getSafraRightValue($user, 'read');
+$permissiontoadd = getSafraRightValue($user, 'write');
+$permissiontodelete = getSafraRightValue($user, 'delete');
 if (!$permissiontoread) {
     accessforbidden();
 }
@@ -308,14 +309,14 @@ print '</td>';
 print '</tr>';
 
 $sql = 'SELECT t.rowid, t.ref, t.label, t.fk_project, t.fk_soc, t.activity_type, t.date_activity, t.qty, t.status, t.amount,'
-    .' (SELECT COUNT(*) FROM '.MAIN_DB_PREFIX.'safra_aplicacao_line AS l WHERE l.fk_aplicacao = t.rowid) AS line_count,'
-    .' (SELECT SUM(l2.total_qty) FROM '.MAIN_DB_PREFIX.'safra_aplicacao_line AS l2 WHERE l2.fk_aplicacao = t.rowid) AS total_qty,'
+    .' (SELECT COUNT(*) FROM '.MAIN_DB_PREFIX.'safra_activity_line AS l WHERE l.fk_activity = t.rowid) AS line_count,'
+    .' (SELECT SUM(l2.total_qty) FROM '.MAIN_DB_PREFIX.'safra_activity_line AS l2 WHERE l2.fk_activity = t.rowid) AS total_qty,'
     .' s.nom AS thirdparty_name, s.rowid AS thirdparty_id,'
     .' p.ref AS project_ref, p.title AS project_title'
-    .' FROM '.MAIN_DB_PREFIX.'safra_aplicacao AS t'
+    .' FROM '.MAIN_DB_PREFIX.'safra_activity AS t'
     .' LEFT JOIN '.MAIN_DB_PREFIX.'societe AS s ON s.rowid = t.fk_soc'
     .' LEFT JOIN '.MAIN_DB_PREFIX.'projet AS p ON p.rowid = t.fk_project';
-$sql .= ' WHERE t.entity IN ('.getEntity('safra_aplicacao').')';
+$sql .= ' WHERE t.entity IN ('.getEntity('safra_activity').')';
 if ($search_ref !== '') {
     $sql .= natural_search('t.ref', $search_ref);
 }

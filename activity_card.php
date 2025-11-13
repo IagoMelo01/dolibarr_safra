@@ -43,6 +43,7 @@ require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
 dol_include_once('/safra/class/SfActivity.class.php');
+dol_include_once('/safra/lib/safra_rights.lib.php');
 
 global $langs, $db, $conf, $user;
 
@@ -52,8 +53,8 @@ $id = GETPOST('id', 'int');
 $ref = GETPOST('ref', 'alpha');
 $action = GETPOST('action', 'aZ09');
 
-$permissiontoread = $user->rights['safra']['aplicacao']['read'] ?? 1;
-$permissiontoadd = $user->rights['safra']['aplicacao']['write'] ?? 1;
+$permissiontoread = getSafraRightValue($user, 'read');
+$permissiontoadd = getSafraRightValue($user, 'write');
 if (!$permissiontoread) {
     accessforbidden();
 }

@@ -32,6 +32,7 @@ if (!isModEnabled('safra')) {
 }
 
 dol_include_once('/safra/class/SfActivity.class.php');
+dol_include_once('/safra/lib/safra_rights.lib.php');
 require_once DOL_DOCUMENT_ROOT.'/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/societe/class/societe.class.php';
 require_once DOL_DOCUMENT_ROOT.'/projet/class/project.class.php';
@@ -40,7 +41,7 @@ global $langs, $db, $conf, $user;
 
 $langs->loadLangs(array('safra@safra', 'companies', 'projects'));
 
-$permissiontoread = $user->rights['safra']['aplicacao']['read'] ?? 1;
+$permissiontoread = getSafraRightValue($user, 'read');
 if (!$permissiontoread) {
     accessforbidden();
 }
@@ -66,10 +67,10 @@ foreach (array_keys($statuses) as $statusKey) {
 $sql = 'SELECT t.rowid, t.ref, t.label, t.status, t.date_activity, t.activity_type, t.fk_project, t.fk_soc,'
     .' p.ref as project_ref, p.title as project_title,'
     .' s.nom as thirdparty_name'
-    .' FROM '.MAIN_DB_PREFIX.'safra_aplicacao AS t'
+    .' FROM '.MAIN_DB_PREFIX.'safra_activity AS t'
     .' LEFT JOIN '.MAIN_DB_PREFIX.'projet AS p ON p.rowid = t.fk_project'
     .' LEFT JOIN '.MAIN_DB_PREFIX.'societe AS s ON s.rowid = t.fk_soc'
-    .' WHERE t.entity IN ('.getEntity('safra_aplicacao').')'
+    .' WHERE t.entity IN ('.getEntity('safra_activity').')'
     .' ORDER BY t.status ASC, t.date_activity DESC';
 if ($limit > 0) {
     $sql .= $db->plimit($limit, 0);
