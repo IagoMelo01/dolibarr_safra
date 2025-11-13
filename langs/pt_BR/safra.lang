@@ -402,26 +402,26 @@ ZoneamentoCycleLabelShort=Ciclos
 ZoneamentoCultivoLabel=Sistema
 
 #
-# Assistente de aplicação
+# Assistente de atividade
 #
-SafraAplicacaoAreaHa = Área aplicada (ha)
+SafraAplicacaoAreaHa = Área trabalhada (ha)
 SafraOperationAreaPreparo = Área preparada (ha)
 SafraOperationAreaTratamento = Área tratada (ha)
 SafraOperationAreaPlantio = Área plantada (ha)
 SafraOperationAreaFertilizacao = Área fertilizada (ha)
-SafraOperationAreaAplicacao = Área aplicada (ha)
+SafraOperationAreaAplicacao = Área trabalhada (ha)
 SafraOperationAreaColheita = Área colhida (ha)
 SafraOperationAreaOutro = Área trabalhada (ha)
-SafraAplicacaoDate = Data da aplicação
+SafraAplicacaoDate = Data da atividade
 SafraAplicacaoCaldaObservation = Observações da calda
 SafraAplicacaoTaskProducts = Dados da atividade
-SafraAplicacaoTaskLabel = Aplicação %s
-SafraAplicacaoTaskLabelNoRef = Aplicação
+SafraAplicacaoTaskLabel = Atividade %s
+SafraAplicacaoTaskLabelNoRef = Atividade
 SafraAplicacaoResourceVehicle = Veículos
 SafraAplicacaoResourceImplement = Implementos
 SafraAplicacaoResourcePerson = Equipe
-SafraAplicacaoStockMovementLabel = Aplicação %s
-SafraAplicacaoMissingWarehouse = Selecione um almoxarifado para cada produto antes de concluir a aplicação.
+SafraAplicacaoStockMovementLabel = Atividade %s
+SafraAplicacaoMissingWarehouse = Selecione um almoxarifado para cada produto antes de concluir a atividade.
 SafraActivityStatusValidated = Validada
 SafraActivityStatusInProgress = Em execução
 SafraActivityStatusCompleted = Concluída
@@ -468,7 +468,7 @@ SafraOperationPreparoSolo = Preparo do solo
 SafraOperationTratamentoSemente = Tratamento de semente
 SafraOperationPlantio = Plantio
 SafraOperationFertilizacao = Fertilização
-SafraOperationAplicacao = Aplicação
+SafraOperationAplicacao = Atividade com insumos
 SafraOperationColheita = Colheita
 SafraOperationOutro = Outro
 SafraLineMovement = Movimento de estoque
@@ -487,14 +487,14 @@ SafraAplicacaoTalhaoAreaFormat = Área: %s ha
 SafraAplicacaoTalhaoMunicipioFormat = Município: %s
 SafraAplicacaoNoLinkedProducts = Nenhum produto do estoque vinculado
 SafraAplicacaoAddLinkedProduct = Adicionar novo
-AplicacaoCreateAssistant = Assistente de aplicação
+AplicacaoCreateAssistant = Assistente de atividade
 SafraAplicacaoViewTask = Visualizar tarefa
 SafraAplicacaoComplete = Marcar como concluída
 
 SafraAplicacaoCaldaCalculation = Cálculo de calda
-ApplicationRate = Taxa de aplicação (L/ha)
+ApplicationRate = Taxa da atividade (L/ha)
 TankCapacity = Capacidade do tanque (L)
-AreaPerTank = Área aplicada por tanque
+AreaPerTank = Área trabalhada por tanque
 QuantityPerTank = Quantidade por tanque
 SaveAsNote = Salvar como observação
 SafraCaldaNoteHeader = Cálculo de calda:
