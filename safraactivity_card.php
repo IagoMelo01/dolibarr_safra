@@ -61,6 +61,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formproduct.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/price.lib.php';
 
 require_once __DIR__ . '/class/safraactivity.class.php';
 require_once __DIR__ . '/class/talhao.class.php';
@@ -420,6 +421,8 @@ if ($object->id > 0) {
         print '<tr><td>' . $langs->trans('DateStart') . '</td><td>' . ($object->date_real_start ? dol_print_date($object->date_real_start, 'dayhour') : '&mdash;') . '</td></tr>';
         print '<tr><td>' . $langs->trans('DateEnd') . '</td><td>' . ($object->date_real_end ? dol_print_date($object->date_real_end, 'dayhour') : '&mdash;') . '</td></tr>';
         print '<tr><td>' . $langs->trans('Status') . '</td><td>' . $object->getLibStatut(5) . '</td></tr>';
+        print '<tr><td>' . $langs->trans('SafraActivityPlannedCost') . '</td><td>' . price($object->planned_cost) . '</td></tr>';
+        print '<tr><td>' . $langs->trans('SafraActivityActualCost') . '</td><td>' . price($object->actual_cost) . '</td></tr>';
         print '</table>';
         print '</div>';
 
@@ -491,6 +494,8 @@ if ($object->id > 0) {
                 print '<tr><td>' . $langs->trans('DateEnd') . '</td><td>' . $form->selectDate($object->date_real_end, 'date_real_end', 1, 1, 1, '', 1, 0) . '</td></tr>';
                 print '<tr><td>' . $langs->trans('NotePublic') . '</td><td>' . dol_htmltextarea('note_public', $object->note_public, '', 5, 50) . '</td></tr>';
                 print '<tr><td>' . $langs->trans('NotePrivate') . '</td><td>' . dol_htmltextarea('note_private', $object->note_private, '', 5, 50) . '</td></tr>';
+                print '<tr><td>' . $langs->trans('SafraActivityPlannedCost') . '</td><td><span class="opacitymedium">' . price($object->planned_cost) . '</span></td></tr>';
+                print '<tr><td>' . $langs->trans('SafraActivityActualCost') . '</td><td><span class="opacitymedium">' . price($object->actual_cost) . '</span></td></tr>';
                 print '</table>';
                 print '<div class="center">';
                 print '<input type="submit" class="button" value="' . dol_escape_htmltag($langs->trans('Save')) . '">';
