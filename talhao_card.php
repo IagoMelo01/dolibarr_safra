@@ -511,11 +511,22 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	$morehtmlref .= '</div>';
 
 
-	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
+        dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
 
 
-	print '<div class="fichecenter">';
-	print '<div class="fichehalfleft">';
+        print '<div class="fichecenter">';
+        if ($object->id > 0) {
+                $activityListUrl = dol_buildpath('/safra/safraactivity_list.php', 1) . '?search_fk_talhao=' . $object->id;
+                $newActivityUrl = dol_buildpath('/safra/safraactivity_card.php', 1) . '?action=create&fk_talhao=' . $object->id;
+                print '<div class="box stats twocolumns">';
+                print '<div class="center">';
+                print '<a class="butAction" href="' . $activityListUrl . '">' . $langs->trans('SafraActivityListTitle') . '</a>';
+                print '&nbsp;';
+                print '<a class="butAction" href="' . $newActivityUrl . '">' . $langs->trans('SafraMenuNewAplicacoes') . '</a>';
+                print '</div>';
+                print '</div>';
+        }
+        print '<div class="fichehalfleft">';
 	print '<div class="underbanner clearboth"></div>';
 	print '<table class="border centpercent tableforfield">'."\n";
 

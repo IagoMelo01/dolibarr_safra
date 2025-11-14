@@ -343,6 +343,15 @@ class ActionsSafra extends CommonHookActions
                         $this->resprints .= '<script>window.SAFRA = Object.assign({}, window.SAFRA || {}, '.json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE).');</script>';
 
                         $this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
+
+                        $activityLinks = array(
+                                'list' => dol_buildpath('/safra/safraactivity_list.php', 1) . '?search_fk_project=' . $object->id,
+                                'new' => dol_buildpath('/safra/safraactivity_card.php', 1) . '?action=create&fk_project=' . $object->id,
+                                'labelList' => $langs->transnoentities('SafraActivityListTitle'),
+                                'labelNew' => $langs->transnoentities('SafraMenuNewAplicacoes'),
+                        );
+
+                        $this->resprints .= '<script>jQuery(function($){var data=' . json_encode($activityLinks, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . ';var $container=$(".tabsAction").first();if(!$container.length){$container=$("<div class=\"tabsAction\"></div>");$(".fichecenter").first().before($container);}if($container.find(".safra-project-activities").length){return;}var $wrap=$("<span class=\"safra-project-activities\"></span>");var $btnList=$("<a>").addClass("butAction").attr("href",data.list).text(data.labelList);var $btnNew=$("<a>").addClass("butAction").attr("href",data.new).text(data.labelNew);$wrap.append($btnList).append("&nbsp;").append($btnNew);$container.prepend($wrap);});</script>';
                 }
 
                 return 0;
