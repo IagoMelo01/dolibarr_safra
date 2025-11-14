@@ -100,6 +100,16 @@ class SafraActivity extends CommonObject
      */
     public $progress = 0.0;
 
+    /**
+     * @var float Planned cost cache.
+     */
+    public $planned_cost = 0.0;
+
+    /**
+     * @var float Actual cost cache.
+     */
+    public $actual_cost = 0.0;
+
     public $rowid;
     public $entity;
     public $ref;
@@ -198,6 +208,8 @@ class SafraActivity extends CommonObject
         )),
         'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'position' => 120, 'notnull' => 0, 'visible' => '0', 'cssview' => 'wordbreak'),
         'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'position' => 130, 'notnull' => 0, 'visible' => '0', 'cssview' => 'wordbreak'),
+        'planned_cost' => array('type' => 'double(24,8)', 'label' => 'SafraActivityPlannedCost', 'enabled' => '1', 'position' => 135, 'notnull' => 0, 'visible' => '1', 'default' => '0'),
+        'actual_cost' => array('type' => 'double(24,8)', 'label' => 'SafraActivityActualCost', 'enabled' => '1', 'position' => 136, 'notnull' => 0, 'visible' => '1', 'default' => '0'),
         'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'position' => 500, 'notnull' => 1, 'visible' => '-2'),
         'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'position' => 501, 'notnull' => 0, 'visible' => '-2'),
         'fk_user_creat' => array('type' => 'integer:User:user/class/user.class.php', 'label' => 'UserAuthor', 'picto' => 'user', 'enabled' => '1', 'position' => 510, 'notnull' => 1, 'visible' => '-2'),
@@ -504,8 +516,21 @@ class SafraActivity extends CommonObject
             $inserted++;
         }
 
+        $this->fetchLines();
+
+        $stockResult = $this->syncStockMovements($user);
+        if ($stockResult < 0) {
+            $this->db->rollback();
+            return -1;
+        }
+
+        if ($this->updateCostTotals() < 0) {
+            $this->db->rollback();
+            return -1;
+        }
+
         $this->db->commit();
-        $this->logMessage('info', 'Added activity input lines', array('count' => $inserted));
+        $this->logMessage('info', 'Added activity input lines', array('count' => $inserted, 'stock_operations' => $stockResult));
         $this->fetchLines();
 
         return $inserted;
@@ -708,6 +733,407 @@ class SafraActivity extends CommonObject
     }
 
     /**
+     * Return origin type label for stock movements.
+     *
+     * @return string
+     */
+    protected function getStockOriginType()
+    {
+        return 'safra_activity';
+    }
+
+    /**
+     * Build default label for stock movements.
+     *
+     * @return string
+     */
+    protected function getStockMovementLabel()
+    {
+        global $langs;
+
+        if (!is_object($langs)) {
+            return 'SafraActivityStockMovementLabel('.$this->ref.')';
+        }
+
+        $langs->load('safra@safra');
+
+        return $langs->trans('SafraActivityStockMovementLabel', $this->ref);
+    }
+
+    /**
+     * Build stock movement summary grouped by product and warehouse.
+     *
+     * @param User|null $user             Acting user
+     * @param bool      $missingWarehouse Flag updated when warehouse is missing
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function buildStockSummary(User $user = null, &$missingWarehouse = false)
+    {
+        $missingWarehouse = false;
+        $summary = array();
+
+        $this->ensureLinesLoaded();
+
+        if (!is_array($this->lines)) {
+            return $summary;
+        }
+
+        foreach ($this->lines as $line) {
+            if (!($line instanceof SafraActivityLine)) {
+                continue;
+            }
+
+            $movement = self::normalizeMovementType(isset($line->movement_type) ? $line->movement_type : '');
+            if ($movement === self::MOVEMENT_TRANSFER) {
+                // Transfer movements require a dedicated workflow not yet implemented.
+                continue;
+            }
+
+            $qty = price2num($line->qty, 'MS');
+            if ($qty === null || (float) $qty == 0.0) {
+                continue;
+            }
+
+            $productId = (int) $line->fk_product;
+            if ($productId <= 0) {
+                continue;
+            }
+
+            $warehouseId = (int) $line->fk_warehouse;
+            if ($warehouseId <= 0) {
+                $missingWarehouse = true;
+                continue;
+            }
+
+            $key = $productId . ':' . $warehouseId . ':' . $movement;
+            if (!isset($summary[$key])) {
+                $summary[$key] = array(
+                    'fk_product' => $productId,
+                    'fk_warehouse' => $warehouseId,
+                    'movement' => $movement,
+                    'qty' => 0.0,
+                );
+            }
+
+            $summary[$key]['qty'] += abs((float) $qty);
+        }
+
+        $this->logMessage('debug', 'Built stock movement summary', array('entries' => count($summary), 'missing_warehouse' => $missingWarehouse));
+
+        return array_values($summary);
+    }
+
+    /**
+     * Retrieve identifiers of existing stock movements linked to the activity.
+     *
+     * @return int[]
+     */
+    protected function fetchExistingStockMovementIds()
+    {
+        $ids = array();
+
+        if (empty($this->id)) {
+            return $ids;
+        }
+
+        $sql = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . "stock_mouvement WHERE fk_origin = " . ((int) $this->id);
+        $sql .= " AND origintype = '" . $this->db->escape($this->getStockOriginType()) . "'";
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->error = $this->db->lasterror();
+            $this->errors = array($this->error);
+            $this->logMessage('error', 'Failed to fetch existing stock movements', array('error' => $this->error));
+            return $ids;
+        }
+
+        while ($obj = $this->db->fetch_object($resql)) {
+            $ids[] = (int) $obj->rowid;
+        }
+
+        $this->db->free($resql);
+
+        return $ids;
+    }
+
+    /**
+     * Remove existing stock movements for the activity.
+     *
+     * @param User $user Acting user
+     *
+     * @return int
+     */
+    protected function deleteExistingStockMovements(User $user)
+    {
+        require_once DOL_DOCUMENT_ROOT . '/product/stock/class/mouvementstock.class.php';
+
+        $count = 0;
+        foreach ($this->fetchExistingStockMovementIds() as $movementId) {
+            $movement = new MouvementStock($this->db);
+            if ($movement->fetch($movementId) <= 0) {
+                continue;
+            }
+
+            $result = $movement->delete($user);
+            if ($result < 0) {
+                $this->error = $movement->error ? $movement->error : 'ErrorSafraActivityStockMovement';
+                $this->errors = array($this->error);
+                $this->logMessage('error', 'Failed to delete stock movement', array('movement' => $movementId, 'error' => $this->error));
+                return -1;
+            }
+
+            $count++;
+        }
+
+        if ($count > 0) {
+            $this->logMessage('info', 'Removed existing stock movements', array('count' => $count));
+        }
+
+        return $count;
+    }
+
+    /**
+     * Apply stock movements based on summary.
+     *
+     * @param User  $user     Acting user
+     * @param array $summary  Movement summary
+     * @param array $applied  Reference to applied movement metadata
+     *
+     * @return int
+     */
+    protected function applyStockMovementsFromSummary(User $user, array $summary, array &$applied = array())
+    {
+        if (empty($summary)) {
+            // Ensure stale movements are removed.
+            $this->deleteExistingStockMovements($user);
+            $applied = array();
+            return 0;
+        }
+
+        if ($this->deleteExistingStockMovements($user) < 0) {
+            return -1;
+        }
+
+        require_once DOL_DOCUMENT_ROOT . '/product/stock/class/mouvementstock.class.php';
+
+        $applied = array();
+        $label = $this->getStockMovementLabel();
+        $originType = $this->getStockOriginType();
+
+        foreach ($summary as $entry) {
+            $qty = isset($entry['qty']) ? (float) $entry['qty'] : 0.0;
+            $productId = isset($entry['fk_product']) ? (int) $entry['fk_product'] : 0;
+            $warehouseId = isset($entry['fk_warehouse']) ? (int) $entry['fk_warehouse'] : 0;
+            $movement = isset($entry['movement']) ? $entry['movement'] : self::MOVEMENT_CONSUME;
+
+            if ($qty <= 0 || $productId <= 0 || $warehouseId <= 0) {
+                continue;
+            }
+
+            $movementObj = new MouvementStock($this->db);
+
+            if ($movement === self::MOVEMENT_RETURN) {
+                $result = $movementObj->reception($user, $productId, $warehouseId, $qty, 0, $label, $originType, (int) $this->id);
+            } else {
+                $result = $movementObj->livraison($user, $productId, $warehouseId, $qty, 0, $label, $originType, (int) $this->id);
+            }
+
+            if ($result < 0) {
+                $this->error = $movementObj->error ? $movementObj->error : 'ErrorSafraActivityStockMovement';
+                $this->errors = array($this->error);
+                $this->logMessage('error', 'Failed to apply stock movement', array('product' => $productId, 'warehouse' => $warehouseId, 'movement' => $movement, 'error' => $this->error));
+                $this->rollbackStockOperations($user, $applied);
+                return -1;
+            }
+
+            $applied[] = array(
+                'id' => $movementObj->id,
+                'movement' => $movement,
+                'fk_product' => $productId,
+                'fk_warehouse' => $warehouseId,
+                'qty' => $qty,
+            );
+        }
+
+        $this->logMessage('info', 'Applied stock movements', array('count' => count($applied)));
+
+        return count($applied);
+    }
+
+    /**
+     * Roll back stock movements created in current execution.
+     *
+     * @param User  $user       Acting user
+     * @param array $operations Applied movements
+     *
+     * @return void
+     */
+    protected function rollbackStockOperations(User $user, array $operations)
+    {
+        if (empty($operations)) {
+            return;
+        }
+
+        require_once DOL_DOCUMENT_ROOT . '/product/stock/class/mouvementstock.class.php';
+
+        foreach ($operations as $operation) {
+            if (empty($operation['id'])) {
+                continue;
+            }
+
+            $movement = new MouvementStock($this->db);
+            if ($movement->fetch((int) $operation['id']) > 0) {
+                $movement->delete($user);
+            }
+        }
+    }
+
+    /**
+     * Synchronise stock movements according to current activity lines.
+     *
+     * @param User $user Acting user
+     *
+     * @return int
+     */
+    public function syncStockMovements(User $user)
+    {
+        $missingWarehouse = false;
+        $summary = $this->buildStockSummary($user, $missingWarehouse);
+
+        if ($missingWarehouse) {
+            $this->error = 'ErrorSafraActivityMissingWarehouse';
+            $this->errors = array($this->error);
+            $this->logMessage('error', 'Cannot synchronise stock without warehouse information');
+            return -1;
+        }
+
+        $applied = array();
+        $result = $this->applyStockMovementsFromSummary($user, $summary, $applied);
+
+        if ($result >= 0) {
+            $this->logMessage('debug', 'Stock synchronisation completed', array('applied' => $result));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Compute cost totals (planned and actual).
+     *
+     * @param bool $forceReload Force reload of lines
+     *
+     * @return array{planned:float,actual:float}
+     */
+    public function computeCostTotals($forceReload = false)
+    {
+        $this->ensureLinesLoaded($forceReload);
+
+        $planned = 0.0;
+        $actual = 0.0;
+        $cache = array();
+
+        if (!is_array($this->lines)) {
+            return array('planned' => $planned, 'actual' => $actual);
+        }
+
+        foreach ($this->lines as $line) {
+            if (!($line instanceof SafraActivityLine)) {
+                continue;
+            }
+
+            $productId = (int) $line->fk_product;
+            if ($productId <= 0) {
+                continue;
+            }
+
+            if (!isset($cache[$productId])) {
+                $cache[$productId] = $this->resolveProductUnitCost($productId);
+            }
+
+            $unitCost = $cache[$productId];
+            if ($unitCost === null) {
+                continue;
+            }
+
+            $planned += $unitCost * (float) $line->getPlannedQuantity();
+            $actual += $unitCost * (float) $line->getActualQuantity();
+        }
+
+        $this->logMessage('debug', 'Computed cost totals', array('planned' => $planned, 'actual' => $actual));
+
+        return array('planned' => $planned, 'actual' => $actual);
+    }
+
+    /**
+     * Resolve product unit cost using PMP, cost price or selling price.
+     *
+     * @param int $productId Product identifier
+     *
+     * @return float|null
+     */
+    protected function resolveProductUnitCost($productId)
+    {
+        require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
+
+        $product = new Product($this->db);
+        if ($product->fetch($productId) <= 0) {
+            return null;
+        }
+
+        if (!empty($product->pmp)) {
+            return (float) $product->pmp;
+        }
+
+        if (!empty($product->cost_price)) {
+            return (float) $product->cost_price;
+        }
+
+        if (!empty($product->price)) {
+            return (float) $product->price;
+        }
+
+        return null;
+    }
+
+    /**
+     * Update cost totals and persist them in database.
+     *
+     * @param bool $forceReload Force reload of lines
+     *
+     * @return int
+     */
+    public function updateCostTotals($forceReload = false)
+    {
+        if (empty($this->id)) {
+            return 0;
+        }
+
+        $totals = $this->computeCostTotals($forceReload);
+
+        $planned = price2num($totals['planned'], 'MS');
+        $actual = price2num($totals['actual'], 'MS');
+
+        $sql = 'UPDATE ' . MAIN_DB_PREFIX . "safra_activity SET planned_cost = " . ($planned !== null ? $planned : 'NULL');
+        $sql .= ', actual_cost = ' . ($actual !== null ? $actual : 'NULL');
+        $sql .= ' WHERE rowid = ' . ((int) $this->id);
+
+        if (!$this->db->query($sql)) {
+            $this->error = $this->db->lasterror();
+            $this->errors = array($this->error);
+            $this->logMessage('error', 'Failed to update cost totals', array('error' => $this->error));
+            return -1;
+        }
+
+        $this->planned_cost = (float) $planned;
+        $this->actual_cost = (float) $actual;
+
+        $this->logMessage('info', 'Updated activity costs', array('planned_cost' => $this->planned_cost, 'actual_cost' => $this->actual_cost));
+
+        return 1;
+    }
+
+    /**
      * Update an activity.
      */
     public function update($id, User $user, $notrigger = 0)
@@ -861,6 +1287,19 @@ class SafraActivity extends CommonObject
             return $this->failWorkflow('ErrorSafraActivityInvalidTransitionState', array($this->getStatusLabelForErrors()));
         }
 
+        $this->db->begin();
+
+        $stockResult = $this->syncStockMovements($user);
+        if ($stockResult < 0) {
+            $this->db->rollback();
+            return -1;
+        }
+
+        if ($this->updateCostTotals(true) < 0) {
+            $this->db->rollback();
+            return -1;
+        }
+
         $result = $this->setStatusCommon($user, self::STATUS_COMPLETED, $notrigger, 'SAFRA_ACTIVITY_COMPLETE');
 
         if ($result > 0) {
@@ -870,7 +1309,10 @@ class SafraActivity extends CommonObject
                 $this->date_real_start = $now;
             }
             $this->date_real_end = $now;
-            $this->logMessage('info', 'Activity completed', array('user' => $user->id, 'status' => $this->status));
+            $this->logMessage('info', 'Activity completed', array('user' => $user->id, 'status' => $this->status, 'stock_operations' => $stockResult));
+            $this->db->commit();
+        } else {
+            $this->db->rollback();
         }
 
         return $result;

@@ -31,6 +31,8 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity (
     description TEXT,
     note_public TEXT,
     note_private TEXT,
+    planned_cost DOUBLE(24,8) DEFAULT 0,
+    actual_cost DOUBLE(24,8) DEFAULT 0,
     mixture_note TEXT,
     date_creation DATETIME NOT NULL,
     tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

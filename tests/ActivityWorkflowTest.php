@@ -2,13 +2,40 @@
 declare(strict_types=1);
 
 require __DIR__.'/bootstrap.php';
-require_once __DIR__.'/../class/aplicacao.class.php';
+require_once __DIR__.'/../class/safraactivity.class.php';
+require_once __DIR__.'/../class/api_sfactivities.class.php';
+
+class DummyResult
+{
+    private $rows;
+    private $index = 0;
+
+    public function __construct(array $rows)
+    {
+        $this->rows = array_values($rows);
+    }
+
+    public function fetchObject()
+    {
+        if ($this->index >= count($this->rows)) {
+            return false;
+        }
+        $row = $this->rows[$this->index++];
+        $object = new stdClass();
+        foreach ($row as $key => $value) {
+            $object->{$key} = $value;
+        }
+        return $object;
+    }
+}
 
 class DummyDoliDB
 {
-    public $queries = array();
     public $transactions = array();
-    public $shouldQuerySucceed = true;
+    public $queries = array();
+    public $stockMovements = array();
+    public $updatedCosts = array();
+    public $selectActivities = array();
 
     public function begin(): void
     {
@@ -25,157 +52,146 @@ class DummyDoliDB
         $this->transactions[] = 'rollback';
     }
 
+    public function escape($value): string
+    {
+        return (string) $value;
+    }
+
+    public function plimit($limit, $offset = 0): string
+    {
+        return 'LIMIT '.((int) $limit).' OFFSET '.((int) $offset);
+    }
+
+    public function idate($timestamp): string
+    {
+        return date('Y-m-d H:i:s', (int) $timestamp);
+    }
+
     public function query(string $sql)
     {
         $this->queries[] = $sql;
-        return $this->shouldQuerySucceed;
+
+        if (stripos($sql, 'SELECT t.rowid FROM llx_safra_activity') === 0) {
+            $rows = array();
+            foreach ($this->selectActivities as $id) {
+                $rows[] = array('rowid' => $id);
+            }
+            return new DummyResult($rows);
+        }
+
+        if (stripos($sql, 'SELECT rowid FROM llx_stock_mouvement') === 0) {
+            $rows = array();
+            foreach ($this->stockMovements as $id => $row) {
+                $rows[] = array('rowid' => $id);
+            }
+            return new DummyResult($rows);
+        }
+
+        if (stripos($sql, 'UPDATE llx_safra_activity SET planned_cost') === 0) {
+            $this->updatedCosts[] = $sql;
+            return true;
+        }
+
+        return true;
     }
 
-    public function escape($value): string
+    public function fetch_object($resql)
     {
-        return addslashes((string) $value);
+        if ($resql instanceof DummyResult) {
+            return $resql->fetchObject();
+        }
+        return false;
     }
 
-    public function idate(int $timestamp): string
+    public function free($resql): void
     {
-        return date('Y-m-d H:i:s', $timestamp);
+        // No-op for dummy result sets.
     }
 
     public function lasterror(): string
     {
         return 'dummy-error';
     }
-
-    public function DDLDescTable($table, $alias)
-    {
-        return array();
-    }
-
-    public function prefix(): string
-    {
-        return MAIN_DB_PREFIX;
-    }
 }
 
-class ActivityWorkflowDouble extends Aplicacao
+class ActivityWorkflowDouble extends SafraActivity
 {
     public $setStatusCalls = array();
     public $triggerCalls = array();
-    public $syncTaskCalls = array();
-    public $appliedSummaries = array();
-    public $rolledBackSummaries = array();
-    public $stubSummary = array();
-    public $shouldSetStatusReturn = 1;
-    public $shouldApplyStockReturn = 1;
-    public $shouldSyncTaskReturn = 1;
-    public $shouldTriggerReturn = 1;
-    public $simulateMissingWarehouse = false;
-    public $newref = '';
-    public $oldref = '';
-    public $labelStatus = array();
-    public $labelStatusShort = array();
+    public $syncCalls = 0;
 
     public function __construct()
     {
         $this->db = new DummyDoliDB();
-        $this->lines = array();
         $this->status = self::STATUS_DRAFT;
-        $this->ref = 'APP-0001';
-        $this->id = 101;
+        $this->ref = 'ACT-TEST';
+        $this->id = 1;
         $this->fields = array();
     }
 
     public function setStatusCommon($user, $status, $notrigger = 0, $trigger = '')
     {
-        $this->setStatusCalls[] = array(
-            'status' => $status,
-            'notrigger' => $notrigger,
-            'trigger' => $trigger,
-        );
-
-        return $this->shouldSetStatusReturn;
-    }
-
-    public function syncTask(User $user)
-    {
-        $this->syncTaskCalls[] = array(
-            'user' => $user,
-            'status' => $this->status,
-        );
-
-        return $this->shouldSyncTaskReturn;
-    }
-
-    public function buildStockSummary(User $user = null, &$missingWarehouse = false)
-    {
-        $missingWarehouse = $this->simulateMissingWarehouse;
-        return $this->stubSummary;
-    }
-
-    protected function applyStockMovementsFromSummary(User $user, array $summary, array &$applied = array())
-    {
-        $this->appliedSummaries[] = $summary;
-        if ($this->shouldApplyStockReturn > 0) {
-            $applied[] = array('summary' => $summary);
-        }
-
-        return $this->shouldApplyStockReturn;
-    }
-
-    protected function rollbackStockOperations(User $user, array $operations)
-    {
-        $this->rolledBackSummaries[] = $operations;
-    }
-
-    public function fetchLines($noextrafields = 0)
-    {
+        $this->setStatusCalls[] = array('status' => $status, 'trigger' => $trigger);
+        $this->status = $status;
         return 1;
     }
 
     public function call_trigger($trigger, $user)
     {
         $this->triggerCalls[] = $trigger;
-        return $this->shouldTriggerReturn;
+        return 1;
+    }
+
+    public function syncStockMovements(User $user)
+    {
+        $this->syncCalls++;
+        return parent::syncStockMovements($user);
+    }
+
+    public function fetchLines($noextrafields = 0)
+    {
+        // Lines are manually injected in tests.
+        return count($this->lines);
+    }
+}
+
+class ApiDouble extends SafraActivitiesApi
+{
+    public $loadedActivity;
+
+    public function __construct($db, SafraActivity $activity)
+    {
+        parent::__construct($db);
+        $this->loadedActivity = $activity;
+    }
+
+    protected function loadActivity($id, $includeLines = false)
+    {
+        return $this->loadedActivity;
+    }
+
+    protected function populateActivity(SafraActivity $activity, array $data)
+    {
+        $activity->label = isset($data['label']) ? $data['label'] : $activity->label;
     }
 }
 
 $assertions = 0;
 
-function assertTrue($condition, string $message = ''): void
-{
-    global $assertions;
-    if (!$condition) {
-        throw new RuntimeException($message ?: 'Failed asserting that condition is true');
-    }
-    $assertions++;
-}
-
 function assertSame($expected, $actual, string $message = ''): void
 {
     global $assertions;
     if ($expected !== $actual) {
-        $exportExpected = var_export($expected, true);
-        $exportActual = var_export($actual, true);
-        throw new RuntimeException($message ?: "Failed asserting that {$exportActual} is identical to {$exportExpected}");
+        throw new RuntimeException($message ?: 'Expected '.var_export($expected, true).' got '.var_export($actual, true));
     }
     $assertions++;
 }
 
-function assertCountValue(int $expectedCount, $value, string $message = ''): void
+function assertTrue($condition, string $message = ''): void
 {
     global $assertions;
-    $count = is_array($value) ? count($value) : 0;
-    if ($count !== $expectedCount) {
-        throw new RuntimeException($message ?: "Failed asserting count {$count} matches expected {$expectedCount}");
-    }
-    $assertions++;
-}
-
-function assertContainsValue($needle, array $haystack, string $message = ''): void
-{
-    global $assertions;
-    if (!in_array($needle, $haystack, true)) {
-        throw new RuntimeException($message ?: "Failed asserting that array contains needle");
+    if (!$condition) {
+        throw new RuntimeException($message ?: 'Condition is false');
     }
     $assertions++;
 }
@@ -183,69 +199,76 @@ function assertContainsValue($needle, array $haystack, string $message = ''): vo
 try {
     $user = new User(5);
 
-    // Validate transition
+    // Validation workflow.
     $activity = new ActivityWorkflowDouble();
-    $activity->status = Aplicacao::STATUS_DRAFT;
-    $activity->ref = 'APP-0001';
     $result = $activity->validate($user);
-    assertSame(1, $result, 'Validation should succeed');
-    assertSame(Aplicacao::STATUS_VALIDATED, $activity->status, 'Validation should move to validated status');
-    assertTrue(!empty($activity->db->queries), 'Validation must execute at least one SQL query');
-    assertContainsValue('MYOBJECT_VALIDATE', $activity->triggerCalls, 'Validation should fire trigger');
+    assertSame(1, $result, 'Validate should succeed');
+    assertSame(SafraActivity::STATUS_VALIDATED, $activity->status, 'Status should change to validated');
 
-    // Start transition
-    $activity->status = Aplicacao::STATUS_VALIDATED;
+    // Start workflow.
+    $activity->status = SafraActivity::STATUS_VALIDATED;
     $activity->setStatusCalls = array();
-    $activity->syncTaskCalls = array();
-    $startResult = $activity->markAsInProgress($user);
-    assertSame(1, $startResult, 'markAsInProgress should succeed when validated');
-    assertSame(Aplicacao::STATUS_IN_PROGRESS, $activity->status, 'Status should become in progress');
-    assertCountValue(1, $activity->setStatusCalls, 'setStatusCommon must be called once when starting');
-    assertContainsValue('SAFRA_ACTIVITY_START', array_column($activity->setStatusCalls, 'trigger'), 'Start must use start trigger');
-    assertCountValue(1, $activity->syncTaskCalls, 'syncTask should be invoked on start');
+    $startResult = $activity->start($user);
+    assertSame(1, $startResult, 'Start should succeed');
+    assertSame(SafraActivity::STATUS_IN_PROGRESS, $activity->status, 'Status becomes in progress');
 
-    // Prevent invalid start
-    $activity->status = Aplicacao::STATUS_DRAFT;
-    $activity->setStatusCalls = array();
-    $invalidStart = $activity->markAsInProgress($user);
-    assertSame(-1, $invalidStart, 'markAsInProgress should fail from draft');
-    assertTrue(strpos($activity->error, 'ErrorSafraActivityInvalidTransitionState') !== false, 'Error message should mention invalid state');
-    assertCountValue(0, $activity->setStatusCalls, 'setStatusCommon must not be called on invalid start');
-
-    // Complete transition
-    $activity->status = Aplicacao::STATUS_IN_PROGRESS;
-    $activity->db = new DummyDoliDB();
-    $activity->setStatusCalls = array();
-    $activity->syncTaskCalls = array();
-    $activity->appliedSummaries = array();
-    $activity->rolledBackSummaries = array();
-    $activity->stubSummary = array(
-        '1:1:2' => array(
-            'fk_product' => 1,
-            'fk_entrepot' => 2,
-            'qty' => 5.5,
-            'movement' => 1,
-            'labels' => array('Linha A' => true),
-        ),
+    // Prepare lines for stock sync and cost update.
+    require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
+    require_once DOL_DOCUMENT_ROOT . '/product/stock/class/mouvementstock.class.php';
+    Product::$repository = array(
+        1 => array('pmp' => 10),
     );
-    $completeResult = $activity->markAsCompleted($user);
-    assertSame(1, $completeResult, 'markAsCompleted should succeed');
-    assertSame(Aplicacao::STATUS_COMPLETED, $activity->status, 'Status should become completed');
-    assertCountValue(1, $activity->setStatusCalls, 'Completion should call setStatusCommon once');
-    assertContainsValue('SAFRA_ACTIVITY_COMPLETE', array_column($activity->setStatusCalls, 'trigger'), 'Completion must use complete trigger');
-    assertCountValue(1, $activity->appliedSummaries, 'Completion should attempt stock movement');
-    assertTrue(isset($activity->appliedSummaries[0]['1:1:2']), 'Applied summary must include aggregated key');
-    assertCountValue(1, $activity->syncTaskCalls, 'Completion must sync linked task');
-    assertSame(array('begin', 'commit'), $activity->db->transactions, 'Completion must wrap actions in a transaction');
-    assertCountValue(0, $activity->rolledBackSummaries, 'No rollback should be triggered on success');
+    MouvementStock::$movements = array();
+    MouvementStock::$autoIncrement = 1;
 
-    // Cancel transition
-    $activity->status = Aplicacao::STATUS_VALIDATED;
+    $line = new SafraActivityLine($activity->db);
+    $line->fk_product = 1;
+    $line->qty = 2;
+    $line->fk_warehouse = 1;
+    $line->movement_type = SafraActivity::MOVEMENT_CONSUME;
+    $line->array_options = array();
+    $activity->lines = array($line);
+
+    $syncResult = $activity->syncStockMovements($user);
+    assertSame(1, $syncResult, 'A single stock movement applied');
+    assertSame(1, count(MouvementStock::$movements), 'Movement stored in stub');
+
+    $costResult = $activity->updateCostTotals();
+    assertSame(1, $costResult, 'Cost totals updated');
+    assertSame(20.0, $activity->planned_cost, 'Planned cost computed');
+    assertSame(20.0, $activity->actual_cost, 'Actual cost computed');
+
+    // Complete workflow with transaction control.
+    $activity->status = SafraActivity::STATUS_IN_PROGRESS;
     $activity->setStatusCalls = array();
-    $cancelResult = $activity->cancel($user);
-    assertSame(1, $cancelResult, 'Cancel should succeed from validated status');
-    assertSame(Aplicacao::STATUS_CANCELED, $activity->status, 'Cancel should switch to canceled status');
-    assertContainsValue('SAFRA_ACTIVITY_CANCEL', array_column($activity->setStatusCalls, 'trigger'), 'Cancel must call cancel trigger');
+    $activity->db->transactions = array();
+    $completeResult = $activity->complete($user);
+    assertSame(1, $completeResult, 'Complete should succeed');
+    assertTrue(in_array('begin', $activity->db->transactions, true), 'Transaction begun');
+    assertTrue(in_array('commit', $activity->db->transactions, true), 'Transaction committed');
+    assertSame(SafraActivity::STATUS_COMPLETED, $activity->status, 'Status becomes completed');
+
+    // Sync should have been called during completion.
+    assertTrue($activity->syncCalls > 0, 'Stock sync executed during completion');
+
+    // Missing warehouse handling.
+    $badActivity = new ActivityWorkflowDouble();
+    $badLine = new SafraActivityLine($badActivity->db);
+    $badLine->fk_product = 1;
+    $badLine->qty = 1;
+    $badLine->fk_warehouse = 0;
+    $badLine->movement_type = SafraActivity::MOVEMENT_CONSUME;
+    $badLine->array_options = array();
+    $badActivity->lines = array($badLine);
+    $missingResult = $badActivity->syncStockMovements($user);
+    assertSame(-1, $missingResult, 'Missing warehouse must fail');
+
+    // API status change wiring.
+    $apiActivity = new ActivityWorkflowDouble();
+    $apiActivity->status = SafraActivity::STATUS_VALIDATED;
+    $api = new ApiDouble($apiActivity->db, $apiActivity);
+    $api->postStatus(1, array('action' => 'start'));
+    assertSame(SafraActivity::STATUS_IN_PROGRESS, $apiActivity->status, 'API triggered workflow');
 
     echo "All tests passed ({$assertions} assertions)\n";
     exit(0);

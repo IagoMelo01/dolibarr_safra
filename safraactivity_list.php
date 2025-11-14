@@ -59,6 +59,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/projet/class/project.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/company.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/extrafields.class.php';
+require_once DOL_DOCUMENT_ROOT . '/core/lib/price.lib.php';
 
 require_once __DIR__ . '/class/safraactivity.class.php';
 require_once __DIR__ . '/class/talhao.class.php';
@@ -140,6 +141,8 @@ $arrayfields = array(
         'progress' => array('label' => 'Progress', 'checked' => 1, 'position' => 8),
         'status' => array('label' => 'Status', 'checked' => 1, 'position' => 9),
         'overdue' => array('label' => 'SafraActivityFilterOverdue', 'checked' => 1, 'position' => 10),
+        't.planned_cost' => array('label' => 'SafraActivityPlannedCost', 'checked' => 0, 'position' => 11),
+        't.actual_cost' => array('label' => 'SafraActivityActualCost', 'checked' => 0, 'position' => 12),
 );
 
 $parameters = array('arrayfields' => $arrayfields);
@@ -194,7 +197,7 @@ $overdueOptions = array(
         'ontime' => $langs->trans('SafraActivityFilterOverdueOnTime'),
 );
 
-$sql = "SELECT t.rowid, t.ref, t.label, t.fk_project, t.fk_talhao, t.activity_type, t.date_planned_start, t.date_planned_end, t.date_real_start, t.date_real_end, t.status, ex.options_progress as progress, ";
+$sql = "SELECT t.rowid, t.ref, t.label, t.fk_project, t.fk_talhao, t.activity_type, t.date_planned_start, t.date_planned_end, t.date_real_start, t.date_real_end, t.status, ex.options_progress as progress, t.planned_cost, t.actual_cost, ";
 $sql .= " p.ref as project_ref, p.title as project_title, ta.ref as talhao_ref, ta.label as talhao_label";
 $sql .= " FROM " . MAIN_DB_PREFIX . "safra_activity as t";
 $sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "projet as p ON t.fk_project = p.rowid";
@@ -322,6 +325,12 @@ if (!empty($arrayfields['status']['checked'])) {
 if (!empty($arrayfields['overdue']['checked'])) {
         print '<td class="liste_titre">' . $form->selectarray('search_overdue', $overdueOptions, $search_overdue, 1, 0, 0, '', 0, 0, 0, '', 'maxwidth150') . '</td>';
 }
+if (!empty($arrayfields['t.planned_cost']['checked'])) {
+        print '<td class="liste_titre"></td>';
+}
+if (!empty($arrayfields['t.actual_cost']['checked'])) {
+        print '<td class="liste_titre"></td>';
+}
 print '</tr>';
 
 $shown = 0;
@@ -397,6 +406,12 @@ for ($i = 0; $i < min($num, $limit); $i++) {
                 } else {
                         print '<td class="ok">' . $langs->trans('SafraActivityFilterOverdueOnTime') . '</td>';
                 }
+        }
+        if (!empty($arrayfields['t.planned_cost']['checked'])) {
+                print '<td class="right">' . price($obj->planned_cost) . '</td>';
+        }
+        if (!empty($arrayfields['t.actual_cost']['checked'])) {
+                print '<td class="right">' . price($obj->actual_cost) . '</td>';
         }
 
         print '</tr>';

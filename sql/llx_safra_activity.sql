@@ -29,6 +29,8 @@ CREATE TABLE llx_safra_activity (
         status INTEGER NOT NULL DEFAULT 0,
         note_public TEXT,
         note_private TEXT,
+        planned_cost DOUBLE(24,8) DEFAULT 0,
+        actual_cost DOUBLE(24,8) DEFAULT 0,
         date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         fk_user_creat INTEGER NOT NULL,
