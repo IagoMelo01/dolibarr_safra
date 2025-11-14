@@ -66,36 +66,24 @@ class InterfaceActivityTriggers extends DolibarrTriggers
             return 0;
         }
 
-        $map = array(
-            'MYOBJECT_CREATE' => 'SAFRA_ACTIVITY_CREATE',
-            'MYOBJECT_VALIDATE' => 'SAFRA_ACTIVITY_VALIDATE',
-            'SAFRA_ACTIVITY_START' => 'SAFRA_ACTIVITY_START',
-            'SAFRA_ACTIVITY_COMPLETE' => 'SAFRA_ACTIVITY_DONE',
-            'SAFRA_ACTIVITY_CANCEL' => 'SAFRA_ACTIVITY_CANCEL',
-            'MYOBJECT_DELETE' => 'SAFRA_ACTIVITY_DELETE',
-        );
+        $result = 0;
 
-        if (!isset($map[$action])) {
-            return 0;
+        $workflowResult = $this->handleActivityWorkflowEvent($action, $object, $user, $langs, $conf);
+        if ($workflowResult < 0) {
+            return -1;
+        }
+        $result += $workflowResult;
+
+        $bridgeResult = $this->bridgeLegacyEvents($action, $object, $user, $langs, $conf);
+        if ($bridgeResult === null) {
+            return $result;
         }
 
-        $targetAction = $map[$action];
-
-        if (!$this->markEventAsEmitted($object, $targetAction)) {
-            return 0;
-        }
-
-        $interfaces = new Interfaces($this->db);
-        $result = $interfaces->run_triggers($targetAction, $object, $user, $langs, $conf);
-
-        $this->unmarkEventAsEmitted($object, $targetAction);
-
-        if ($result < 0) {
-            $this->setErrorsFromObject($interfaces);
+        if ($bridgeResult < 0) {
             return -1;
         }
 
-        return $result;
+        return $result + $bridgeResult;
     }
 
     /**
@@ -174,5 +162,170 @@ class InterfaceActivityTriggers extends DolibarrTriggers
         }
 
         unset($object->context['safra_activity_emitted'][$targetAction]);
+    }
+
+    /**
+     * Execute workflow-specific side effects.
+     */
+    protected function handleActivityWorkflowEvent($action, $object, User $user, Translate $langs, Conf $conf)
+    {
+        $events = array(
+            'SAFRA_ACTIVITY_VALIDATE',
+            'SAFRA_ACTIVITY_START',
+            'SAFRA_ACTIVITY_COMPLETE',
+            'SAFRA_ACTIVITY_CANCEL',
+            'SAFRA_ACTIVITY_REOPEN',
+        );
+
+        if (!in_array($action, $events, true)) {
+            return 0;
+        }
+
+        $this->registerActivityLog($action, $object, $user);
+
+        $dateResult = $this->updateActivityDates($action, $object, $user);
+        if ($dateResult < 0) {
+            return -1;
+        }
+
+        return 1;
+    }
+
+    /**
+     * Bridge legacy actions into new activity events.
+     */
+    protected function bridgeLegacyEvents($action, $object, User $user, Translate $langs, Conf $conf)
+    {
+        $map = array(
+            'MYOBJECT_CREATE' => array('SAFRA_ACTIVITY_CREATE'),
+            'MYOBJECT_VALIDATE' => array('SAFRA_ACTIVITY_VALIDATE'),
+            'MYOBJECT_START' => array('SAFRA_ACTIVITY_START'),
+            'MYOBJECT_COMPLETE' => array('SAFRA_ACTIVITY_COMPLETE'),
+            'MYOBJECT_CANCEL' => array('SAFRA_ACTIVITY_CANCEL'),
+            'MYOBJECT_REOPEN' => array('SAFRA_ACTIVITY_REOPEN'),
+            'MYOBJECT_DELETE' => array('SAFRA_ACTIVITY_DELETE'),
+            'SAFRA_ACTIVITY_VALIDATE' => array('SAFRA_ACTIVITY_VALIDATE'),
+            'SAFRA_ACTIVITY_START' => array('SAFRA_ACTIVITY_START'),
+            'SAFRA_ACTIVITY_COMPLETE' => array('SAFRA_ACTIVITY_COMPLETE', 'SAFRA_ACTIVITY_DONE'),
+            'SAFRA_ACTIVITY_CANCEL' => array('SAFRA_ACTIVITY_CANCEL'),
+            'SAFRA_ACTIVITY_REOPEN' => array('SAFRA_ACTIVITY_REOPEN'),
+        );
+
+        if (!isset($map[$action])) {
+            return null;
+        }
+
+        $targets = (array) $map[$action];
+        $aggregate = 0;
+
+        foreach ($targets as $targetAction) {
+            if (!$this->markEventAsEmitted($object, $targetAction)) {
+                continue;
+            }
+
+            $interfaces = new Interfaces($this->db);
+            $result = $interfaces->run_triggers($targetAction, $object, $user, $langs, $conf);
+
+            $this->unmarkEventAsEmitted($object, $targetAction);
+
+            if ($result < 0) {
+                $this->setErrorsFromObject($interfaces);
+                return -1;
+            }
+
+            $aggregate += (int) $result;
+        }
+
+        return $aggregate;
+    }
+
+    /**
+     * Register workflow log either through the object helper or system log.
+     */
+    protected function registerActivityLog($action, $object, User $user)
+    {
+        $context = array(
+            'action' => $action,
+            'user' => $user->id,
+        );
+
+        if (method_exists($object, 'registerWorkflowEvent')) {
+            $object->registerWorkflowEvent($action, $user, $context);
+            return;
+        }
+
+        dol_syslog(static::class . ': workflow event ' . $action . ' for activity #' . (int) $object->id, LOG_INFO);
+    }
+
+    /**
+     * Update real date markers according to workflow transitions.
+     */
+    protected function updateActivityDates($action, $object, User $user)
+    {
+        if (!property_exists($object, 'id') && property_exists($object, 'rowid')) {
+            $object->id = $object->rowid;
+        }
+
+        $id = (int) $object->id;
+        if ($id <= 0) {
+            return 0;
+        }
+
+        $fields = array();
+        $now = dol_now();
+
+        if ($action === 'SAFRA_ACTIVITY_START') {
+            if (empty($object->date_real_start)) {
+                $fields['date_real_start'] = $this->db->idate($now);
+                $object->date_real_start = $now;
+            }
+        } elseif ($action === 'SAFRA_ACTIVITY_COMPLETE') {
+            if (empty($object->date_real_start)) {
+                $fields['date_real_start'] = $this->db->idate($now);
+                $object->date_real_start = $now;
+            }
+            $fields['date_real_end'] = $this->db->idate($now);
+            $object->date_real_end = $now;
+        } elseif ($action === 'SAFRA_ACTIVITY_CANCEL') {
+            $fields['date_real_end'] = $this->db->idate($now);
+            $object->date_real_end = $now;
+        } elseif ($action === 'SAFRA_ACTIVITY_REOPEN') {
+            if (!empty($object->date_real_end)) {
+                $fields['date_real_end'] = null;
+                $object->date_real_end = null;
+            }
+        }
+
+        if (empty($fields)) {
+            return 0;
+        }
+
+        if ($user->id > 0) {
+            $fields['fk_user_modif'] = (int) $user->id;
+        }
+
+        $sqlParts = array();
+        foreach ($fields as $field => $value) {
+            if ($value === null) {
+                $sqlParts[] = $field . ' = NULL';
+            } else {
+                $sqlParts[] = $field . " = '" . $this->db->escape($value) . "'";
+            }
+        }
+
+        if (empty($sqlParts)) {
+            return 0;
+        }
+
+        $sql = 'UPDATE ' . MAIN_DB_PREFIX . "safra_activity SET " . implode(', ', $sqlParts) . ' WHERE rowid = ' . $id;
+        dol_syslog(__METHOD__ . ': ' . $sql, LOG_DEBUG);
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->errors[] = $this->db->lasterror();
+            return -1;
+        }
+
+        return 1;
     }
 }
