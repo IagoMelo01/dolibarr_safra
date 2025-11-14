@@ -1,7 +1,10 @@
 ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_entity (entity);
 ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_activity (fk_activity);
 ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_product (fk_product);
+ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_unit (fk_unit);
 ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse);
+ALTER TABLE llx_safra_activity_line ADD INDEX idx_safra_activity_line_movement_type (movement_type);
 ALTER TABLE llx_safra_activity_line ADD CONSTRAINT llx_safra_activity_line_fk_activity FOREIGN KEY (fk_activity) REFERENCES llx_safra_activity(rowid) ON DELETE CASCADE;
 ALTER TABLE llx_safra_activity_line ADD CONSTRAINT llx_safra_activity_line_fk_product FOREIGN KEY (fk_product) REFERENCES llx_product(rowid) ON DELETE SET NULL;
+ALTER TABLE llx_safra_activity_line ADD CONSTRAINT llx_safra_activity_line_fk_unit FOREIGN KEY (fk_unit) REFERENCES llx_c_units(rowid) ON DELETE SET NULL;
 ALTER TABLE llx_safra_activity_line ADD CONSTRAINT llx_safra_activity_line_fk_warehouse FOREIGN KEY (fk_warehouse) REFERENCES llx_entrepot(rowid) ON DELETE SET NULL;
