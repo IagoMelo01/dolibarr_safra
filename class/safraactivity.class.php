@@ -154,7 +154,7 @@ class SafraActivity extends CommonObject
         ),
         self::STATUS_CANCELED => array(
             'forward' => array(),
-            'fallback' => array(),
+            'fallback' => array(self::STATUS_VALIDATED),
             'cancel' => array(),
         ),
     );
@@ -368,6 +368,205 @@ class SafraActivity extends CommonObject
     }
 
     /**
+     * Validate the activity document.
+     */
+    public function validate(User $user, $notrigger = 0)
+    {
+        $this->resetErrors();
+
+        if (!$this->ensureValidIdentifier()) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidIdentifier');
+        }
+
+        if (!$this->userHasWorkflowRight($user, 'validate')) {
+            return $this->failWorkflow('ErrorSafraActivityNoRights');
+        }
+
+        if ((int) $this->status === self::STATUS_VALIDATED) {
+            return 0;
+        }
+
+        if (!$this->canTransitionTo(self::STATUS_VALIDATED)) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidTransitionState', array($this->getStatusLabelForErrors()));
+        }
+
+        $result = $this->setStatusCommon($user, self::STATUS_VALIDATED, $notrigger, 'SAFRA_ACTIVITY_VALIDATE');
+
+        if ($result > 0) {
+            $this->status = self::STATUS_VALIDATED;
+            $this->logMessage('info', 'Activity validated', array('user' => $user->id, 'status' => $this->status));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Start the execution of an activity.
+     */
+    public function start(User $user, $notrigger = 0)
+    {
+        $this->resetErrors();
+
+        if (!$this->ensureValidIdentifier()) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidIdentifier');
+        }
+
+        if (!$this->userHasWorkflowRight($user, 'start')) {
+            return $this->failWorkflow('ErrorSafraActivityNoRights');
+        }
+
+        if ((int) $this->status === self::STATUS_IN_PROGRESS) {
+            return 0;
+        }
+
+        if (!$this->canTransitionTo(self::STATUS_IN_PROGRESS)) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidTransitionState', array($this->getStatusLabelForErrors()));
+        }
+
+        $result = $this->setStatusCommon($user, self::STATUS_IN_PROGRESS, $notrigger, 'SAFRA_ACTIVITY_START');
+
+        if ($result > 0) {
+            $this->status = self::STATUS_IN_PROGRESS;
+            if (empty($this->date_real_start)) {
+                $this->date_real_start = dol_now();
+            }
+            $this->logMessage('info', 'Activity started', array('user' => $user->id, 'status' => $this->status));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Mark the activity as completed.
+     */
+    public function complete(User $user, $notrigger = 0)
+    {
+        $this->resetErrors();
+
+        if (!$this->ensureValidIdentifier()) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidIdentifier');
+        }
+
+        if (!$this->userHasWorkflowRight($user, 'complete')) {
+            return $this->failWorkflow('ErrorSafraActivityNoRights');
+        }
+
+        if ((int) $this->status === self::STATUS_COMPLETED) {
+            return 0;
+        }
+
+        if (!$this->canTransitionTo(self::STATUS_COMPLETED)) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidTransitionState', array($this->getStatusLabelForErrors()));
+        }
+
+        $result = $this->setStatusCommon($user, self::STATUS_COMPLETED, $notrigger, 'SAFRA_ACTIVITY_COMPLETE');
+
+        if ($result > 0) {
+            $now = dol_now();
+            $this->status = self::STATUS_COMPLETED;
+            if (empty($this->date_real_start)) {
+                $this->date_real_start = $now;
+            }
+            $this->date_real_end = $now;
+            $this->logMessage('info', 'Activity completed', array('user' => $user->id, 'status' => $this->status));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Cancel the activity.
+     */
+    public function cancel(User $user, $notrigger = 0)
+    {
+        $this->resetErrors();
+
+        if (!$this->ensureValidIdentifier()) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidIdentifier');
+        }
+
+        if (!$this->userHasWorkflowRight($user, 'cancel')) {
+            return $this->failWorkflow('ErrorSafraActivityNoRights');
+        }
+
+        if ((int) $this->status === self::STATUS_CANCELED) {
+            return 0;
+        }
+
+        if (!$this->canTransitionTo(self::STATUS_CANCELED)) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidTransitionState', array($this->getStatusLabelForErrors()));
+        }
+
+        $result = $this->setStatusCommon($user, self::STATUS_CANCELED, $notrigger, 'SAFRA_ACTIVITY_CANCEL');
+
+        if ($result > 0) {
+            $this->status = self::STATUS_CANCELED;
+            $this->date_real_end = dol_now();
+            $this->logMessage('info', 'Activity canceled', array('user' => $user->id, 'status' => $this->status));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Reopen a previously closed activity.
+     */
+    public function reopen(User $user, $notrigger = 0)
+    {
+        $this->resetErrors();
+
+        if (!$this->ensureValidIdentifier()) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidIdentifier');
+        }
+
+        if (!$this->userHasWorkflowRight($user, 'reopen')) {
+            return $this->failWorkflow('ErrorSafraActivityNoRights');
+        }
+
+        $targetStatus = $this->getFallbackStatus();
+
+        if ($targetStatus === null) {
+            return $this->failWorkflow('ErrorSafraActivityInvalidTransitionState', array($this->getStatusLabelForErrors()));
+        }
+
+        if ((int) $this->status === (int) $targetStatus) {
+            return 0;
+        }
+
+        $previousStatus = $this->status;
+        $result = $this->setStatusCommon($user, $targetStatus, $notrigger, 'SAFRA_ACTIVITY_REOPEN');
+
+        if ($result > 0) {
+            $this->status = $targetStatus;
+            if ((int) $previousStatus === self::STATUS_CANCELED) {
+                $this->date_real_end = null;
+            }
+            $this->logMessage('info', 'Activity reopened', array('user' => $user->id, 'status' => $this->status, 'previous' => $previousStatus));
+        }
+
+        return $result;
+    }
+
+    /**
+     * Register workflow event into the in-memory log buffer.
+     */
+    public function registerWorkflowEvent($action, User $user = null, array $context = array())
+    {
+        $context = array_merge(
+            array(
+                'action' => $action,
+                'user' => $user ? (int) $user->id : null,
+                'status' => $this->status,
+                'id' => $this->id,
+                'ref' => $this->ref,
+            ),
+            $context
+        );
+
+        $this->logMessage('info', 'Workflow event recorded', $context);
+    }
+
+    /**
      * Refresh cached progress value from extrafields.
      */
     public function refreshProgressFromExtraFields()
@@ -516,6 +715,163 @@ class SafraActivity extends CommonObject
 
         $contextString = $context ? ' ' . json_encode($context) : '';
         dol_syslog(static::class . ': ' . $message . $contextString, $dolLevel);
+    }
+
+    /**
+     * Reset error buffers.
+     */
+    protected function resetErrors()
+    {
+        $this->error = '';
+        $this->errors = array();
+    }
+
+    /**
+     * Ensure the object identifier is valid.
+     */
+    protected function ensureValidIdentifier()
+    {
+        if (!empty($this->id)) {
+            return true;
+        }
+
+        if (!empty($this->rowid)) {
+            $this->id = $this->rowid;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Return the fallback status from workflow configuration.
+     */
+    protected function getFallbackStatus()
+    {
+        $allowed = $this->getAllowedTransitions();
+        if (!empty($allowed['fallback'])) {
+            $fallback = reset($allowed['fallback']);
+            return ($fallback === false) ? null : (int) $fallback;
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve current status label for error rendering.
+     */
+    protected function getStatusLabelForErrors()
+    {
+        $label = '';
+
+        if (method_exists($this, 'getLibStatut')) {
+            $libStatut = $this->getLibStatut(0);
+            if (is_array($libStatut) && isset($libStatut['label'])) {
+                $label = $libStatut['label'];
+            } elseif (is_scalar($libStatut)) {
+                $label = (string) $libStatut;
+            }
+        }
+
+        if ($label === '' && isset($this->statusCodes[$this->status])) {
+            $label = $this->statusCodes[$this->status];
+        }
+
+        if ($label === '') {
+            $label = (string) $this->status;
+        }
+
+        return $label;
+    }
+
+    /**
+     * Report workflow error with translated message and logging.
+     */
+    protected function failWorkflow($translationKey, array $params = array())
+    {
+        global $langs;
+
+        if (is_object($langs)) {
+            $langs->load('safra@safra');
+            $message = call_user_func_array(array($langs, 'trans'), array_merge(array($translationKey), $params));
+        } else {
+            $message = $translationKey;
+        }
+
+        $this->error = $message;
+        $this->errors = array($message);
+        $this->logMessage('error', 'Workflow transition failed', array('error' => $translationKey, 'params' => $params, 'status' => $this->status));
+
+        return -1;
+    }
+
+    /**
+     * Check if user owns permission for workflow operation.
+     */
+    protected function userHasWorkflowRight(User $user, $operation)
+    {
+        if (!is_object($user)) {
+            return false;
+        }
+
+        $default = $this->invokeHasRight($user, 'safra', 'atividade', 'write');
+
+        if (!getDolGlobalInt('MAIN_USE_ADVANCED_PERMS')) {
+            return $default;
+        }
+
+        $map = array(
+            'validate' => array('atividade_advance', 'validate'),
+            'start' => array('atividade_advance', 'start'),
+            'complete' => array('atividade_advance', 'complete'),
+            'cancel' => array('atividade_advance', 'cancel'),
+            'reopen' => array('atividade_advance', 'reopen'),
+        );
+
+        if (isset($map[$operation])) {
+            list($section, $right) = $map[$operation];
+            $advanced = $this->invokeHasRight($user, 'safra', $section, $right);
+            if ($advanced) {
+                return true;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * Invoke Dolibarr hasRight with flexible signature.
+     */
+    protected function invokeHasRight(User $user, $module, $permission, $operation)
+    {
+        if (!is_object($user) || !method_exists($user, 'hasRight')) {
+            return false;
+        }
+
+        try {
+            $reflection = new \ReflectionMethod($user, 'hasRight');
+        } catch (\ReflectionException $e) {
+            return false;
+        }
+
+        $paramCount = $reflection->getNumberOfParameters();
+        $args = array();
+
+        if ($paramCount >= 1) {
+            $args[] = $module;
+        }
+        if ($paramCount >= 2) {
+            $args[] = $permission;
+        }
+        if ($paramCount >= 3) {
+            $args[] = $operation;
+        }
+
+        try {
+            return (bool) $reflection->invokeArgs($user, $args);
+        } catch (\ArgumentCountError $e) {
+            return false;
+        }
     }
 }
 
