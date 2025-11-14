@@ -52,7 +52,9 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_line (
     fk_product INTEGER,
     fk_formulated_product INTEGER,
     fk_technical_product INTEGER,
+    fk_unit INTEGER,
     fk_warehouse INTEGER,
+    movement_type VARCHAR(16) NOT NULL DEFAULT 'consume',
     label VARCHAR(255),
     dose DOUBLE,
     dose_unit VARCHAR(10),
@@ -60,7 +62,33 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_line (
     total_qty DOUBLE,
     note TEXT,
     movement INTEGER NOT NULL DEFAULT 1,
-    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=innodb;
+
+CREATE TABLE __MAIN_DB_PREFIX__safra_activity_fleet (
+    rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    entity INTEGER NOT NULL DEFAULT 1,
+    fk_activity INTEGER NOT NULL,
+    resource_type VARCHAR(16) NOT NULL DEFAULT 'vehicle',
+    fk_fleet_equipment INTEGER NOT NULL,
+    fk_user_responsible INTEGER,
+    planned_hours DOUBLE,
+    note TEXT,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=innodb;
+
+CREATE TABLE __MAIN_DB_PREFIX__safra_activity_team (
+    rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    entity INTEGER NOT NULL DEFAULT 1,
+    fk_activity INTEGER NOT NULL,
+    fk_user INTEGER NOT NULL,
+    planned_hours DOUBLE,
+    is_responsible INTEGER NOT NULL DEFAULT 0,
+    note TEXT,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=innodb;
 
 -- -----------------------------------------------------------------------------
@@ -77,9 +105,21 @@ ALTER TABLE __MAIN_DB_PREFIX__safra_activity ADD INDEX idx_safra_activity_date (
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_entity (entity);
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_fk_activity (fk_activity);
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_fk_product (fk_product);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_fk_unit (fk_unit);
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_fk_formulated (fk_formulated_product);
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_fk_technical (fk_technical_product);
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line ADD INDEX idx_safra_activity_line_movement_type (movement_type);
+
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_fleet ADD INDEX idx_safra_activity_fleet_entity (entity);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_fleet ADD INDEX idx_safra_activity_fleet_fk_activity (fk_activity);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_fleet ADD INDEX idx_safra_activity_fleet_fk_equipment (fk_fleet_equipment);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_fleet ADD INDEX idx_safra_activity_fleet_fk_user_responsible (fk_user_responsible);
+
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_team ADD INDEX idx_safra_activity_team_entity (entity);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_team ADD INDEX idx_safra_activity_team_fk_activity (fk_activity);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_team ADD INDEX idx_safra_activity_team_fk_user (fk_user);
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_team ADD INDEX idx_safra_activity_team_is_responsible (is_responsible);
 
 -- -----------------------------------------------------------------------------
 -- Foreign keys
@@ -106,6 +146,9 @@ ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line
     ADD CONSTRAINT fk_safra_activity_line_product FOREIGN KEY (fk_product) REFERENCES __MAIN_DB_PREFIX__product (rowid)
         ON DELETE SET NULL;
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line
+    ADD CONSTRAINT fk_safra_activity_line_unit FOREIGN KEY (fk_unit) REFERENCES __MAIN_DB_PREFIX__c_units (rowid)
+        ON DELETE SET NULL;
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line
     ADD CONSTRAINT fk_safra_activity_line_formulated FOREIGN KEY (fk_formulated_product) REFERENCES __MAIN_DB_PREFIX__safra_produto_formulado (rowid)
         ON DELETE SET NULL;
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line
@@ -114,3 +157,17 @@ ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line
 ALTER TABLE __MAIN_DB_PREFIX__safra_activity_line
     ADD CONSTRAINT fk_safra_activity_line_warehouse FOREIGN KEY (fk_warehouse) REFERENCES __MAIN_DB_PREFIX__entrepot (rowid)
         ON DELETE SET NULL;
+
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_fleet
+    ADD CONSTRAINT fk_safra_activity_fleet_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity (rowid)
+        ON DELETE CASCADE;
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_fleet
+    ADD CONSTRAINT fk_safra_activity_fleet_user FOREIGN KEY (fk_user_responsible) REFERENCES __MAIN_DB_PREFIX__user (rowid)
+        ON DELETE SET NULL;
+
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_team
+    ADD CONSTRAINT fk_safra_activity_team_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity (rowid)
+        ON DELETE CASCADE;
+ALTER TABLE __MAIN_DB_PREFIX__safra_activity_team
+    ADD CONSTRAINT fk_safra_activity_team_user FOREIGN KEY (fk_user) REFERENCES __MAIN_DB_PREFIX__user (rowid)
+        ON DELETE CASCADE;

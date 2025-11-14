@@ -34,6 +34,7 @@ INSERT INTO llx_safra_activity_line (
     fk_formulated_product,
     fk_technical_product,
     fk_warehouse,
+    fk_unit,
     label,
     dose,
     dose_unit,
@@ -41,10 +42,39 @@ INSERT INTO llx_safra_activity_line (
     total_qty,
     note,
     movement,
+    movement_type,
     date_creation
 ) VALUES
-    (9501, 1, 9001, 1, NULL, NULL, 1, 'Fungicida validado', 0.50, 'L/ha', 10.00, 5.00, 'Linha validada', 1, NOW()),
-    (9502, 1, 9002, 1, NULL, NULL, 1, 'Herbicida em aplicação', 0.30, 'L/ha', 8.00, 2.40, 'Linha em andamento', 1, NOW()),
-    (9503, 1, 9002, NULL, NULL, NULL, 1, 'Ajuste de estoque retorno', 0.00, '', 0.00, 1.00, 'Reabastecimento parcial', 0, NOW()),
-    (9504, 1, 9003, 1, NULL, NULL, 2, 'Inseticida concluído', 0.45, 'L/ha', 15.75, 7.09, 'Linha concluída', 1, NOW()),
-    (9505, 1, 9004, 1, NULL, NULL, 1, 'Mistura cancelada', 0.20, 'L/ha', 5.00, 1.00, 'Linha cancelada', 0, NOW());
+    (9501, 1, 9001, 1, NULL, NULL, 1, NULL, 'Fungicida validado', 0.50, 'L/ha', 10.00, 5.00, 'Linha validada', 1, 'consume', NOW()),
+    (9502, 1, 9002, 1, NULL, NULL, 1, NULL, 'Herbicida em aplicação', 0.30, 'L/ha', 8.00, 2.40, 'Linha em andamento', 1, 'consume', NOW()),
+    (9503, 1, 9002, NULL, NULL, NULL, 1, NULL, 'Ajuste de estoque retorno', 0.00, '', 0.00, 1.00, 'Reabastecimento parcial', 0, 'return', NOW()),
+    (9504, 1, 9003, 1, NULL, NULL, 2, NULL, 'Inseticida concluído', 0.45, 'L/ha', 15.75, 7.09, 'Linha concluída', 1, 'consume', NOW()),
+    (9505, 1, 9004, 1, NULL, NULL, 1, NULL, 'Mistura cancelada', 0.20, 'L/ha', 5.00, 1.00, 'Linha cancelada', 0, 'return', NOW());
+
+INSERT INTO llx_safra_activity_fleet (
+    rowid,
+    entity,
+    fk_activity,
+    resource_type,
+    fk_fleet_equipment,
+    fk_user_responsible,
+    planned_hours,
+    note,
+    date_creation
+) VALUES
+    (9801, 1, 9001, 'vehicle', 101, 1, 4.0, 'Trator principal para aplicação', NOW()),
+    (9802, 1, 9002, 'implement', 202, NULL, 3.5, 'Pulverizador acoplado', NOW());
+
+INSERT INTO llx_safra_activity_team (
+    rowid,
+    entity,
+    fk_activity,
+    fk_user,
+    planned_hours,
+    is_responsible,
+    note,
+    date_creation
+) VALUES
+    (9901, 1, 9001, 2, 6.0, 1, 'Supervisor da aplicação', NOW()),
+    (9902, 1, 9001, 3, 6.0, 0, 'Auxiliar operacional', NOW()),
+    (9903, 1, 9002, 4, 5.0, 1, 'Responsável pela calibração', NOW());
