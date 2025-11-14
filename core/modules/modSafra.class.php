@@ -557,6 +557,22 @@ class modSafra extends DolibarrModules
 		$this->rights[$r][5] = 'delete';
 		$r++;
 
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (18 * 10) + 0 + 1);
+		$this->rights[$r][1] = 'Read SafraActivity object of Safra';
+		$this->rights[$r][4] = 'SafraActivity';
+		$this->rights[$r][5] = 'read';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (18 * 10) + 1 + 1);
+		$this->rights[$r][1] = 'Create/Update SafraActivity object of Safra';
+		$this->rights[$r][4] = 'SafraActivity';
+		$this->rights[$r][5] = 'write';
+		$r++;
+		$this->rights[$r][0] = $this->numero . sprintf('%02d', (18 * 10) + 2 + 1);
+		$this->rights[$r][1] = 'Delete SafraActivity object of Safra';
+		$this->rights[$r][4] = 'SafraActivity';
+		$this->rights[$r][5] = 'delete';
+		$r++;
+
 		/* END MODULEBUILDER PERMISSIONS */
 
 		// Main menu entries to add
@@ -2278,7 +2294,7 @@ class modSafra extends DolibarrModules
                );
 
                $operacoes = array(
-                       array('Aplicacoes', 'aplicacao', '/safra/safraactivity_list.php', '/safra/safraactivity_card.php?action=create', '$user->hasRight("safra", "aplicacao", "read")', '$user->hasRight("safra", "aplicacao", "write")'),
+                       array('Atividades', 'SafraActivity', '/safra/safraactivity_list.php', '/safra/safraactivity_card.php?action=create', '$user->hasRight("safra", "SafraActivity", "read")', '$user->hasRight("safra", "SafraActivity", "write")'),
                        array('Eventos', 'evento', '/safra/evento_list.php', '/safra/evento_card.php?action=create', '$user->hasRight("safra", "evento", "read")', '$user->hasRight("safra", "evento", "write")'),
                        array('Colheitas', 'colheita', '/safra/colheita_list.php', '/safra/colheita_card.php?action=create', '$user->hasRight("safra", "colheita", "read")', '$user->hasRight("safra", "colheita", "write")'),
                );
@@ -2509,6 +2525,31 @@ class modSafra extends DolibarrModules
 				'isModEnabled("safra")'                                        // Sempre editÃ¡vel
 			);
 
+
+
+		$extrafields->addExtraField(
+			'options_progress',                      // Field name
+			'SafraActivityProgress',                 // Field label
+			'double',                                // Field type
+			105,                                     // Position
+			'24,8',                                  // Length
+			'safra_activity',                        // Element type
+			0,                                        // Unique
+			0,                                        // Required
+			'0',                                      // Default
+			'',                                       // Params
+			1,                                        // Always editable
+			'isModEnabled("safra")',                  // Permission
+			1,                                        // List visibility
+			'',                                       // Help
+			'',                                       // Computed
+			'',                                       // Entity
+			'safra@safra',                            // Language file
+			'isModEnabled("safra")',                  // Enabled condition
+			0,                                        // Totalizable
+			0,                                        // Printable
+			array()                                  // Extra params
+		);
 
 		// Adicionar extrafield para vincular Aplicação às tarefas
 		$extrafields->addExtraField(

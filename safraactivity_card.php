@@ -58,7 +58,31 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.formother.class.php';
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
-require_once DOL_DOCUMENT_ROOT . '/core/class/html.formproduct.class.php';
+require_once DOL_DOCUMENT_ROOT . '/product/class/html.formproduct.class.php';
+
+if (!function_exists('dol_htmltextarea')) {
+        /**
+         * Fallback textarea helper used by legacy modules.
+         *
+         * @param string $name  Input name/id
+         * @param string $value Content
+         * @param string $more  Extra HTML attributes
+         * @param int    $rows  Rows count
+         * @param int    $cols  Cols count
+         *
+         * @return string
+         */
+        function dol_htmltextarea($name, $value = '', $more = '', $rows = 3, $cols = 60)
+        {
+                $attributes = '';
+                if ($more) {
+                        $attributes = ' ' . $more;
+                }
+                $escapedName = dol_escape_htmltag($name);
+                $escapedValue = dol_escape_htmltag($value);
+                return '<textarea name="' . $escapedName . '" id="' . $escapedName . '" rows="' . ((int) $rows) . '" cols="' . ((int) $cols) . '"' . $attributes . '>' . $escapedValue . '</textarea>';
+        }
+}
 require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/price.lib.php';

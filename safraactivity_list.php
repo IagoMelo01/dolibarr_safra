@@ -64,6 +64,68 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/price.lib.php';
 require_once __DIR__ . '/class/safraactivity.class.php';
 require_once __DIR__ . '/class/talhao.class.php';
 
+/**
+ * Ensure the activity extrafield infrastructure exists so progress can be stored.
+ */
+function safraEnsureActivityProgressInfrastructure($db, SafraActivity $activity, ExtraFields $extrafields)
+{
+        static $ensured = false;
+        if ($ensured) {
+                return;
+        }
+        $ensured = true;
+
+        global $conf;
+
+        $extrafieldTable = $db->prefix() . $activity->table_element . '_extrafields';
+        $resql = $db->query('SHOW TABLES LIKE "' . $db->escape($extrafieldTable) . '"');
+        $tableExists = $resql && $db->num_rows($resql) > 0;
+        if (!$tableExists) {
+                $sql = "CREATE TABLE IF NOT EXISTS `" . $extrafieldTable . "` (
+                        rowid INTEGER AUTO_INCREMENT PRIMARY KEY,
+                        tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        fk_object INTEGER NOT NULL,
+                        import_key VARCHAR(14)
+                ) ENGINE=innodb";
+                if ($db->query($sql)) {
+                        $db->query("ALTER TABLE `" . $extrafieldTable . "` ADD INDEX idx_safra_activity_extrafields_fk_object(fk_object)");
+                } else {
+                        dol_syslog('safraEnsureActivityProgressInfrastructure failed to create ' . $extrafieldTable, LOG_ERR);
+                }
+        }
+
+        $sqlExtra = "SELECT rowid FROM " . $db->prefix() . "extrafields WHERE elementtype = '" . $db->escape($activity->table_element) . "' AND name = 'options_progress'";
+        if (!empty($conf->entity)) {
+                $sqlExtra .= " AND entity IN (0, " . ((int) $conf->entity) . ")";
+        }
+        $resExtra = $db->query($sqlExtra);
+        if ($resExtra && $db->num_rows($resExtra) === 0) {
+                $extrafields->addExtraField(
+                        'options_progress',
+                        'SafraActivityProgress',
+                        'double',
+                        110,
+                        '24,8',
+                        $activity->table_element,
+                        0,
+                        0,
+                        '0',
+                        '',
+                        1,
+                        'isModEnabled("safra")',
+                        1,
+                        '',
+                        '',
+                        '',
+                        'safra@safra',
+                        'isModEnabled("safra")',
+                        0,
+                        0,
+                        array()
+                );
+        }
+}
+
 $langs->loadLangs(array('safra@safra', 'projects'));
 
 $action = GETPOST('action', 'aZ09');
@@ -117,6 +179,7 @@ $object = new SafraActivity($db);
 $form = new Form($db);
 $formother = new FormOther($db);
 $extrafields = new ExtraFields($db);
+safraEnsureActivityProgressInfrastructure($db, $object, $extrafields);
 $hookmanager->initHooks(array('safraactivitylist', 'globalcard'));
 $extrafields->fetch_name_optionals_label($object->table_element);
 
