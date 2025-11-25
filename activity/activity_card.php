@@ -36,7 +36,16 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT . '/product/class/html.formproduct.class.php';
 require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
-require_once DOL_DOCUMENT_ROOT . '/custom/frota/class/veiculo.class.php';
+
+$veiculoClassFile = DOL_DOCUMENT_ROOT . '/custom/frota/class/veiculo.class.php';
+if (file_exists($veiculoClassFile)) {
+    require_once $veiculoClassFile;
+}
+
+$implementoClassFile = DOL_DOCUMENT_ROOT . '/custom/frota/class/implemento.class.php';
+if (file_exists($implementoClassFile)) {
+    require_once $implementoClassFile;
+}
 dol_include_once('/safra/class/FvActivity.class.php');
 dol_include_once('/safra/class/FvActivityLine.class.php');
 dol_include_once('/safra/class/talhao.class.php');
@@ -76,9 +85,74 @@ function safra_load_options($db, $table, $labelField)
     return $options;
 }
 
+function safra_load_from_class($db, $className, $labelFields = array())
+{
+    $options = array();
+
+    if (!class_exists($className)) {
+        return $options;
+    }
+
+    $object = new $className($db);
+    if (method_exists($object, 'fetchAll')) {
+        $records = $object->fetchAll('', '', 0, 0, array('customsql' => '1=1'));
+        if (is_array($records)) {
+            foreach ($records as $record) {
+                $pieces = array();
+                foreach ($labelFields as $field) {
+                    if (!empty($record->$field)) {
+                        $pieces[] = $record->$field;
+                    }
+                }
+                $label = implode(' - ', $pieces);
+                if (!empty($label)) {
+                    $options[$record->id] = $label;
+                }
+            }
+        }
+    }
+
+    return $options;
+}
+
+function safra_project_talhao_option($db, $projectId)
+{
+    if (empty($projectId)) {
+        return null;
+    }
+
+    $sql = 'SELECT options_fk_talhao as talhao_id FROM ' . MAIN_DB_PREFIX . 'projet_extrafields WHERE fk_object = ' . ((int) $projectId) . ' LIMIT 1';
+    $resql = $db->query($sql);
+    if ($resql) {
+        $obj = $db->fetch_object($resql);
+        if (!empty($obj->talhao_id)) {
+            $talhao = new Talhao($db);
+            if ($talhao->fetch((int) $obj->talhao_id) > 0) {
+                $label = trim(($talhao->ref ? $talhao->ref . ' - ' : '') . $talhao->label);
+                return array($talhao->id => $label ?: $talhao->id);
+            }
+        }
+    }
+
+    return null;
+}
+
 $machines = safra_load_options($db, 'vehicule', 'CONCAT(immatriculation, " - ", label)');
 $implements = $machines;
-$talhoes = safra_load_options($db, 'safra_talhao', 'label');
+
+$machinesFromModule = safra_load_from_class($db, 'Veiculo', array('placa', 'label', 'ref'));
+if (!empty($machinesFromModule)) {
+    $machines = $machinesFromModule;
+}
+
+$implementsFromModule = safra_load_from_class($db, 'Implemento', array('label', 'ref'));
+if (!empty($implementsFromModule)) {
+    $implements = $implementsFromModule;
+}
+
+$projectIdForTalhao = $activity->fk_project ?: GETPOSTINT('fk_project');
+$talhaoFromProject = safra_project_talhao_option($db, $projectIdForTalhao);
+$talhoes = $talhaoFromProject ?: safra_load_options($db, 'safra_talhao', 'label');
 $warehouses = safra_load_options($db, 'entrepot', 'label');
 
 $userOptions = array();
@@ -92,7 +166,13 @@ if ($resUsers) {
 }
 
 $productOptions = array();
-$sqlProducts = 'SELECT rowid, ref, label FROM ' . MAIN_DB_PREFIX . "product WHERE entity IN (0, " . ((int) $conf->entity) . ') AND tosell = 1 ORDER BY label';
+$sqlProducts = 'SELECT p.rowid, p.ref, p.label'
+    . ' FROM ' . MAIN_DB_PREFIX . 'product p'
+    . ' INNER JOIN ' . MAIN_DB_PREFIX . "product_stock ps ON ps.fk_product = p.rowid"
+    . ' WHERE p.entity IN (0, ' . ((int) $conf->entity) . ')'
+    . ' AND ps.reel > 0'
+    . ' GROUP BY p.rowid, p.ref, p.label'
+    . ' ORDER BY p.label';
 $resProducts = $db->query($sqlProducts);
 if ($resProducts) {
     while ($obj = $db->fetch_object($resProducts)) {
@@ -313,6 +393,12 @@ print '<style>
         background: linear-gradient(135deg, #0d6efd, #20c997);
         color: #fff;
         border-bottom: none;
+        }
+    .safra-activity-card .card-header .btn-light {
+        color: #0d6efd;
+        background: #e7f1ff;
+        border: none;
+        font-weight: 600;
     }
     .safra-activity-card .section-title {
         font-size: 1rem;
@@ -343,6 +429,10 @@ print '<style>
         align-items: center;
         gap: 0.35rem;
         color: #0f172a;
+    }
+    .safra-activity-card .table-modern {
+        border-radius: 0.75rem;
+        overflow: hidden;
     }
     .safra-activity-card .summary-pill .dot {
         width: 9px;
@@ -625,23 +715,46 @@ function bindLine(row) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('#products-table tbody tr').forEach(bindLine);
+    document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
+        if (!row.querySelector('.area-input')) {
+            return;
+        }
+        if (!row.querySelector('.unit-input').value) {
+            row.querySelector('.unit-input').value = 'L/ha';
+        }
+        recalcLineTotal(row);
+        bindLine(row);
+    });
 
     document.getElementById('add-line').addEventListener('click', function () {
         var tbody = document.querySelector('#products-table tbody');
         var template = tbody.querySelector('tr');
         var clone = template.cloneNode(true);
-        clone.querySelectorAll('input').forEach(function (input) { input.value = ''; });
-        clone.querySelectorAll('select').forEach(function (select) { select.selectedIndex = 0; });
+        clone.querySelectorAll('input').forEach(function (input) {
+            if (input.classList.contains('unit-input')) {
+                input.value = 'L/ha';
+            } else {
+                input.value = '0';
+            }
+        });
+        clone.querySelectorAll('select').forEach(function (select) {
+            select.selectedIndex = 0;
+        });
+        recalcLineTotal(clone);
         tbody.appendChild(clone);
         bindLine(clone);
     });
 
-    document.getElementById('open-mixture').addEventListener('click', function () {
-        updateMixtureModal();
-        var modal = new bootstrap.Modal(document.getElementById('mixtureModal'));
-        modal.show();
-    });
+    var mixtureButton = document.getElementById('open-mixture');
+    if (mixtureButton) {
+        mixtureButton.addEventListener('click', function () {
+            updateMixtureModal();
+            if (window.bootstrap && bootstrap.Modal) {
+                var modal = new bootstrap.Modal(document.getElementById('mixtureModal'));
+                modal.show();
+            }
+        });
+    }
 
     document.getElementById('application-rate').addEventListener('input', updateMixtureModal);
     document.getElementById('tank-capacity').addEventListener('input', updateMixtureModal);
