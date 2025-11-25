@@ -516,8 +516,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
         print '<div class="fichecenter">';
         if ($object->id > 0) {
-                $activityListUrl = dol_buildpath('/safra/safraactivity_list.php', 1) . '?search_fk_talhao=' . $object->id;
-                $newActivityUrl = dol_buildpath('/safra/safraactivity_card.php', 1) . '?action=create&fk_talhao=' . $object->id;
+                $activityListUrl = dol_buildpath('/safra/activity/activity_list.php', 1) . '?search_fk_talhao=' . $object->id;
+                $newActivityUrl = dol_buildpath('/safra/activity/activity_card.php', 1) . '?action=create&fk_talhao=' . $object->id;
                 print '<div class="box stats twocolumns">';
                 print '<div class="center">';
                 print '<a class="butAction" href="' . $activityListUrl . '">' . $langs->trans('SafraActivityListTitle') . '</a>';
