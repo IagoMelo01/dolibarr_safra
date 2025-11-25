@@ -162,13 +162,10 @@ if (!empty($implementsFromModule)) {
     $implements = $implementsFromModule;
 }
 
+
 $projectIdForTalhao = $activity->fk_project ?: GETPOSTINT('fk_project');
 $talhaoFromProject = safra_project_talhao_option($db, $projectIdForTalhao);
-$talhoes = safra_load_options($db, 'safra_talhao', 'label');
 $talhaoPlaceholder = $langs->trans('SelectAProjectFirst');
-if (empty($activity->fk_fieldplot)) {
-    $talhoes = array('' => '— ' . $talhaoPlaceholder . ' —') + $talhoes;
-}
 
 $talhaoDetails = array();
 $sqlTalhaoDetails = 'SELECT t.rowid, t.ref, t.label, t.area, m.label as municipio_label'
@@ -527,6 +524,17 @@ print '<style>
         color: #475569;
         font-size: 0.85rem;
     }
+    .safra-activity-card .info-strip {
+        background: linear-gradient(120deg, #f8fafc, #eef2ff);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.65rem 0.85rem;
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #0f172a;
+    }
 </style>';
 
 print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
@@ -590,8 +598,20 @@ print '<div class="row g-4 mt-1">';
 print '<div class="col-lg-8">';
 print '<div class="floating-box h-100">';
 print '<label class="section-title mb-1">' . $langs->trans('FieldPlot') . '</label>';
-print $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
-print '<div class="helper-text mt-1" id="talhao-area-info">' . $talhaoPlaceholder . '</div>';
+print '<input type="hidden" name="fk_fieldplot" value="' . ((int) $activity->fk_fieldplot) . '">';
+$talhaoLabel = $talhaoPlaceholder;
+if (!empty($activity->fk_fieldplot) && !empty($talhaoDetails[$activity->fk_fieldplot])) {
+    $t = $talhaoDetails[$activity->fk_fieldplot];
+    $pieces = array();
+    if (!empty($t['ref'])) $pieces[] = $t['ref'];
+    if (!empty($t['label'])) $pieces[] = $t['label'];
+    $areaText = isset($t['area']) ? price2num($t['area']) . ' ha' : '';
+    if ($areaText) $pieces[] = $areaText;
+    if (!empty($t['municipio'])) $pieces[] = $t['municipio'];
+    $talhaoLabel = implode(' • ', array_filter($pieces));
+}
+print '<div class="info-strip" id="talhao-area-info">' . dol_escape_htmltag($talhaoLabel) . '</div>';
+print '<div class="helper-text mt-1">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
 print '</div>';
 print '</div>';
 print '<div class="col-lg-4">';
@@ -773,7 +793,7 @@ if ($activity->id) {
 print '<script>';
 ?>
 var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
-var talhaoPlaceholderText = '<?php echo dol_escape_js('— ' . $talhaoPlaceholder . ' —'); ?>';
+var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->trans('SelectProjectToAutoFillFieldPlot')); ?>';
 var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
 
 function recalcLineTotal(row) {
@@ -799,19 +819,19 @@ function bindLine(row) {
     }
 }
 
-function updateTalhaoArea(selectEl) {
+function updateTalhaoArea(talhaoId) {
     var areaField = document.querySelector('input[name="area_total"]');
     var info = document.getElementById('talhao-area-info');
-    var selectedId = selectEl ? selectEl.value : '';
-    var data = talhaoData[selectedId] || null;
+    var hiddenField = document.querySelector('input[name="fk_fieldplot"]');
+    var data = talhaoData[talhaoId] || null;
 
-    if (data && areaField) {
-        var normalizedArea = parseFloat(data.area) || 0;
-        areaField.value = normalizedArea ? normalizedArea.toFixed(4) : '';
+    if (hiddenField) {
+        hiddenField.value = data ? talhaoId : '';
     }
 
-    if (!data && areaField) {
-        areaField.value = '';
+    if (areaField) {
+        var normalizedArea = data && data.area ? parseFloat(data.area) || 0 : 0;
+        areaField.value = normalizedArea ? normalizedArea.toFixed(4) : '';
     }
 
     if (info) {
@@ -835,21 +855,12 @@ function updateTalhaoArea(selectEl) {
 }
 
 function fetchTalhaoForProject(projectId) {
-    var talhaoSelect = document.querySelector('select[name="fk_fieldplot"]');
-    if (!talhaoSelect) {
-        return;
-    }
-
     if (!projectId) {
-        talhaoSelect.disabled = true;
-        talhaoSelect.value = '';
-        updateTalhaoArea(talhaoSelect);
+        updateTalhaoArea('');
         return;
     }
 
-    talhaoSelect.disabled = true;
-    talhaoSelect.value = '';
-    updateTalhaoArea(talhaoSelect);
+    updateTalhaoArea('');
 
     fetch('<?php echo dol_buildpath('/safra/ajax/project_talhao.php', 1); ?>?id=' + encodeURIComponent(projectId), {
         credentials: 'same-origin'
@@ -857,21 +868,11 @@ function fetchTalhaoForProject(projectId) {
         .then(function (response) { return response.json(); })
         .then(function (data) {
             if (!data || !data.success || !data.talhao_id) {
-                talhaoSelect.disabled = false;
-                talhaoSelect.value = '';
-                updateTalhaoArea(talhaoSelect);
+                updateTalhaoArea('');
                 return;
             }
 
             var talhaoId = String(data.talhao_id);
-            var optionExists = !!talhaoSelect.querySelector('option[value="' + talhaoId + '"]');
-            if (!optionExists) {
-                var opt = document.createElement('option');
-                opt.value = talhaoId;
-                opt.textContent = data.talhao && data.talhao.label ? data.talhao.label : talhaoId;
-                talhaoSelect.appendChild(opt);
-            }
-
             if (data.talhao) {
                 talhaoData[talhaoId] = {
                     ref: data.talhao.label,
@@ -881,12 +882,10 @@ function fetchTalhaoForProject(projectId) {
                 };
             }
 
-            talhaoSelect.value = talhaoId;
-            updateTalhaoArea(talhaoSelect);
-            talhaoSelect.disabled = true;
+            updateTalhaoArea(talhaoId);
         })
         .catch(function () {
-            talhaoSelect.disabled = false;
+            updateTalhaoArea('');
         });
 }
 
@@ -929,24 +928,15 @@ document.addEventListener('DOMContentLoaded', function () {
         bindLine(clone);
     });
 
-    var talhaoSelect = document.querySelector('select[name="fk_fieldplot"]');
-    if (talhaoSelect) {
-        updateTalhaoArea(talhaoSelect);
-        talhaoSelect.addEventListener('change', function () {
-            updateTalhaoArea(talhaoSelect);
-        });
-    } else {
-        updateTalhaoArea(null);
-    }
-
     var projectSelect = document.querySelector('select[name="fk_project"]');
     if (projectSelect) {
         projectSelect.addEventListener('change', function () {
             fetchTalhaoForProject(projectSelect.value);
         });
-
         fetchTalhaoForProject(projectSelect.value || '');
     }
+
+    updateTalhaoArea(document.querySelector('input[name="fk_fieldplot"]').value || '');
 
     var mixtureButton = document.getElementById('open-mixture');
     if (mixtureButton) {
