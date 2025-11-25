@@ -121,7 +121,7 @@ function safra_project_talhao_option($db, $projectId)
         return null;
     }
 
-    $sql = 'SELECT options_fk_talhao as talhao_id FROM ' . MAIN_DB_PREFIX . 'projet_extrafields WHERE fk_object = ' . ((int) $projectId) . ' LIMIT 1';
+    $sql = 'SELECT fk_talhao as talhao_id FROM ' . MAIN_DB_PREFIX . 'projet_extrafields WHERE fk_object = ' . ((int) $projectId) . ' LIMIT 1';
     $resql = $db->query($sql);
     if ($resql) {
         $obj = $db->fetch_object($resql);
@@ -596,7 +596,7 @@ if (!empty($activity->lines)) {
         print '</tr>';
     }
 } else {
-    print '<tr class="product-line-template">';
+    print '<tr>';
     print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
     print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0"></td>';
     print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
@@ -610,6 +610,18 @@ if (!empty($activity->lines)) {
 
 print '</tbody>';
 print '</table>';
+print '<template id="product-line-template">';
+print '<tr>';
+print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
+print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0"></td>';
+print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
+print '<td><input type="text" name="line_unit[]" class="form-control unit-input" value="L/ha"></td>';
+print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
+print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
+print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
+print '<td><button type="button" class="btn btn-outline-danger btn-icon remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">&times;</button></td>';
+print '</tr>';
+print '</template>';
 print '</div>'; // responsive
 
 print '<button type="button" class="btn btn-primary btn-sm" id="add-line">+ ' . $langs->trans('Add') . '</button>';
@@ -715,6 +727,7 @@ function bindLine(row) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    var lineTemplate = document.getElementById('product-line-template');
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         if (!row.querySelector('.area-input')) {
             return;
@@ -728,13 +741,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('add-line').addEventListener('click', function () {
         var tbody = document.querySelector('#products-table tbody');
-        var template = tbody.querySelector('tr');
-        var clone = template.cloneNode(true);
+        var baseRow = null;
+        if (lineTemplate && 'content' in lineTemplate) {
+            baseRow = lineTemplate.content.querySelector('tr');
+        }
+        if (!baseRow) {
+            baseRow = tbody.querySelector('tr');
+        }
+        var clone = baseRow ? baseRow.cloneNode(true) : document.createElement('tr');
         clone.querySelectorAll('input').forEach(function (input) {
+            var defaultValue = input.getAttribute('value') || '';
             if (input.classList.contains('unit-input')) {
-                input.value = 'L/ha';
+                input.value = defaultValue || 'L/ha';
             } else {
-                input.value = '0';
+                input.value = defaultValue || '0';
             }
         });
         clone.querySelectorAll('select').forEach(function (select) {
