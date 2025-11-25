@@ -307,6 +307,76 @@ if ($errors) {
     setEventMessages(null, $errors, 'errors');
 }
 
+// Modern styles for a cleaner card layout
+print '<style>
+    .safra-activity-card .card-header {
+        background: linear-gradient(135deg, #0d6efd, #20c997);
+        color: #fff;
+        border-bottom: none;
+    }
+    .safra-activity-card .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0d1b2a;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .safra-activity-card .section-title .badge {
+        font-weight: 500;
+    }
+    .safra-activity-card .form-control, .safra-activity-card select {
+        border-radius: 0.65rem;
+        border-color: #e5e7eb;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+    .safra-activity-card .form-control:focus, .safra-activity-card select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+    .safra-activity-card .summary-pill {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #0f172a;
+    }
+    .safra-activity-card .summary-pill .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        display: inline-block;
+        background: #20c997;
+    }
+    .safra-activity-card .note-area {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 0.75rem;
+    }
+    .safra-activity-card .table-modern thead th {
+        background: #0f172a;
+        color: #fff;
+        border: none;
+    }
+    .safra-activity-card .table-modern tbody tr {
+        transition: background 0.2s ease;
+    }
+    .safra-activity-card .table-modern tbody tr:hover {
+        background: #f1f5f9;
+    }
+    .safra-activity-card .btn-icon {
+        border-radius: 50%;
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>';
+
 print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
 print '<input type="hidden" name="token" value="' . newToken() . '">';
 print '<input type="hidden" name="action" value="save">';
@@ -314,33 +384,22 @@ if ($activity->id) {
     print '<input type="hidden" name="id" value="' . $activity->id . '">';
 }
 
-print '<div class="card">';
-print '<div class="card-body">';
-print '<div class="row">';
-print '<div class="col-md-6">';
-print $form->textwithpicto($langs->trans('Label'), '') . '<input class="form-control" name="label" value="' . dol_escape_htmltag($activity->label) . '" required>';
-print '</div>';
-print '<div class="col-md-3">';
-print $form->textwithpicto($langs->trans('Type'), '') . '<input class="form-control" name="type" value="' . dol_escape_htmltag($activity->type) . '" required>';
-print '</div>';
-print '<div class="col-md-3">';
-print $langs->trans('Project') . $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 0, 1, 0, 0, 0, '', '', 1, 0, 1);
-print '</div>';
-print '</div>';
+print '<div class="card shadow-sm border-0 safra-activity-card">';
+print '<div class="card-header d-flex flex-wrap align-items-center justify-content-between">';
+print '<div class="d-flex flex-column">
+        <span class="text-uppercase small opacity-75">' . $langs->trans('SafraActivity') . '</span>
+        <span class="fw-semibold fs-5">' . ($activity->label ? dol_escape_htmltag($activity->label) : $langs->trans('NewActivity')) . '</span>
+    </div>';
 
-print '<div class="row mt-3">';
-print '<div class="col-md-6">';
-print $langs->trans('FieldPlot') . $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
-print '</div>';
-print '<div class="col-md-3">';
-print $langs->trans('Area') . ' (ha)' . '<input class="form-control" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0">';
-print '</div>';
-print '<div class="col-md-3">';
+print '<div class="d-flex align-items-center gap-2">';
 if ($activity->fk_task) {
     $taskUrl = dol_buildpath('/projet/tasks/task.php?id=' . $activity->fk_task, 1);
-    print $langs->trans('Task') . ': <a href="' . $taskUrl . '">' . $langs->trans('View') . '</a>';
+    print '<a class="badge bg-light text-dark text-decoration-none" href="' . $taskUrl . '">' . $langs->trans('Task') . '</a>';
 }
-print '<div class="small text-muted">' . $langs->trans('Status') . ': ';
+
+print '<span class="summary-pill">';
+print '<span class="dot"></span>';
+print '<span class="fw-semibold">' . $langs->trans('Status') . ':</span> ';
 switch ((int) $activity->status) {
     case FvActivity::STATUS_COMPLETED:
         print $langs->trans('SafraActivityStatusCompleted');
@@ -351,39 +410,76 @@ switch ((int) $activity->status) {
     default:
         print $langs->trans('Draft');
 }
-print '</div>';
-print '</div>';
-print '</div>';
-
-print '<div class="row mt-3">';
-print '<div class="col-md-4">';
-print $langs->trans('Machine') . $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
-print '</div>';
-print '<div class="col-md-4">';
-print $langs->trans('Implements') . $form->multiselectarray('implement_ids', $implements, $selectedImplements, '', 0, '', 1);
-print '</div>';
-print '<div class="col-md-4">';
-print $langs->trans('Employees') . $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
+print '</span>';
 print '</div>';
 print '</div>';
 
-print '<div class="row mt-3">';
+print '<div class="card-body">';
+print '<div class="row g-4">';
+print '<div class="col-lg-6">';
+print '<label class="section-title">' . $langs->trans('Label') . '</label>';
+print '<input class="form-control" name="label" value="' . dol_escape_htmltag($activity->label) . '" required placeholder="' . dol_escape_htmltag($langs->trans('Label')) . '">';
+print '</div>';
+print '<div class="col-lg-3">';
+print '<label class="section-title">' . $langs->trans('Type') . '</label>';
+print '<input class="form-control" name="type" value="' . dol_escape_htmltag($activity->type) . '" required placeholder="' . dol_escape_htmltag($langs->trans('Type')) . '">';
+print '</div>';
+print '<div class="col-lg-3">';
+print '<label class="section-title">' . $langs->trans('Project') . '</label>';
+print $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 0, 1, 0, 0, 0, '', '', 1, 0, 1);
+print '</div>';
+print '</div>';
+
+print '<div class="row g-4 mt-1">';
+print '<div class="col-lg-6">';
+print '<label class="section-title">' . $langs->trans('FieldPlot') . '</label>';
+print $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
+print '</div>';
+print '<div class="col-lg-3">';
+print '<label class="section-title">' . $langs->trans('Area') . ' (ha)</label>';
+print '<input class="form-control" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0" placeholder="0.00">';
+print '</div>';
+print '<div class="col-lg-3 d-flex align-items-end">';
+print '<div class="text-muted small">' . $langs->trans('Area') . ' • ' . $langs->trans('Total') . '</div>';
+print '</div>';
+print '</div>';
+
+print '<div class="row g-4 mt-1">';
+print '<div class="col-lg-4">';
+print '<label class="section-title">' . $langs->trans('Machine') . '</label>';
+print $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
+print '</div>';
+print '<div class="col-lg-4">';
+print '<label class="section-title">' . $langs->trans('Implements') . '</label>';
+print $form->multiselectarray('implement_ids', $implements, $selectedImplements, '', 0, '', 1);
+print '</div>';
+print '<div class="col-lg-4">';
+print '<label class="section-title">' . $langs->trans('Employees') . '</label>';
+print $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
+print '</div>';
+print '</div>';
+
+print '<div class="row g-3 mt-3">';
 print '<div class="col-12">';
-print $langs->trans('Note') . '<textarea class="form-control" name="note_public" id="note_public" rows="3">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
+print '<label class="section-title">' . $langs->trans('Note') . '</label>';
+print '<textarea class="form-control note-area" name="note_public" id="note_public" rows="3" placeholder="' . dol_escape_htmltag($langs->trans('Note')) . '">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
 print '</div>';
 print '</div>';
 print '</div>'; // card-body
 print '</div>'; // card
 
-print '<div class="card mt-3">';
+print '<div class="card shadow-sm border-0 mt-3 safra-activity-card">';
 print '<div class="card-header d-flex justify-content-between align-items-center">';
-print '<h5 class="mb-0">' . $langs->trans('Products') . '</h5>';
-print '<button type="button" class="btn btn-sm btn-secondary" id="open-mixture">' . $langs->trans('MixtureCalculation') . '</button>';
+print '<div>
+        <div class="text-uppercase small opacity-75">' . $langs->trans('Products') . '</div>
+        <h5 class="mb-0">' . $langs->trans('Products') . '</h5>
+    </div>';
+print '<button type="button" class="btn btn-light btn-sm" id="open-mixture">' . $langs->trans('MixtureCalculation') . '</button>';
 print '</div>';
 print '<div class="card-body">';
 
 print '<div class="table-responsive">';
-print '<table class="table" id="products-table">';
+print '<table class="table table-modern align-middle" id="products-table">';
 print '<thead><tr>';
 print '<th>' . $langs->trans('Product') . '</th>';
 print '<th>' . $langs->trans('Area') . ' (ha)</th>';
@@ -406,7 +502,7 @@ if (!empty($activity->lines)) {
         print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->total)) . '" readonly></td>';
         print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1) . '</td>';
         print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, $line->fk_warehouse, 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
-        print '<td><button type="button" class="btn btn-sm btn-danger remove-line">&times;</button></td>';
+        print '<td><button type="button" class="btn btn-outline-danger btn-icon remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">&times;</button></td>';
         print '</tr>';
     }
 } else {
@@ -418,7 +514,7 @@ if (!empty($activity->lines)) {
     print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
     print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
     print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
-    print '<td><button type="button" class="btn btn-sm btn-danger remove-line">&times;</button></td>';
+    print '<td><button type="button" class="btn btn-outline-danger btn-icon remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">&times;</button></td>';
     print '</tr>';
 }
 
@@ -426,7 +522,7 @@ print '</tbody>';
 print '</table>';
 print '</div>'; // responsive
 
-print '<button type="button" class="btn btn-sm btn-primary" id="add-line">' . $langs->trans('Add') . '</button>';
+print '<button type="button" class="btn btn-primary btn-sm" id="add-line">+ ' . $langs->trans('Add') . '</button>';
 print '</div>'; // card-body
 print '</div>'; // card
 

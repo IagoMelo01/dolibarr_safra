@@ -45,7 +45,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/lib/date.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/core/lib/functions2.lib.php';
 require_once DOL_DOCUMENT_ROOT . '/projet/class/project.class.php';
 require_once DOL_DOCUMENT_ROOT . '/custom/safra/class/talhao.class.php';
-require_once __DIR__ . '/class/FvActivity.class.php';
+require_once __DIR__ . '/../class/FvActivity.class.php';
 
 global $db, $user, $langs, $hookmanager, $conf;
 
@@ -185,7 +185,7 @@ foreach ($activities as $i => $obj) {
     $var = ($i % 2) ? 'class="oddeven"' : 'class="oddeven"';
     print '<tr ' . $var . '>';
 
-    $activityLink = '<a href="' . dol_buildpath('/safra/safraactivity_card.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . dol_escape_htmltag($obj->ref ?: $obj->rowid) . '</a>';
+    $activityLink = '<a href="' . dol_buildpath('/safra/activity/activity_card.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . dol_escape_htmltag($obj->ref ?: $obj->rowid) . '</a>';
     print '<td>' . $activityLink . '</td>';
 
     print '<td>' . dol_escape_htmltag($obj->label) . '</td>';
@@ -211,7 +211,7 @@ foreach ($activities as $i => $obj) {
     print '<td class="center">' . dol_print_date($db->jdate($obj->date_creation), 'dayhour') . '</td>';
 
     print '<td class="right">';
-    print '<a class="btn btn-sm btn-secondary" href="' . dol_buildpath('/safra/safraactivity_card.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . $langs->trans('Card') . '</a>';
+    print '<a class="btn btn-sm btn-secondary" href="' . dol_buildpath('/safra/activity/activity_card.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . $langs->trans('Card') . '</a>';
     print '</td>';
 
     print '</tr>';
