@@ -345,8 +345,8 @@ class ActionsSafra extends CommonHookActions
                         $this->resprints .= '<script src="' . dol_buildpath('/safra/js/hooks/talhao_map.js', 1) . '?v=' . urlencode(DOL_VERSION) . '"></script>';
 
                         $activityLinks = array(
-                                'list' => dol_buildpath('/safra/safraactivity_list.php', 1) . '?search_fk_project=' . $object->id,
-                                'new' => dol_buildpath('/safra/safraactivity_card.php', 1) . '?action=create&fk_project=' . $object->id,
+                                'list' => dol_buildpath('/safra/activity/activity_list.php', 1) . '?search_fk_project=' . $object->id,
+                                'new' => dol_buildpath('/safra/activity/activity_card.php', 1) . '?action=create&fk_project=' . $object->id,
                                 'labelList' => $langs->transnoentities('SafraActivityListTitle'),
                                 'labelNew' => $langs->transnoentities('SafraMenuNewAplicacoes'),
                         );

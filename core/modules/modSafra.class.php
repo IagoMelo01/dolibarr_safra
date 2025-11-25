@@ -1028,7 +1028,7 @@ class modSafra extends DolibarrModules
 			'titre' => 'SafraMenuOperacoes',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_operacoes',
-                   '/custom/safra/safraactivity_list.php',
+                   '/custom/safra/activity/activity_list.php',
 			'langs' => 'safra@safra',
 			'position' => 1000,
 			'enabled' => 'isModEnabled(\'safra\')',
@@ -1920,7 +1920,7 @@ class modSafra extends DolibarrModules
 			 'titre' => 'Aplicacao',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'aplicacao',
-                    '/custom/safra/safraactivity_list.php',
+                    '/custom/safra/activity/activity_list.php',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
 			 'enabled' => 'isModEnabled(\'safra\')',
@@ -1936,7 +1936,7 @@ class modSafra extends DolibarrModules
 			 'titre' => 'Lista Aplicacao',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_aplicacao_list',
-                    '/custom/safra/safraactivity_list.php',
+                    '/custom/safra/activity/activity_list.php',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
 			 'enabled' => 'isModEnabled(\'safra\')',
@@ -1952,7 +1952,7 @@ class modSafra extends DolibarrModules
 			 'titre' => 'Novo Aplicacao',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'safra_aplicacao_new',
-                    '/custom/safra/safraactivity_card.php?action=create',
+                    '/custom/safra/activity/activity_card.php?action=create',
 			 'langs' => 'safra@safra',
 			 'position' => 1000 + $r,
 			 'enabled' => 'isModEnabled(\'safra\')',
@@ -2284,7 +2284,7 @@ class modSafra extends DolibarrModules
                        'prefix' => img_picto('', 'fa-tractor', 'class="pictofixedwidth valignmiddle"'),
                        'mainmenu' => 'safra',
                        'leftmenu' => 'safra_operacoes',
-                       'url' => '/custom/safra/safraactivity_list.php',
+                       'url' => '/custom/safra/activity/activity_list.php',
                        'langs' => 'safra@safra',
                        'position' => 1000 + $r,
                        'enabled' => 'isModEnabled("safra")',
@@ -2294,7 +2294,7 @@ class modSafra extends DolibarrModules
                );
 
                $operacoes = array(
-                       array('Atividades', 'SafraActivity', '/custom/safra/safraactivity_list.php', '/custom/safra/safraactivity_card.php?action=create', '$user->hasRight("safra", "SafraActivity", "read")', '$user->hasRight("safra", "SafraActivity", "write")'),
+                       array('Atividades', 'SafraActivity', '/custom/safra/activity/activity_list.php', '/custom/safra/activity/activity_card.php?action=create', '$user->hasRight("safra", "SafraActivity", "read")', '$user->hasRight("safra", "SafraActivity", "write")'),
                        array('Eventos', 'evento', '/custom/safra/evento_list.php', '/custom/safra/evento_card.php?action=create', '$user->hasRight("safra", "evento", "read")', '$user->hasRight("safra", "evento", "write")'),
                        array('Colheitas', 'colheita', '/custom/safra/colheita_list.php', '/custom/safra/colheita_card.php?action=create', '$user->hasRight("safra", "colheita", "read")', '$user->hasRight("safra", "colheita", "write")'),
                );
