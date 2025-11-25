@@ -1,0 +1,482 @@
+<?php
+/*
+ * Activity card for Safra module.
+ */
+
+$res = 0;
+if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
+    $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'] . '/main.inc.php';
+}
+$tmp = empty($_SERVER['SCRIPT_FILENAME']) ? '' : $_SERVER['SCRIPT_FILENAME'];
+$tmp2 = realpath(__FILE__);
+$i = strlen($tmp) - 1;
+$j = strlen($tmp2) - 1;
+while ($i > 0 && $j > 0 && isset($tmp[$i]) && isset($tmp2[$j]) && $tmp[$i] == $tmp2[$j]) {
+    $i--;
+    $j--;
+}
+if (!$res && $i > 0 && file_exists(substr($tmp, 0, ($i + 1)) . '/main.inc.php')) {
+    $res = @include substr($tmp, 0, ($i + 1)) . '/main.inc.php';
+}
+if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))) . '/main.inc.php')) {
+    $res = @include dirname(substr($tmp, 0, ($i + 1))) . '/main.inc.php';
+}
+if (!$res && file_exists('../main.inc.php')) {
+    $res = @include '../main.inc.php';
+}
+if (!$res && file_exists('../../main.inc.php')) {
+    $res = @include '../../main.inc.php';
+}
+if (!$res) {
+    die('Include of main fails');
+}
+
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
+require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
+require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
+require_once DOL_DOCUMENT_ROOT . '/product/class/html.formproduct.class.php';
+require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
+require_once DOL_DOCUMENT_ROOT . '/vehicule/class/vehicule.class.php';
+dol_include_once('/safra/class/FvActivity.class.php');
+dol_include_once('/safra/class/FvActivityLine.class.php');
+dol_include_once('/safra/class/talhao.class.php');
+
+global $db, $langs, $user, $conf;
+
+$langs->loadLangs(array('safra@safra', 'projects', 'stocks', 'companies', 'users'));
+
+$action = GETPOST('action', 'aZ09');
+$id = GETPOSTINT('id');
+
+$form = new Form($db);
+$formproject = new FormProjets($db);
+$formproduct = new FormProduct($db);
+
+$activity = new FvActivity($db);
+if ($id > 0) {
+    $activity->fetch($id);
+}
+
+// Helpers
+function safra_load_options($db, $table, $labelField)
+{
+    global $conf;
+
+    $options = array();
+    $sql = 'SELECT rowid, ' . $labelField . ' as label FROM ' . MAIN_DB_PREFIX . $db->escape($table)
+        . ' WHERE entity IN (0, ' . ((int) $conf->entity) . ') ORDER BY label';
+    $resql = $db->query($sql);
+    if ($resql) {
+        while ($obj = $db->fetch_object($resql)) {
+            $options[$obj->rowid] = $obj->label;
+        }
+    }
+
+    return $options;
+}
+
+$machines = safra_load_options($db, 'vehicule', 'CONCAT(immatriculation, " - ", label)');
+$implements = $machines;
+$talhoes = safra_load_options($db, 'safra_talhao', 'label');
+$warehouses = safra_load_options($db, 'entrepot', 'label');
+
+$userOptions = array();
+$sqlUsers = 'SELECT rowid, lastname, firstname FROM ' . MAIN_DB_PREFIX . 'user WHERE statut = 1 AND entity IN (0, ' . ((int) $conf->entity) . ') ORDER BY lastname, firstname';
+$resUsers = $db->query($sqlUsers);
+if ($resUsers) {
+    while ($obj = $db->fetch_object($resUsers)) {
+        $fullname = trim(($obj->firstname ? $obj->firstname . ' ' : '') . $obj->lastname);
+        $userOptions[$obj->rowid] = $fullname ?: $obj->rowid;
+    }
+}
+
+$productOptions = array();
+$sqlProducts = 'SELECT rowid, ref, label FROM ' . MAIN_DB_PREFIX . "product WHERE entity IN (0, " . ((int) $conf->entity) . ') AND tosell = 1 ORDER BY label';
+$resProducts = $db->query($sqlProducts);
+if ($resProducts) {
+    while ($obj = $db->fetch_object($resProducts)) {
+        $productOptions[$obj->rowid] = $obj->ref . ' - ' . $obj->label;
+    }
+}
+
+$movementTypes = array(
+    'consume' => $langs->trans('Consume'),
+    'return' => $langs->trans('Return'),
+    'transfer' => $langs->trans('Transfer'),
+);
+
+$errors = array();
+
+if ($action === 'save') {
+    $isNew = empty($activity->id);
+    $activity->label = GETPOST('label', 'alpha');
+    $activity->type = GETPOST('type', 'alpha');
+    $activity->fk_project = GETPOSTINT('fk_project');
+    $activity->fk_fieldplot = GETPOSTINT('fk_fieldplot');
+    $activity->area_total = price2num(GETPOST('area_total', 'alpha'), 'MT');
+    $activity->note_public = GETPOST('note_public', 'restricthtml');
+
+    if (empty($activity->label)) {
+        $errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('Label'));
+    }
+
+    if (!$errors) {
+        $db->begin();
+        $result = $isNew ? $activity->create($user) : $activity->update($user);
+
+        if ($result > 0) {
+            // Create project task when creating activity
+            if ($isNew && $activity->fk_project > 0 && isModEnabled('project')) {
+                dol_include_once('/projet/class/task.class.php');
+                $task = new Task($db);
+                $task->fk_project = $activity->fk_project;
+                $task->label = $activity->label;
+                $task->date_c = dol_now();
+                $task->date_start = dol_now();
+                $task->progress = 0;
+                $task->description = $langs->trans('Activity') . ' #' . $activity->id;
+                $taskId = $task->create($user);
+                if ($taskId > 0) {
+                    $activity->fk_task = $taskId;
+                    $activity->update($user);
+
+                    $activityUrl = dol_buildpath('/safra/activity/activity_card.php?id=' . $activity->id, 1);
+                    $task->fetch($taskId);
+                    $task->note_private .= "\n" . $langs->trans('Link') . ': ' . $activityUrl;
+                    $task->update($user);
+                }
+            }
+
+            // Replace relations
+            $machinesSelected = GETPOST('machine_ids', 'array');
+            $implementsSelected = GETPOST('implement_ids', 'array');
+            $usersSelected = GETPOST('user_ids', 'array');
+            $relMachine = $activity->setMachines($machinesSelected ?: array());
+            $relImplement = $activity->setImplements($implementsSelected ?: array());
+            $relUsers = $activity->setUsers($usersSelected ?: array());
+
+            // Replace lines
+            $deleteRes = FvActivityLine::deleteForActivity($db, $activity->id);
+            if ($deleteRes < 0) {
+                $errors[] = $langs->trans('ErrorRecordNotSaved');
+            }
+            $lineProducts = GETPOST('product_id', 'array');
+            $lineAreas = GETPOST('line_area', 'array');
+            $lineDoses = GETPOST('line_dose', 'array');
+            $lineUnits = GETPOST('line_unit', 'array');
+            $lineTotals = GETPOST('line_total', 'array');
+            $lineMovements = GETPOST('line_movement', 'array');
+            $lineWarehouses = GETPOST('line_warehouse', 'array');
+            if (!$errors) {
+                foreach ($lineProducts as $idx => $productId) {
+                    $productId = (int) $productId;
+                    if ($productId <= 0) {
+                        continue;
+                    }
+                    $line = new FvActivityLine($db);
+                    $line->fk_activity = $activity->id;
+                    $line->fk_product = $productId;
+                    $line->area_applied = price2num($lineAreas[$idx] ?? 0, 'MT');
+                    $line->dose = price2num($lineDoses[$idx] ?? 0, 'MT');
+                    $line->dose_unit = $lineUnits[$idx] ?? '';
+                    $line->total = price2num(($lineTotals[$idx] ?? 0) ?: $line->dose * $line->area_applied, 'MT');
+                    $line->movement_type = $lineMovements[$idx] ?? 'consume';
+                    $line->fk_warehouse = (int) ($lineWarehouses[$idx] ?? 0);
+                    $lineResult = $line->create($user);
+                    if ($lineResult < 0) {
+                        $errors[] = $line->error ?: $langs->trans('ErrorRecordNotSaved');
+                        break;
+                    }
+                }
+            }
+
+            if ($relMachine < 0 || $relImplement < 0 || $relUsers < 0) {
+                $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+            }
+
+            if (!$errors) {
+                $db->commit();
+                header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+                exit;
+            } else {
+                $db->rollback();
+            }
+        } else {
+            $db->rollback();
+            $errors[] = $activity->error ?: $langs->trans('ErrorUnknown');
+        }
+    }
+}
+
+$selectedMachines = $activity->id ? $activity->fetchMachines() : array();
+$selectedImplements = $activity->id ? $activity->fetchImplements() : array();
+$selectedUsers = $activity->id ? $activity->fetchUsers() : array();
+
+llxHeader('', $langs->trans('SafraActivity'));
+
+print load_fiche_titre($langs->trans('SafraActivity'));
+
+if ($errors) {
+    setEventMessages(null, $errors, 'errors');
+}
+
+print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
+print '<input type="hidden" name="token" value="' . newToken() . '">';
+print '<input type="hidden" name="action" value="save">';
+if ($activity->id) {
+    print '<input type="hidden" name="id" value="' . $activity->id . '">';
+}
+
+print '<div class="card">';
+print '<div class="card-body">';
+print '<div class="row">';
+print '<div class="col-md-6">';
+print $form->textwithpicto($langs->trans('Label'), '') . '<input class="form-control" name="label" value="' . dol_escape_htmltag($activity->label) . '" required>';
+print '</div>';
+print '<div class="col-md-3">';
+print $form->textwithpicto($langs->trans('Type'), '') . '<input class="form-control" name="type" value="' . dol_escape_htmltag($activity->type) . '" required>';
+print '</div>';
+print '<div class="col-md-3">';
+print $langs->trans('Project') . $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 0, 1, 0, 0, 0, '', '', 1, 0, 1);
+print '</div>';
+print '</div>';
+
+print '<div class="row mt-3">';
+print '<div class="col-md-6">';
+print $langs->trans('FieldPlot') . $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
+print '</div>';
+print '<div class="col-md-3">';
+print $langs->trans('Area') . ' (ha)' . '<input class="form-control" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0">';
+print '</div>';
+print '<div class="col-md-3">';
+if ($activity->fk_task) {
+    $taskUrl = dol_buildpath('/projet/tasks/task.php?id=' . $activity->fk_task, 1);
+    print $langs->trans('Task') . ': <a href="' . $taskUrl . '">' . $langs->trans('View') . '</a>';
+}
+print '</div>';
+print '</div>';
+
+print '<div class="row mt-3">';
+print '<div class="col-md-4">';
+print $langs->trans('Machine') . $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
+print '</div>';
+print '<div class="col-md-4">';
+print $langs->trans('Implements') . $form->multiselectarray('implement_ids', $implements, $selectedImplements, '', 0, '', 1);
+print '</div>';
+print '<div class="col-md-4">';
+print $langs->trans('Employees') . $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
+print '</div>';
+print '</div>';
+
+print '<div class="row mt-3">';
+print '<div class="col-12">';
+print $langs->trans('Note') . '<textarea class="form-control" name="note_public" id="note_public" rows="3">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
+print '</div>';
+print '</div>';
+print '</div>'; // card-body
+print '</div>'; // card
+
+print '<div class="card mt-3">';
+print '<div class="card-header d-flex justify-content-between align-items-center">';
+print '<h5 class="mb-0">' . $langs->trans('Products') . '</h5>';
+print '<button type="button" class="btn btn-sm btn-secondary" id="open-mixture">' . $langs->trans('MixtureCalculation') . '</button>';
+print '</div>';
+print '<div class="card-body">';
+
+print '<div class="table-responsive">';
+print '<table class="table" id="products-table">';
+print '<thead><tr>';
+print '<th>' . $langs->trans('Product') . '</th>';
+print '<th>' . $langs->trans('Area') . ' (ha)</th>';
+print '<th>' . $langs->trans('Dose') . '</th>';
+print '<th>' . $langs->trans('Unit') . '</th>';
+print '<th>' . $langs->trans('Total') . '</th>';
+print '<th>' . $langs->trans('Movement') . '</th>';
+print '<th>' . $langs->trans('Warehouse') . '</th>';
+print '<th></th>';
+print '</tr></thead>';
+print '<tbody>';
+
+if (!empty($activity->lines)) {
+    foreach ($activity->lines as $line) {
+        print '<tr>';
+        print '<td>' . $form->selectarray('product_id[]', $productOptions, $line->fk_product, 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
+        print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->area_applied)) . '"></td>';
+        print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->dose)) . '"></td>';
+        print '<td><input type="text" name="line_unit[]" class="form-control unit-input" value="' . dol_escape_htmltag($line->dose_unit) . '"></td>';
+        print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->total)) . '" readonly></td>';
+        print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1) . '</td>';
+        print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, $line->fk_warehouse, 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
+        print '<td><button type="button" class="btn btn-sm btn-danger remove-line">&times;</button></td>';
+        print '</tr>';
+    }
+} else {
+    print '<tr class="product-line-template">';
+    print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
+    print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0"></td>';
+    print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
+    print '<td><input type="text" name="line_unit[]" class="form-control unit-input" value="L/ha"></td>';
+    print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
+    print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
+    print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
+    print '<td><button type="button" class="btn btn-sm btn-danger remove-line">&times;</button></td>';
+    print '</tr>';
+}
+
+print '</tbody>';
+print '</table>';
+print '</div>'; // responsive
+
+print '<button type="button" class="btn btn-sm btn-primary" id="add-line">' . $langs->trans('Add') . '</button>';
+print '</div>'; // card-body
+print '</div>'; // card
+
+print '<div class="mt-3"><button class="btn btn-success" type="submit">' . $langs->trans('Save') . '</button></div>';
+
+print '</form>';
+
+// Modal for mixture calculation
+?>
+<div class="modal fade" id="mixtureModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><?php echo dol_escape_htmltag($langs->trans('MixtureCalculation')); ?></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label><?php echo $langs->trans('ApplicationRate'); ?> (L/ha)</label>
+                    <input type="number" class="form-control" id="application-rate" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label><?php echo $langs->trans('TankCapacity'); ?> (L)</label>
+                    <input type="number" class="form-control" id="tank-capacity" step="0.01" value="0">
+                </div>
+                <div class="form-group">
+                    <label><?php echo $langs->trans('AppliedAreaPerTank'); ?></label>
+                    <input type="text" class="form-control" id="area-per-tank" readonly>
+                </div>
+                <div class="form-group">
+                    <label><?php echo $langs->trans('QuantityPerTank'); ?></label>
+                    <div id="mixture-lines"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
+                <button type="button" class="btn btn-success" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php
+print '<script>';
+?>
+function recalcLineTotal(row) {
+    var area = parseFloat(row.querySelector('.area-input').value) || 0;
+    var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
+    var total = dose * area;
+    row.querySelector('.total-input').value = total.toFixed(4);
+}
+
+function bindLine(row) {
+    row.querySelectorAll('.area-input, .dose-input').forEach(function (input) {
+        input.addEventListener('input', function () {
+            recalcLineTotal(row);
+        });
+    });
+    var removeBtn = row.querySelector('.remove-line');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function () {
+            if (document.querySelectorAll('#products-table tbody tr').length > 1) {
+                row.remove();
+            }
+        });
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('#products-table tbody tr').forEach(bindLine);
+
+    document.getElementById('add-line').addEventListener('click', function () {
+        var tbody = document.querySelector('#products-table tbody');
+        var template = tbody.querySelector('tr');
+        var clone = template.cloneNode(true);
+        clone.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+        clone.querySelectorAll('select').forEach(function (select) { select.selectedIndex = 0; });
+        tbody.appendChild(clone);
+        bindLine(clone);
+    });
+
+    document.getElementById('open-mixture').addEventListener('click', function () {
+        updateMixtureModal();
+        var modal = new bootstrap.Modal(document.getElementById('mixtureModal'));
+        modal.show();
+    });
+
+    document.getElementById('application-rate').addEventListener('input', updateMixtureModal);
+    document.getElementById('tank-capacity').addEventListener('input', updateMixtureModal);
+
+    document.getElementById('save-mixture-note').addEventListener('click', function () {
+        var noteField = document.getElementById('note_public');
+        var summary = buildMixtureSummary();
+        if (summary) {
+            noteField.value = (noteField.value ? noteField.value + "\n\n" : '') + summary;
+        }
+        var modal = bootstrap.Modal.getInstance(document.getElementById('mixtureModal'));
+        modal.hide();
+    });
+});
+
+function updateMixtureModal() {
+    var rate = parseFloat(document.getElementById('application-rate').value) || 0;
+    var capacity = parseFloat(document.getElementById('tank-capacity').value) || 0;
+    var areaPerTank = rate > 0 ? (capacity / rate) : 0;
+    document.getElementById('area-per-tank').value = areaPerTank.toFixed(2);
+
+    var container = document.getElementById('mixture-lines');
+    container.innerHTML = '';
+
+    document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
+        var productSelect = row.querySelector('select[name="product_id[]"]');
+        var productLabel = productSelect.options[productSelect.selectedIndex] ? productSelect.options[productSelect.selectedIndex].text : '';
+        var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
+        var unit = row.querySelector('.unit-input').value || '';
+        if (!productLabel || dose === 0) {
+            return;
+        }
+        var qty = dose * areaPerTank;
+        var item = document.createElement('div');
+        item.textContent = productLabel + ': ' + qty.toFixed(2) + ' ' + (unit || '');
+        container.appendChild(item);
+    });
+}
+
+function buildMixtureSummary() {
+    var rate = parseFloat(document.getElementById('application-rate').value) || 0;
+    var capacity = parseFloat(document.getElementById('tank-capacity').value) || 0;
+    var areaPerTank = rate > 0 ? (capacity / rate) : 0;
+    var lines = [];
+    document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
+        var productSelect = row.querySelector('select[name="product_id[]"]');
+        var productLabel = productSelect.options[productSelect.selectedIndex] ? productSelect.options[productSelect.selectedIndex].text : '';
+        var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
+        var unit = row.querySelector('.unit-input').value || '';
+        if (!productLabel || dose === 0) {
+            return;
+        }
+        var qty = dose * areaPerTank;
+        lines.push(productLabel + ' = ' + qty.toFixed(2) + ' ' + (unit || ''));
+    });
+    if (!lines.length) {
+        return '';
+    }
+    var summary = 'Taxa: ' + rate.toFixed(2) + ' L/ha; Capacidade: ' + capacity.toFixed(2) + ' L; Área/tanque: ' + areaPerTank.toFixed(2) + ' ha';
+    summary += "\n" + lines.join("\n");
+    return summary;
+}
+<?php
+print '</script>';
+
+llxFooter();
+$db->close();
