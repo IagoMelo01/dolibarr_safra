@@ -119,6 +119,39 @@ if ($action === 'complete' && $activity->id) {
     }
 }
 
+if ($action === 'cancel' && $activity->id) {
+    $result = $activity->cancel($user);
+    if ($result > 0) {
+        setEventMessages($langs->trans('SafraActivityCanceled'), null, 'mesgs');
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+        exit;
+    }
+
+    $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+}
+
+if ($action === 'delete' && $activity->id) {
+    $result = $activity->cancel($user, true);
+    if ($result > 0) {
+        if ($result === 2) {
+            setEventMessages($langs->trans('SafraActivityDeleted'), null, 'mesgs');
+            header('Location: ' . dol_buildpath('/safra/safraindex.php', 1));
+            exit;
+        }
+
+        if (!empty($activity->deletionPrevented)) {
+            setEventMessages($langs->trans('ErrorSafraActivityDeleteWithStock'), null, 'warnings');
+        } else {
+            setEventMessages($langs->trans('SafraActivityCanceled'), null, 'mesgs');
+        }
+
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+        exit;
+    }
+
+    $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+}
+
 if ($action === 'save') {
     $isNew = empty($activity->id);
     $activity->label = GETPOST('label', 'alpha');
@@ -266,10 +299,15 @@ if ($activity->fk_task) {
     print $langs->trans('Task') . ': <a href="' . $taskUrl . '">' . $langs->trans('View') . '</a>';
 }
 print '<div class="small text-muted">' . $langs->trans('Status') . ': ';
-if ($activity->isCompleted()) {
-    print $langs->trans('Closed');
-} else {
-    print $langs->trans('Draft');
+switch ((int) $activity->status) {
+    case FvActivity::STATUS_COMPLETED:
+        print $langs->trans('SafraActivityStatusCompleted');
+        break;
+    case FvActivity::STATUS_CANCELED:
+        print $langs->trans('SafraActivityStatusCanceled');
+        break;
+    default:
+        print $langs->trans('Draft');
 }
 print '</div>';
 print '</div>';
@@ -356,13 +394,36 @@ print '</div>';
 
 print '</form>';
 
-if ($activity->id && !$activity->isCompleted()) {
-    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mt-2">';
+if ($activity->id) {
+    print '<div class="d-flex flex-wrap gap-2 mt-2">';
+
+    if (!$activity->isCompleted() && !$activity->isCanceled()) {
+        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0">';
+        print '<input type="hidden" name="token" value="' . newToken() . '">';
+        print '<input type="hidden" name="action" value="complete">';
+        print '<input type="hidden" name="id" value="' . $activity->id . '">';
+        print '<button class="btn btn-outline-success" type="submit">' . $langs->trans('SafraActivityComplete') . '</button>';
+        print '</form>';
+    }
+
+    if (!$activity->isCanceled()) {
+        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0">';
+        print '<input type="hidden" name="token" value="' . newToken() . '">';
+        print '<input type="hidden" name="action" value="cancel">';
+        print '<input type="hidden" name="id" value="' . $activity->id . '">';
+        print '<button class="btn btn-outline-warning" type="submit">' . $langs->trans('SafraActivityCancel') . '</button>';
+        print '</form>';
+    }
+
+    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0" onsubmit="return confirm(\''
+        . dol_escape_js($langs->transnoentities('ConfirmDelete')) . "\');">";
     print '<input type="hidden" name="token" value="' . newToken() . '">';
-    print '<input type="hidden" name="action" value="complete">';
+    print '<input type="hidden" name="action" value="delete">';
     print '<input type="hidden" name="id" value="' . $activity->id . '">';
-    print '<button class="btn btn-outline-success" type="submit">' . $langs->trans('SafraActivityComplete') . '</button>';
+    print '<button class="btn btn-outline-danger" type="submit">' . $langs->trans('SafraActivityDelete') . '</button>';
     print '</form>';
+
+    print '</div>';
 }
 
 // Modal for mixture calculation

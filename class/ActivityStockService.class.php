@@ -79,4 +79,79 @@ class ActivityStockService
 
         return 1;
     }
+
+    /**
+     * Revert stock consumption movements for an activity.
+     *
+     * @param FvActivity $activity
+     * @param User       $user
+     * @return int
+     */
+    public function revertConsumptionMovements(FvActivity $activity, User $user)
+    {
+        global $langs;
+
+        if (empty($activity->id)) {
+            $this->error = 'MissingActivityIdentifier';
+
+            return -1;
+        }
+
+        $langs->loadLangs(array('safra@safra', 'stocks'));
+
+        $sql = 'SELECT rowid, fk_product, fk_entrepot, qty FROM ' . MAIN_DB_PREFIX . "stock_mouvement"
+            . " WHERE fk_origin = " . ((int) $activity->id)
+            . " AND origintype = 'safra_activity'";
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->error = $this->db->lasterror();
+
+            return -1;
+        }
+
+        $movements = array();
+        while ($obj = $this->db->fetch_object($resql)) {
+            if ($obj->qty >= 0) {
+                continue;
+            }
+
+            $movements[] = $obj;
+        }
+
+        if (empty($movements)) {
+            return 0;
+        }
+
+        $this->db->begin();
+
+        foreach ($movements as $movementData) {
+            $quantity = abs(price2num($movementData->qty, 'MS'));
+            if ($quantity <= 0 || empty($movementData->fk_product) || empty($movementData->fk_entrepot)) {
+                continue;
+            }
+
+            $movement = new MouvementStock($this->db);
+            $movement->origin = $activity;
+            $movement->origin_id = $activity->id;
+            $movement->origintype = 'safra_activity';
+
+            $label = $langs->transnoentitiesnoconv(
+                'SafraActivityRevertMovementLabel',
+                $activity->ref ?: $activity->id,
+                $movementData->rowid
+            );
+
+            $result = $movement->reception($user, $movementData->fk_product, $movementData->fk_entrepot, $quantity, 0, $label);
+            if ($result < 0) {
+                $this->db->rollback();
+                $this->error = $movement->error ?: $langs->trans('ErrorRecordNotSaved');
+
+                return -1;
+            }
+        }
+
+        $this->db->commit();
+
+        return 1;
+    }
 }
