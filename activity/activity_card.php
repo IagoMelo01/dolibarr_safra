@@ -40,6 +40,7 @@ require_once DOL_DOCUMENT_ROOT . '/vehicule/class/vehicule.class.php';
 dol_include_once('/safra/class/FvActivity.class.php');
 dol_include_once('/safra/class/FvActivityLine.class.php');
 dol_include_once('/safra/class/talhao.class.php');
+dol_include_once('/projet/class/task.class.php');
 
 global $db, $langs, $user, $conf;
 
@@ -106,6 +107,17 @@ $movementTypes = array(
 );
 
 $errors = array();
+
+if ($action === 'complete' && $activity->id) {
+    $result = $activity->complete($user);
+    if ($result > 0) {
+        setEventMessages($langs->trans('SafraActivityComplete'), null, 'mesgs');
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+        exit;
+    } else {
+        $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+    }
+}
 
 if ($action === 'save') {
     $isNew = empty($activity->id);
@@ -253,6 +265,13 @@ if ($activity->fk_task) {
     $taskUrl = dol_buildpath('/projet/tasks/task.php?id=' . $activity->fk_task, 1);
     print $langs->trans('Task') . ': <a href="' . $taskUrl . '">' . $langs->trans('View') . '</a>';
 }
+print '<div class="small text-muted">' . $langs->trans('Status') . ': ';
+if ($activity->isCompleted()) {
+    print $langs->trans('Closed');
+} else {
+    print $langs->trans('Draft');
+}
+print '</div>';
 print '</div>';
 print '</div>';
 
@@ -331,9 +350,20 @@ print '<button type="button" class="btn btn-sm btn-primary" id="add-line">' . $l
 print '</div>'; // card-body
 print '</div>'; // card
 
-print '<div class="mt-3"><button class="btn btn-success" type="submit">' . $langs->trans('Save') . '</button></div>';
+print '<div class="mt-3">';
+print '<button class="btn btn-success" type="submit">' . $langs->trans('Save') . '</button>';
+print '</div>';
 
 print '</form>';
+
+if ($activity->id && !$activity->isCompleted()) {
+    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mt-2">';
+    print '<input type="hidden" name="token" value="' . newToken() . '">';
+    print '<input type="hidden" name="action" value="complete">';
+    print '<input type="hidden" name="id" value="' . $activity->id . '">';
+    print '<button class="btn btn-outline-success" type="submit">' . $langs->trans('SafraActivityComplete') . '</button>';
+    print '</form>';
+}
 
 // Modal for mixture calculation
 ?>

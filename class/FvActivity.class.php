@@ -8,6 +8,9 @@ require_once __DIR__ . '/FvActivityLine.class.php';
 
 class FvActivity extends CommonObject
 {
+    public const STATUS_DRAFT = 0;
+    public const STATUS_COMPLETED = 1;
+
     /** @var string */
     public $module = 'safra';
 
@@ -156,9 +159,21 @@ class FvActivity extends CommonObject
      *
      * @return int
      */
-    public function createStockMovements()
+    public function createStockMovements(User $user = null)
     {
-        return 0;
+        dol_include_once('/safra/class/ActivityStockService.class.php');
+
+        $service = new ActivityStockService($this->db);
+
+        $stockUser = $user ?: $GLOBALS['user'];
+
+        $result = $service->createConsumptionMovements($this, $stockUser);
+
+        if ($result < 0) {
+            $this->error = $service->error;
+        }
+
+        return $result;
     }
 
     /**
@@ -169,6 +184,146 @@ class FvActivity extends CommonObject
     public function revertStockMovements()
     {
         return 0;
+    }
+
+    /**
+     * Mark activity as completed and synchronize related elements.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function complete(User $user)
+    {
+        $this->db->begin();
+
+        if (!$this->isCompleted()) {
+            $this->status = self::STATUS_COMPLETED;
+            $this->fk_user_modif = $user->id;
+
+            $statusResult = $this->update($user);
+            if ($statusResult < 0) {
+                $this->db->rollback();
+
+                return -1;
+            }
+        }
+
+        $taskResult = $this->syncProjectTaskCompletion($user);
+        if ($taskResult < 0) {
+            $this->db->rollback();
+
+            return -1;
+        }
+
+        $stockResult = $this->createStockMovements($user);
+        if ($stockResult < 0) {
+            $this->db->rollback();
+
+            return -1;
+        }
+
+        $triggerResult = $this->call_trigger('SAFRA_ACTIVITY_CLOSE', $user);
+        if ($triggerResult < 0) {
+            $this->db->rollback();
+
+            return -1;
+        }
+
+        $this->db->commit();
+
+        return 1;
+    }
+
+    /**
+     * Sync completion with linked project task if required.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function syncProjectTaskCompletion(User $user)
+    {
+        if (empty($this->fk_task)) {
+            return 0;
+        }
+
+        dol_include_once('/projet/class/task.class.php');
+
+        $task = new Task($this->db);
+        if ($task->fetch($this->fk_task) <= 0) {
+            return 0;
+        }
+
+        if ((int) $task->progress === 100) {
+            return 0;
+        }
+
+        $task->progress = 100;
+        $task->fk_user_modif = $user->id;
+
+        return $task->update($user);
+    }
+
+    /**
+     * Check if activity is completed.
+     *
+     * @return bool
+     */
+    public function isCompleted()
+    {
+        return ((int) $this->status) === self::STATUS_COMPLETED;
+    }
+
+    /**
+     * Check if stock movements were already created for this activity.
+     *
+     * @return bool
+     */
+    public function hasStockMovements()
+    {
+        $sql = 'SELECT COUNT(rowid) as nb FROM ' . MAIN_DB_PREFIX . "stock_mouvement WHERE fk_origin = " . ((int) $this->id)
+            . " AND origintype = 'safra_activity'";
+
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            return false;
+        }
+
+        $obj = $this->db->fetch_object($resql);
+
+        return $obj && ((int) $obj->nb > 0);
+    }
+
+    /**
+     * Fetch activity by task identifier.
+     *
+     * @param DoliDB $db
+     * @param int    $taskId
+     * @return FvActivity|null
+     */
+    public static function fetchByTaskId($db, $taskId)
+    {
+        $taskId = (int) $taskId;
+        if ($taskId <= 0) {
+            return null;
+        }
+
+        $sql = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . 'safra_activity WHERE fk_task = ' . $taskId . ' LIMIT 1';
+        $resql = $db->query($sql);
+        if (!$resql) {
+            return null;
+        }
+
+        $obj = $db->fetch_object($resql);
+        if (!$obj) {
+            return null;
+        }
+
+        $activity = new self($db);
+        if ($activity->fetch((int) $obj->rowid) > 0) {
+            return $activity;
+        }
+
+        return null;
     }
 
     /**
