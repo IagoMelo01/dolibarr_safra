@@ -413,7 +413,7 @@ $selectedMachines = $activity->id ? $activity->fetchMachines() : array();
 $selectedImplements = $activity->id ? $activity->fetchImplements() : array();
 $selectedUsers = $activity->id ? $activity->fetchUsers() : array();
 
-llxHeader('', $langs->trans('SafraActivity'));
+llxHeader('', $langs->trans('SafraActivity'), '', '', '', array(), array('/safra/css/safra.css.php'));
 
 print load_fiche_titre($langs->trans('SafraActivity'));
 
@@ -806,6 +806,10 @@ function fetchTalhaoForProject(projectId) {
         updateTalhaoArea(talhaoSelect);
         return;
     }
+
+    talhaoSelect.disabled = true;
+    talhaoSelect.value = '';
+    updateTalhaoArea(talhaoSelect);
 
     fetch('<?php echo dol_buildpath('/safra/ajax/project_talhao.php', 1); ?>?id=' + encodeURIComponent(projectId), {
         credentials: 'same-origin'
