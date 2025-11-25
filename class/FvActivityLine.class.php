@@ -26,6 +26,43 @@ class FvActivityLine extends CommonObjectLine
     public $isextrafieldmanaged = 1;
 
     /**
+     * Create activity line.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function create($user)
+    {
+        global $conf;
+
+        $this->entity = $this->entity ?: $conf->entity;
+
+        return $this->createCommon($user);
+    }
+
+    /**
+     * Delete every line linked to an activity.
+     *
+     * @param DoliDB $db
+     * @param int    $activityId
+     * @return int
+     */
+    public static function deleteForActivity($db, $activityId)
+    {
+        $activityId = (int) $activityId;
+        if ($activityId <= 0) {
+            return 0;
+        }
+
+        $sql = 'DELETE FROM ' . MAIN_DB_PREFIX . 'safra_activity_line WHERE fk_activity = ' . $activityId;
+        if (!$db->query($sql)) {
+            return -1;
+        }
+
+        return 1;
+    }
+
+    /**
      * Field description for automatic CRUD helpers.
      *
      * @var array
