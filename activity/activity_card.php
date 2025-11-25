@@ -24,8 +24,8 @@ if (!$res && $i > 0 && file_exists(dirname(substr($tmp, 0, ($i + 1))) . '/main.i
 if (!$res && file_exists('../main.inc.php')) {
     $res = @include '../main.inc.php';
 }
-if (!$res && file_exists('../../main.inc.php')) {
-    $res = @include '../../main.inc.php';
+if (!$res && file_exists('../../../main.inc.php')) {
+    $res = @include '../../../main.inc.php';
 }
 if (!$res) {
     die('Include of main fails');
@@ -36,7 +36,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
 require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT . '/product/class/html.formproduct.class.php';
 require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
-require_once DOL_DOCUMENT_ROOT . '/vehicule/class/vehicule.class.php';
+require_once DOL_DOCUMENT_ROOT . '/custom/frota/class/veiculo.class.php';
 dol_include_once('/safra/class/FvActivity.class.php');
 dol_include_once('/safra/class/FvActivityLine.class.php');
 dol_include_once('/safra/class/talhao.class.php');
