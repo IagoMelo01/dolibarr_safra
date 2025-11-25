@@ -61,6 +61,18 @@ $id = GETPOSTINT('id');
 $form = new Form($db);
 $formproject = new FormProjets($db);
 $formproduct = new FormProduct($db);
+$activityTypes = array(
+    'Preparo do solo' => 'Preparo do solo',
+    'Tratamento de semente' => 'Tratamento de semente',
+    'Plantio' => 'Plantio',
+    'Fertilização' => 'Fertilização',
+    'Aplicação' => 'Aplicação',
+    'Colheita' => 'Colheita',
+    'Monitoramento' => 'Monitoramento',
+    'Instalação de armadilhas' => 'Instalação de armadilhas',
+    'Leitura de armadilhas' => 'Leitura de armadilhas',
+    'Outro' => 'Outro',
+);
 
 $activity = new FvActivity($db);
 if ($id > 0) {
@@ -152,7 +164,7 @@ if (!empty($implementsFromModule)) {
 
 $projectIdForTalhao = $activity->fk_project ?: GETPOSTINT('fk_project');
 $talhaoFromProject = safra_project_talhao_option($db, $projectIdForTalhao);
-$talhoes = $talhaoFromProject ?: safra_load_options($db, 'safra_talhao', 'label');
+$talhoes = safra_load_options($db, 'safra_talhao', 'label');
 
 $talhaoDetails = array();
 $sqlTalhaoDetails = 'SELECT rowid, ref, label, area FROM ' . MAIN_DB_PREFIX . 'safra_talhao';
@@ -167,7 +179,7 @@ if ($resTalhao) {
     }
 }
 
-if ($talhaoFromProject && empty($activity->fk_fieldplot)) {
+if ($talhaoFromProject && empty($activity->fk_fieldplot) && $activity->id > 0) {
     $activity->fk_fieldplot = key($talhaoFromProject);
 }
 
@@ -534,7 +546,10 @@ print '<input class="form-control" name="label" value="' . dol_escape_htmltag($a
 print '</div>';
 print '<div class="col-lg-3">';
 print '<label class="section-title">' . $langs->trans('Type') . '</label>';
-print '<input class="form-control" name="type" value="' . dol_escape_htmltag($activity->type) . '" required placeholder="' . dol_escape_htmltag($langs->trans('Type')) . '">';
+if ($activity->type && !isset($activityTypes[$activity->type])) {
+    $activityTypes = array($activity->type => $activity->type) + $activityTypes;
+}
+print $form->selectarray('type', $activityTypes, $activity->type, 1, 0, 0, '', 0, 0, 0, '', 'form-control minwidth200');
 print '</div>';
 print '<div class="col-lg-3">';
 print '<label class="section-title">' . $langs->trans('Project') . '</label>';
@@ -545,12 +560,7 @@ print '</div>';
 print '<div class="row g-4 mt-1">';
 print '<div class="col-lg-6">';
 print '<label class="section-title">' . $langs->trans('FieldPlot') . '</label>';
- $talhaoSelect = $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
- if ($talhaoFromProject) {
-     $talhaoSelect = str_replace('<select', '<select disabled', $talhaoSelect);
-     $talhaoSelect .= '<input type="hidden" name="fk_fieldplot" value="' . (int) $activity->fk_fieldplot . '">';
- }
- print $talhaoSelect;
+print $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
 print '</div>';
 print '<div class="col-lg-3">';
 print '<label class="section-title">' . $langs->trans('Area') . ' (ha)</label>';
@@ -766,6 +776,10 @@ function updateTalhaoArea(selectEl) {
         areaField.value = normalizedArea ? normalizedArea.toFixed(4) : '';
     }
 
+    if (!data && areaField) {
+        areaField.value = '';
+    }
+
     if (info) {
         if (data) {
             var labelParts = [];
@@ -778,6 +792,57 @@ function updateTalhaoArea(selectEl) {
             info.textContent = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
         }
     }
+}
+
+function fetchTalhaoForProject(projectId) {
+    var talhaoSelect = document.querySelector('select[name="fk_fieldplot"]');
+    if (!talhaoSelect) {
+        return;
+    }
+
+    if (!projectId) {
+        talhaoSelect.disabled = false;
+        talhaoSelect.value = '';
+        updateTalhaoArea(talhaoSelect);
+        return;
+    }
+
+    fetch('<?php echo dol_buildpath('/safra/ajax/project_talhao.php', 1); ?>?id=' + encodeURIComponent(projectId), {
+        credentials: 'same-origin'
+    })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (!data || !data.success || !data.talhao_id) {
+                talhaoSelect.disabled = false;
+                talhaoSelect.value = '';
+                updateTalhaoArea(talhaoSelect);
+                return;
+            }
+
+            var talhaoId = String(data.talhao_id);
+            var optionExists = !!talhaoSelect.querySelector('option[value="' + talhaoId + '"]');
+            if (!optionExists) {
+                var opt = document.createElement('option');
+                opt.value = talhaoId;
+                opt.textContent = data.talhao && data.talhao.label ? data.talhao.label : talhaoId;
+                talhaoSelect.appendChild(opt);
+            }
+
+            if (data.talhao) {
+                talhaoData[talhaoId] = {
+                    ref: data.talhao.label,
+                    label: data.talhao.label,
+                    area: data.talhao.area
+                };
+            }
+
+            talhaoSelect.value = talhaoId;
+            updateTalhaoArea(talhaoSelect);
+            talhaoSelect.disabled = true;
+        })
+        .catch(function () {
+            talhaoSelect.disabled = false;
+        });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -827,6 +892,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     } else {
         updateTalhaoArea(null);
+    }
+
+    var projectSelect = document.querySelector('select[name="fk_project"]');
+    if (projectSelect) {
+        projectSelect.addEventListener('change', function () {
+            fetchTalhaoForProject(projectSelect.value);
+        });
+
+        if (projectSelect.value) {
+            fetchTalhaoForProject(projectSelect.value);
+        }
     }
 
     var mixtureButton = document.getElementById('open-mixture');
