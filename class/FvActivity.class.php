@@ -1,0 +1,317 @@
+<?php
+/*
+ * Base activity object for Safra module.
+ */
+
+require_once DOL_DOCUMENT_ROOT . '/core/class/commonobject.class.php';
+require_once __DIR__ . '/FvActivityLine.class.php';
+
+class FvActivity extends CommonObject
+{
+    /** @var string */
+    public $module = 'safra';
+
+    /** @var string */
+    public $element = 'safra_activity';
+
+    /** @var string */
+    public $table_element = 'safra_activity';
+
+    /** @var string */
+    public $table_element_line = 'safra_activity_line';
+
+    /** @var string */
+    public $fk_element = 'fk_activity';
+
+    /** @var string */
+    public $class_element_line = 'FvActivityLine';
+
+    /** @var int */
+    public $ismultientitymanaged = 1;
+
+    /** @var int */
+    public $isextrafieldmanaged = 1;
+
+    /** @var string */
+    public $picto = 'safra@safra';
+
+    /** @var FvActivityLine[] */
+    public $lines = array();
+
+    /**
+     * Field definition for automatic CRUD support.
+     *
+     * @var array
+     */
+    public $fields = array(
+        'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'visible' => -1, 'notnull' => 1),
+        'entity' => array('type' => 'integer', 'label' => 'Entity', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'default' => 1, 'index' => 1),
+        'ref' => array('type' => 'varchar(128)', 'label' => 'Ref', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'index' => 1, 'searchall' => 1),
+        'label' => array('type' => 'varchar(255)', 'label' => 'Label', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'searchall' => 1),
+        'fk_project' => array('type' => 'integer:Project:projet/class/project.class.php:1', 'label' => 'Project', 'enabled' => "isModEnabled('project')", 'visible' => 1, 'notnull' => 0, 'index' => 1),
+        'fk_task' => array('type' => 'integer:Task:projet/class/task.class.php:1', 'label' => 'Task', 'enabled' => "isModEnabled('project')", 'visible' => 1, 'notnull' => 0, 'index' => 1),
+        'fk_thirdparty' => array('type' => 'integer:ThirdParty:societe/class/societe.class.php:1', 'label' => 'ThirdParty', 'enabled' => "isModEnabled('societe')", 'visible' => 1, 'notnull' => 0, 'index' => 1),
+        'fk_fieldplot' => array('type' => 'integer:Talhao:custom/safra/class/talhao.class.php:1', 'label' => 'FieldPlot', 'enabled' => 1, 'visible' => 1, 'notnull' => 0, 'index' => 1),
+        'area_total' => array('type' => 'double(24,8)', 'label' => 'AreaTotal', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'default' => '0'),
+        'type' => array('type' => 'varchar(32)', 'label' => 'Type', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'index' => 1),
+        'status' => array('type' => 'integer', 'label' => 'Status', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'default' => '0', 'index' => 1),
+        'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'visible' => 1),
+        'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'visible' => 0),
+        'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'visible' => -2, 'notnull' => 1),
+        'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'visible' => -2, 'notnull' => 0),
+        'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'visible' => -2, 'notnull' => 1),
+        'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'visible' => -2, 'notnull' => 0),
+    );
+
+    public function __construct($db)
+    {
+        parent::__construct($db);
+    }
+
+    /**
+     * Create activity.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function create($user)
+    {
+        global $conf;
+
+        $this->entity = $this->entity ?: $conf->entity;
+
+        return $this->createCommon($user);
+    }
+
+    /**
+     * Fetch activity by id or ref.
+     *
+     * @param int         $id
+     * @param string|null $ref
+     * @return int
+     */
+    public function fetch($id, $ref = null)
+    {
+        $result = $this->fetchCommon($id, $ref);
+        if ($result > 0) {
+            $this->fetchLines();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Update activity.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function update($user)
+    {
+        return $this->updateCommon($user);
+    }
+
+    /**
+     * Delete activity and linked data.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function delete($user)
+    {
+        return $this->deleteCommon($user);
+    }
+
+    /**
+     * Load activity lines.
+     *
+     * @return int
+     */
+    public function fetchLines()
+    {
+        $this->lines = array();
+
+        if (empty($this->id)) {
+            return 0;
+        }
+
+        $sql = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . $this->table_element_line . ' WHERE fk_activity = ' . ((int) $this->id) . ' ORDER BY rowid';
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
+
+        while ($obj = $this->db->fetch_object($resql)) {
+            $line = new FvActivityLine($this->db);
+            $line->fetch($obj->rowid);
+            $this->lines[] = $line;
+        }
+
+        return count($this->lines);
+    }
+
+    /**
+     * Placeholder for stock movements creation.
+     *
+     * @return int
+     */
+    public function createStockMovements()
+    {
+        return 0;
+    }
+
+    /**
+     * Placeholder for stock movements rollback.
+     *
+     * @return int
+     */
+    public function revertStockMovements()
+    {
+        return 0;
+    }
+
+    /**
+     * Fetch related machines.
+     *
+     * @return int[]
+     */
+    public function fetchMachines()
+    {
+        return $this->fetchRelationIds('safra_activity_machine', 'fk_machine');
+    }
+
+    /**
+     * Overwrite machine relations.
+     *
+     * @param int[] $ids
+     * @return int
+     */
+    public function setMachines(array $ids)
+    {
+        return $this->replaceRelations('safra_activity_machine', 'fk_machine', $ids);
+    }
+
+    /**
+     * Fetch related implements.
+     *
+     * @return int[]
+     */
+    public function fetchImplements()
+    {
+        return $this->fetchRelationIds('safra_activity_implement', 'fk_implement');
+    }
+
+    /**
+     * Overwrite implement relations.
+     *
+     * @param int[] $ids
+     * @return int
+     */
+    public function setImplements(array $ids)
+    {
+        return $this->replaceRelations('safra_activity_implement', 'fk_implement', $ids);
+    }
+
+    /**
+     * Fetch related users/employees.
+     *
+     * @return int[]
+     */
+    public function fetchUsers()
+    {
+        return $this->fetchRelationIds('safra_activity_user', 'fk_user');
+    }
+
+    /**
+     * Overwrite user relations.
+     *
+     * @param int[] $ids
+     * @return int
+     */
+    public function setUsers(array $ids)
+    {
+        return $this->replaceRelations('safra_activity_user', 'fk_user', $ids);
+    }
+
+    /**
+     * Generic helper to fetch relation ids for the current activity.
+     *
+     * @param string $table
+     * @param string $field
+     * @return int[]
+     */
+    protected function fetchRelationIds($table, $field)
+    {
+        $ids = array();
+
+        if (empty($this->id)) {
+            return $ids;
+        }
+
+        $sql = 'SELECT ' . $this->db->escape($field) . ' as target_id FROM ' . MAIN_DB_PREFIX . $this->db->escape($table) . ' WHERE fk_activity = ' . ((int) $this->id) . ' ORDER BY rowid';
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->error = $this->db->lasterror();
+            return $ids;
+        }
+
+        while ($obj = $this->db->fetch_object($resql)) {
+            $ids[] = (int) $obj->target_id;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Generic helper to replace relation rows for the current activity.
+     *
+     * @param string $table
+     * @param string $field
+     * @param int[]  $ids
+     * @return int
+     */
+    protected function replaceRelations($table, $field, array $ids)
+    {
+        global $conf;
+
+        if (empty($this->id)) {
+            $this->error = 'MissingActivityIdentifier';
+            return -1;
+        }
+
+        $cleanIds = array();
+        foreach ($ids as $id) {
+            $id = (int) $id;
+            if ($id > 0) {
+                $cleanIds[$id] = $id;
+            }
+        }
+
+        $this->db->begin();
+
+        $sqlDelete = 'DELETE FROM ' . MAIN_DB_PREFIX . $this->db->escape($table) . ' WHERE fk_activity = ' . ((int) $this->id);
+        if (!$this->db->query($sqlDelete)) {
+            $this->db->rollback();
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
+
+        foreach ($cleanIds as $targetId) {
+            $sqlInsert = 'INSERT INTO ' . MAIN_DB_PREFIX . $this->db->escape($table) . ' (entity, fk_activity, ' . $this->db->escape($field) . ', date_creation) VALUES ('
+                . ((int) $conf->entity) . ', '
+                . ((int) $this->id) . ', '
+                . $targetId . ', '
+                . "'" . $this->db->idate(dol_now()) . "'" . ')';
+            if (!$this->db->query($sqlInsert)) {
+                $this->db->rollback();
+                $this->error = $this->db->lasterror();
+                return -1;
+            }
+        }
+
+        $this->db->commit();
+
+        return count($cleanIds);
+    }
+}
