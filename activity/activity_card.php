@@ -154,6 +154,8 @@ if ($action === 'delete' && $activity->id) {
 
 if ($action === 'save') {
     $isNew = empty($activity->id);
+    $wasCompleted = !$isNew && $activity->isCompleted();
+    $hadStockMovements = !$isNew && $activity->hasStockMovements();
     $activity->label = GETPOST('label', 'alpha');
     $activity->type = GETPOST('type', 'alpha');
     $activity->fk_project = GETPOSTINT('fk_project');
@@ -167,9 +169,25 @@ if ($action === 'save') {
 
     if (!$errors) {
         $db->begin();
-        $result = $isNew ? $activity->create($user) : $activity->update($user);
 
-        if ($result > 0) {
+        $stockReverted = false;
+        $stockRecreated = false;
+        $result = 0;
+
+        if (!$isNew && $wasCompleted && $hadStockMovements) {
+            $revertResult = $activity->revertStockMovements($user, false);
+            if ($revertResult < 0) {
+                $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+            } else {
+                $stockReverted = $revertResult > 0;
+            }
+        }
+
+        if (!$errors) {
+            $result = $isNew ? $activity->create($user) : $activity->update($user);
+        }
+
+        if (!$errors && $result > 0) {
             // Create project task when creating activity
             if ($isNew && $activity->fk_project > 0 && isModEnabled('project')) {
                 dol_include_once('/projet/class/task.class.php');
@@ -213,6 +231,7 @@ if ($action === 'save') {
             $lineMovements = GETPOST('line_movement', 'array');
             $lineWarehouses = GETPOST('line_warehouse', 'array');
             if (!$errors) {
+                $activity->lines = array();
                 foreach ($lineProducts as $idx => $productId) {
                     $productId = (int) $productId;
                     if ($productId <= 0) {
@@ -232,6 +251,8 @@ if ($action === 'save') {
                         $errors[] = $line->error ?: $langs->trans('ErrorRecordNotSaved');
                         break;
                     }
+
+                    $activity->lines[] = $line;
                 }
             }
 
@@ -239,8 +260,27 @@ if ($action === 'save') {
                 $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
             }
 
+            if (!$errors && !$isNew && $activity->isCompleted()) {
+                $stockResult = $activity->createStockMovements($user, true, false);
+                if ($stockResult < 0) {
+                    $errors[] = $activity->error ?: $langs->trans('ErrorSafraActivityStockMovement');
+                } else {
+                    $stockRecreated = $stockResult > 0;
+                }
+            }
+
             if (!$errors) {
+                $messages = array();
+                if ($stockRecreated) {
+                    $messages[] = $langs->trans('SafraActivityStockRecalculated');
+                } elseif ($stockReverted) {
+                    $messages[] = $langs->trans('SafraActivityStockReverted');
+                }
+
+                $messages[] = $langs->trans('SafraActivitySaved');
+
                 $db->commit();
+                setEventMessages($messages, null, 'mesgs');
                 header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
                 exit;
             } else {
@@ -248,7 +288,9 @@ if ($action === 'save') {
             }
         } else {
             $db->rollback();
-            $errors[] = $activity->error ?: $langs->trans('ErrorUnknown');
+            if (!$errors) {
+                $errors[] = $activity->error ?: $langs->trans('ErrorUnknown');
+            }
         }
     }
 }
@@ -415,8 +457,8 @@ if ($activity->id) {
         print '</form>';
     }
 
-    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0" onsubmit="return confirm(\''
-        . dol_escape_js($langs->transnoentities('ConfirmDelete')) . "\');">";
+    $confirmMessage = dol_escape_js($langs->transnoentities('ConfirmDelete'));
+    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0" onsubmit="return confirm(\'' . $confirmMessage . '\');">';
     print '<input type="hidden" name="token" value="' . newToken() . '">';
     print '<input type="hidden" name="action" value="delete">';
     print '<input type="hidden" name="id" value="' . $activity->id . '">';

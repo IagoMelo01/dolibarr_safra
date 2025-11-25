@@ -27,7 +27,7 @@ class ActivityStockService
      * @param User       $user
      * @return int
      */
-    public function createConsumptionMovements(FvActivity $activity, User $user)
+    public function createConsumptionMovements(FvActivity $activity, User $user, $force = false, $useTransaction = true)
     {
         global $langs;
 
@@ -36,7 +36,7 @@ class ActivityStockService
             return -1;
         }
 
-        if ($activity->hasStockMovements()) {
+        if (!$force && $activity->hasStockMovements()) {
             return 0;
         }
 
@@ -46,7 +46,10 @@ class ActivityStockService
             $activity->fetchLines();
         }
 
-        $this->db->begin();
+        $useLocalTransaction = $useTransaction && empty($this->db->transaction_opened);
+        if ($useLocalTransaction) {
+            $this->db->begin();
+        }
 
         foreach ($activity->lines as $line) {
             if ($line->movement_type && $line->movement_type !== 'consume') {
@@ -68,14 +71,18 @@ class ActivityStockService
 
             $result = $movement->livraison($user, $line->fk_product, $line->fk_warehouse, $quantity, 0, $label);
             if ($result < 0) {
-                $this->db->rollback();
+                if ($useLocalTransaction) {
+                    $this->db->rollback();
+                }
                 $this->error = $movement->error ?: $langs->trans('ErrorRecordNotSaved');
 
                 return -1;
             }
         }
 
-        $this->db->commit();
+        if ($useLocalTransaction) {
+            $this->db->commit();
+        }
 
         return 1;
     }
@@ -87,7 +94,7 @@ class ActivityStockService
      * @param User       $user
      * @return int
      */
-    public function revertConsumptionMovements(FvActivity $activity, User $user)
+    public function revertConsumptionMovements(FvActivity $activity, User $user, $useTransaction = true)
     {
         global $langs;
 
@@ -122,7 +129,10 @@ class ActivityStockService
             return 0;
         }
 
-        $this->db->begin();
+        $useLocalTransaction = $useTransaction && empty($this->db->transaction_opened);
+        if ($useLocalTransaction) {
+            $this->db->begin();
+        }
 
         foreach ($movements as $movementData) {
             $quantity = abs(price2num($movementData->qty, 'MS'));
@@ -143,14 +153,18 @@ class ActivityStockService
 
             $result = $movement->reception($user, $movementData->fk_product, $movementData->fk_entrepot, $quantity, 0, $label);
             if ($result < 0) {
-                $this->db->rollback();
+                if ($useLocalTransaction) {
+                    $this->db->rollback();
+                }
                 $this->error = $movement->error ?: $langs->trans('ErrorRecordNotSaved');
 
                 return -1;
             }
         }
 
-        $this->db->commit();
+        if ($useLocalTransaction) {
+            $this->db->commit();
+        }
 
         return 1;
     }

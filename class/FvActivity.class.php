@@ -160,7 +160,7 @@ class FvActivity extends CommonObject
      *
      * @return int
      */
-    public function createStockMovements(User $user = null)
+    public function createStockMovements(User $user = null, $force = false, $useTransaction = true)
     {
         dol_include_once('/safra/class/ActivityStockService.class.php');
 
@@ -168,7 +168,7 @@ class FvActivity extends CommonObject
 
         $stockUser = $user ?: $GLOBALS['user'];
 
-        $result = $service->createConsumptionMovements($this, $stockUser);
+        $result = $service->createConsumptionMovements($this, $stockUser, $force, $useTransaction);
 
         if ($result < 0) {
             $this->error = $service->error;
@@ -182,7 +182,7 @@ class FvActivity extends CommonObject
      *
      * @return int
      */
-    public function revertStockMovements(User $user = null)
+    public function revertStockMovements(User $user = null, $useTransaction = true)
     {
         dol_include_once('/safra/class/ActivityStockService.class.php');
 
@@ -193,7 +193,7 @@ class FvActivity extends CommonObject
             return -1;
         }
 
-        $result = $service->revertConsumptionMovements($this, $stockUser);
+        $result = $service->revertConsumptionMovements($this, $stockUser, $useTransaction);
 
         if ($result < 0) {
             $this->error = $service->error;
