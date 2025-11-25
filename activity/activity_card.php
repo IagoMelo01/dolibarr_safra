@@ -165,9 +165,15 @@ if (!empty($implementsFromModule)) {
 $projectIdForTalhao = $activity->fk_project ?: GETPOSTINT('fk_project');
 $talhaoFromProject = safra_project_talhao_option($db, $projectIdForTalhao);
 $talhoes = safra_load_options($db, 'safra_talhao', 'label');
+$talhaoPlaceholder = $langs->trans('SelectAProjectFirst');
+if (empty($activity->fk_fieldplot)) {
+    $talhoes = array('' => '— ' . $talhaoPlaceholder . ' —') + $talhoes;
+}
 
 $talhaoDetails = array();
-$sqlTalhaoDetails = 'SELECT rowid, ref, label, area FROM ' . MAIN_DB_PREFIX . 'safra_talhao';
+$sqlTalhaoDetails = 'SELECT t.rowid, t.ref, t.label, t.area, m.label as municipio_label'
+    . ' FROM ' . MAIN_DB_PREFIX . 'safra_talhao as t'
+    . ' LEFT JOIN ' . MAIN_DB_PREFIX . 'safra_municipio as m ON m.rowid = t.municipio';
 $resTalhao = $db->query($sqlTalhaoDetails);
 if ($resTalhao) {
     while ($obj = $db->fetch_object($resTalhao)) {
@@ -175,6 +181,7 @@ if ($resTalhao) {
             'ref' => $obj->ref,
             'label' => $obj->label,
             'area' => price2num($obj->area),
+            'municipio' => $obj->municipio_label,
         );
     }
 }
@@ -423,27 +430,40 @@ if ($errors) {
 
 // Modern styles for a cleaner card layout
 print '<style>
+    .safra-activity-card {
+        border-radius: 18px;
+        overflow: hidden;
+    }
     .safra-activity-card .card-header {
-        background: linear-gradient(135deg, #0d6efd, #20c997);
+        background: linear-gradient(120deg, #0d6efd, #20c997);
         color: #fff;
         border-bottom: none;
-        }
+        padding: 1rem 1.25rem;
+    }
     .safra-activity-card .card-header .btn-light {
         color: #0d6efd;
         background: #e7f1ff;
         border: none;
         font-weight: 600;
+        box-shadow: 0 6px 18px rgba(13, 110, 253, 0.18);
     }
     .safra-activity-card .section-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #0d1b2a;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #0f172a;
         display: flex;
         align-items: center;
         gap: 0.35rem;
+        letter-spacing: 0.01em;
     }
     .safra-activity-card .section-title .badge {
         font-weight: 500;
+    }
+    .safra-activity-card .floating-box {
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 1rem;
     }
     .safra-activity-card .form-control, .safra-activity-card select {
         border-radius: 0.65rem;
@@ -486,10 +506,14 @@ print '<style>
         border: none;
     }
     .safra-activity-card .table-modern tbody tr {
-        transition: background 0.2s ease;
+        transition: background 0.2s ease, transform 0.2s ease;
     }
     .safra-activity-card .table-modern tbody tr:hover {
         background: #f1f5f9;
+        transform: translateY(-1px);
+    }
+    .safra-activity-card .table-modern td {
+        vertical-align: middle;
     }
     .safra-activity-card .btn-icon {
         border-radius: 50%;
@@ -498,6 +522,10 @@ print '<style>
         display: inline-flex;
         align-items: center;
         justify-content: center;
+    }
+    .safra-activity-card .helper-text {
+        color: #475569;
+        font-size: 0.85rem;
     }
 </style>';
 
@@ -554,20 +582,24 @@ print '</div>';
 print '<div class="col-lg-3">';
 print '<label class="section-title">' . $langs->trans('Project') . '</label>';
 print $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 0, 1, 0, 0, 0, '', '', 1, 0, 1);
+print '<div class="helper-text mt-1">' . $langs->trans('SelectProjectToAutoFillFieldPlot') . '</div>';
 print '</div>';
 print '</div>';
 
 print '<div class="row g-4 mt-1">';
-print '<div class="col-lg-6">';
-print '<label class="section-title">' . $langs->trans('FieldPlot') . '</label>';
+print '<div class="col-lg-8">';
+print '<div class="floating-box h-100">';
+print '<label class="section-title mb-1">' . $langs->trans('FieldPlot') . '</label>';
 print $form->selectarray('fk_fieldplot', $talhoes, $activity->fk_fieldplot, 1, 0, 0, '', 0, 0, 0, '', 'minwidth300');
+print '<div class="helper-text mt-1" id="talhao-area-info">' . $talhaoPlaceholder . '</div>';
 print '</div>';
-print '<div class="col-lg-3">';
-print '<label class="section-title">' . $langs->trans('Area') . ' (ha)</label>';
+print '</div>';
+print '<div class="col-lg-4">';
+print '<div class="floating-box h-100">';
+print '<label class="section-title mb-1">' . $langs->trans('Area') . ' (ha)</label>';
 print '<input class="form-control" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0" placeholder="0.00" readonly>';
+print '<div class="helper-text mt-2">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
 print '</div>';
-print '<div class="col-lg-3 d-flex align-items-end">';
-print '<div class="text-muted small" id="talhao-area-info">' . $langs->trans('Area') . ' • ' . $langs->trans('Total') . '</div>';
 print '</div>';
 print '</div>';
 
@@ -741,6 +773,8 @@ if ($activity->id) {
 print '<script>';
 ?>
 var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
+var talhaoPlaceholderText = '<?php echo dol_escape_js('— ' . $talhaoPlaceholder . ' —'); ?>';
+var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
 
 function recalcLineTotal(row) {
     var area = parseFloat(row.querySelector('.area-input').value) || 0;
@@ -786,10 +820,16 @@ function updateTalhaoArea(selectEl) {
             if (data.ref) labelParts.push(data.ref);
             if (data.label) labelParts.push(data.label);
             var baseLabel = labelParts.join(' - ');
-            var areaText = data.area ? (parseFloat(data.area).toFixed(4) + ' ha') : '<?php echo dol_escape_js($langs->trans('Area')); ?>';
-            info.textContent = (baseLabel ? baseLabel + ' • ' : '') + areaText;
-        } else if (!info.textContent) {
-            info.textContent = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
+            var areaText = data.area ? (parseFloat(data.area).toFixed(4) + ' ha') : talhaoAreaDefault;
+            var extras = [];
+            if (data.municipio) extras.push(data.municipio);
+            var infoPieces = [];
+            if (baseLabel) infoPieces.push(baseLabel);
+            infoPieces.push(areaText);
+            if (extras.length) infoPieces.push(extras.join(' • '));
+            info.textContent = infoPieces.join(' • ');
+        } else {
+            info.textContent = talhaoPlaceholderText;
         }
     }
 }
@@ -801,7 +841,7 @@ function fetchTalhaoForProject(projectId) {
     }
 
     if (!projectId) {
-        talhaoSelect.disabled = false;
+        talhaoSelect.disabled = true;
         talhaoSelect.value = '';
         updateTalhaoArea(talhaoSelect);
         return;
@@ -836,7 +876,8 @@ function fetchTalhaoForProject(projectId) {
                 talhaoData[talhaoId] = {
                     ref: data.talhao.label,
                     label: data.talhao.label,
-                    area: data.talhao.area
+                    area: data.talhao.area,
+                    municipio: data.talhao.municipio || ''
                 };
             }
 
@@ -904,9 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchTalhaoForProject(projectSelect.value);
         });
 
-        if (projectSelect.value) {
-            fetchTalhaoForProject(projectSelect.value);
-        }
+        fetchTalhaoForProject(projectSelect.value || '');
     }
 
     var mixtureButton = document.getElementById('open-mixture');
