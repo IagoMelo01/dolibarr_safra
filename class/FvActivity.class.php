@@ -10,6 +10,7 @@ class FvActivity extends CommonObject
 {
     public const STATUS_DRAFT = 0;
     public const STATUS_COMPLETED = 1;
+    public const STATUS_CANCELED = 2;
 
     /** @var string */
     public $module = 'safra';
@@ -181,9 +182,24 @@ class FvActivity extends CommonObject
      *
      * @return int
      */
-    public function revertStockMovements()
+    public function revertStockMovements(User $user = null)
     {
-        return 0;
+        dol_include_once('/safra/class/ActivityStockService.class.php');
+
+        $service = new ActivityStockService($this->db);
+
+        $stockUser = $user ?: ($GLOBALS['user'] ?? null);
+        if (!$stockUser instanceof User) {
+            return -1;
+        }
+
+        $result = $service->revertConsumptionMovements($this, $stockUser);
+
+        if ($result < 0) {
+            $this->error = $service->error;
+        }
+
+        return $result;
     }
 
     /**
@@ -264,6 +280,35 @@ class FvActivity extends CommonObject
     }
 
     /**
+     * Sync cancellation with linked project task if required.
+     *
+     * @param User $user
+     * @return int
+     */
+    public function syncProjectTaskCancellation(User $user)
+    {
+        if (empty($this->fk_task)) {
+            return 0;
+        }
+
+        dol_include_once('/projet/class/task.class.php');
+
+        $task = new Task($this->db);
+        if ($task->fetch($this->fk_task) <= 0) {
+            return 0;
+        }
+
+        if ((int) $task->progress === 0) {
+            return 0;
+        }
+
+        $task->progress = 0;
+        $task->fk_user_modif = $user->id;
+
+        return $task->update($user);
+    }
+
+    /**
      * Check if activity is completed.
      *
      * @return bool
@@ -271,6 +316,16 @@ class FvActivity extends CommonObject
     public function isCompleted()
     {
         return ((int) $this->status) === self::STATUS_COMPLETED;
+    }
+
+    /**
+     * Check if activity is canceled.
+     *
+     * @return bool
+     */
+    public function isCanceled()
+    {
+        return ((int) $this->status) === self::STATUS_CANCELED;
     }
 
     /**
@@ -291,6 +346,122 @@ class FvActivity extends CommonObject
         $obj = $this->db->fetch_object($resql);
 
         return $obj && ((int) $obj->nb > 0);
+    }
+
+    /**
+     * Append messages to the private note with timestamp.
+     *
+     * @param string[] $messages
+     * @return void
+     */
+    protected function appendPrivateNotes(array $messages)
+    {
+        if (empty($messages)) {
+            return;
+        }
+
+        $timestamp = dol_print_date(dol_now(), 'dayhourlog');
+
+        foreach ($messages as $message) {
+            if (!trim($message)) {
+                continue;
+            }
+
+            $this->note_private = trim($this->note_private . "\n" . '[' . $timestamp . '] ' . $message);
+        }
+    }
+
+    /**
+     * Cancel the activity with optional deletion.
+     *
+     * @param User $user
+     * @param bool $allowDelete
+     * @return int 1 when canceled, 2 when deleted
+     */
+    public function cancel(User $user, $allowDelete = false)
+    {
+        global $langs;
+
+        $langs->load('safra@safra');
+
+        if (empty($this->id)) {
+            $this->error = $langs->trans('ErrorSafraActivityInvalidIdentifier');
+
+            return -1;
+        }
+
+        if ($this->isCanceled()) {
+            $this->error = $langs->trans('SafraActivityAlertCanceled');
+
+            return -1;
+        }
+
+        $hasStockMovements = $this->hasStockMovements();
+        $this->deletionPrevented = false;
+
+        $this->db->begin();
+
+        $logMessages = array();
+
+        if ($this->isCompleted() && $hasStockMovements) {
+            $revertResult = $this->revertStockMovements($user);
+            if ($revertResult < 0) {
+                $this->db->rollback();
+
+                return -1;
+            }
+
+            $logMessages[] = $langs->trans('SafraActivityStockRevertedLog', $this->ref ?: $this->id);
+        }
+
+        $logMessages[] = $langs->trans('SafraActivityCanceledLog', $this->ref ?: $this->id);
+        $this->appendPrivateNotes($logMessages);
+
+        $this->status = self::STATUS_CANCELED;
+        $this->fk_user_modif = $user->id;
+
+        $statusResult = $this->update($user);
+        if ($statusResult < 0) {
+            $this->db->rollback();
+
+            return -1;
+        }
+
+        $taskResult = $this->syncProjectTaskCancellation($user);
+        if ($taskResult < 0) {
+            $this->db->rollback();
+
+            return -1;
+        }
+
+        $triggerResult = $this->call_trigger('SAFRA_ACTIVITY_CANCEL', $user);
+        if ($triggerResult < 0) {
+            $this->db->rollback();
+
+            return -1;
+        }
+
+        if ($allowDelete && !$hasStockMovements) {
+            $deleteResult = $this->delete($user);
+            if ($deleteResult < 0) {
+                $this->db->rollback();
+                $this->error = $this->error ?: $langs->trans('ErrorRecordNotDeleted');
+
+                return -1;
+            }
+
+            $this->db->commit();
+
+            return 2;
+        }
+
+        if ($allowDelete && $hasStockMovements) {
+            $this->deletionPrevented = true;
+        }
+
+        $this->db->commit();
+
+        return 1;
     }
 
     /**
