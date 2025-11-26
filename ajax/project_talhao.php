@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /* Return talhão linked to a project (via extrafields) as JSON */
 
 $res = 0;
