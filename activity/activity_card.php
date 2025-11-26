@@ -712,12 +712,20 @@ print '<style>
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
         border-top: 1px solid rgba(255,255,255,0.08);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
     }
     .safra-activity-card .product-footer .footer-note {
         color: #cbd5e1;
         font-weight: 600;
+    }
+    .safra-activity-card .product-footer .left-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
     }
     .safra-activity-card .btn-add-line {
         background: linear-gradient(120deg, #22c55e, #16a34a);
@@ -734,20 +742,23 @@ print '<style>
         transform: translateY(-2px);
         box-shadow: 0 22px 38px rgba(22, 163, 74, 0.28);
     }
-    .safra-activity-card .btn-save-primary {
-        background: linear-gradient(120deg, #2563eb, #1d4ed8);
-        border: none;
-        color: #fff;
+    .safra-activity-card .safra-save-action {
+        min-width: 190px;
+        text-align: center;
+        font-size: 1.05rem;
         font-weight: 800;
-        letter-spacing: 0.03em;
-        padding: 0.8rem 1.4rem;
-        border-radius: 14px;
-        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.25);
-        transition: transform 0.15s ease, box-shadow 0.2s ease;
+        letter-spacing: 0.01em;
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+        background: var(--safra-save-color, linear-gradient(120deg, #2c7be5, #2563eb));
+        color: #fff;
+        cursor: pointer;
     }
-    .safra-activity-card .btn-save-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 24px 46px rgba(37, 99, 235, 0.28);
+    .safra-activity-card .safra-save-action:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 16px 32px rgba(37, 99, 235, 0.28);
     }
 </style>';
 
@@ -956,15 +967,14 @@ print '</tr>';
 print '</template>';
 print '</div>'; // responsive
 print '<div class="product-footer">';
-print '<span class="footer-note">' . $langs->trans('Add') . ' ' . $langs->trans('Products') . '</span>';
+print '<div class="left-group">';
 print '<button type="button" class="btn btn-add-line" id="add-line">+ ' . $langs->trans('Add') . '</button>';
+print '<span class="footer-note">' . $langs->trans('Add') . ' ' . $langs->trans('Products') . '</span>';
+print '</div>';
+print '<button class="butAction safra-save-action" type="submit" style="text-decoration:none;">💾 ' . $langs->trans('Save') . '</button>';
 print '</div>';
 print '</div>'; // card-body
 print '</div>'; // card
-
-print '<div class="mt-3 text-end">';
-print '<button class="btn btn-save-primary" type="submit">💾 ' . $langs->trans('Save') . '</button>';
-print '</div>';
 
 print '</form>';
 
@@ -1349,12 +1359,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (mixtureButton) {
         mixtureButton.addEventListener('click', function () {
             updateMixtureModal();
-            if (window.bootstrap && bootstrap.Modal) {
-                var modal = new bootstrap.Modal(document.getElementById('mixtureModal'));
-                modal.show();
-            }
+            showMixtureModal();
         });
     }
+
+    document.querySelectorAll('#mixtureModal [data-bs-dismiss="modal"], #mixtureModal .btn-close').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            hideMixtureModal();
+        });
+    });
 
     var appRateInput = document.getElementById('application-rate');
     if (appRateInput) {
@@ -1374,16 +1387,63 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.getElementById('save-mixture-note').addEventListener('click', function () {
-        var noteField = document.getElementById('note_public');
-        var summary = buildMixtureSummary();
-        if (summary) {
-            noteField.value = (noteField.value ? noteField.value + "\n\n" : '') + summary;
-        }
-        var modal = bootstrap.Modal.getInstance(document.getElementById('mixtureModal'));
-        modal.hide();
-    });
+    var saveMixtureBtn = document.getElementById('save-mixture-note');
+    if (saveMixtureBtn) {
+        saveMixtureBtn.addEventListener('click', function () {
+            var noteField = document.getElementById('note_public');
+            var summary = buildMixtureSummary();
+            if (summary) {
+                noteField.value = (noteField.value ? noteField.value + "\n\n" : '') + summary;
+            }
+            hideMixtureModal();
+        });
+    }
 });
+
+function showMixtureModal() {
+    var modalEl = document.getElementById('mixtureModal');
+    if (!modalEl) return;
+
+    if (window.bootstrap && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        return;
+    }
+
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.removeAttribute('aria-hidden');
+    document.body.classList.add('modal-open');
+
+    if (!document.getElementById('mixture-backdrop')) {
+        var backdrop = document.createElement('div');
+        backdrop.id = 'mixture-backdrop';
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+    }
+}
+
+function hideMixtureModal() {
+    var modalEl = document.getElementById('mixtureModal');
+    if (!modalEl) return;
+
+    if (window.bootstrap && bootstrap.Modal) {
+        var instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) {
+            instance.hide();
+        }
+        return;
+    }
+
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+
+    var backdrop = document.getElementById('mixture-backdrop');
+    if (backdrop && backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+    }
+}
 
 function updateMixtureModal() {
     var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
