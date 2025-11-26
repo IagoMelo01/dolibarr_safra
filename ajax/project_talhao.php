@@ -1,12 +1,13 @@
-﻿<?php
+<?php
 /* Return talhão linked to a project (via extrafields) as JSON */
 
 $res = 0;
 if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
     $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'].'/main.inc.php';
 }
-if (!$res && file_exists('../../main.inc.php')) {
-    $res = @include '../../main.inc.php';
+// From htdocs/custom/safra/ajax -> htdocs/main.inc.php
+if (!$res && file_exists(__DIR__.'/../../../main.inc.php')) {
+    $res = @include __DIR__.'/../../../main.inc.php';
 }
 if (!$res) {
     http_response_code(500);
@@ -27,36 +28,55 @@ if ($projectId <= 0) {
     exit;
 }
 
-// Detect column name in extrafields
-function safraAjaxColumnExists(DoliDB $db, $tablename, $columnname)
-{
-    $sql = "SHOW COLUMNS FROM ".$db->prefix().$tablename." LIKE '".$db->escape($columnname)."'";
-    $res = $db->query($sql);
-    if ($res) {
-        $ok = ($db->num_rows($res) > 0);
-        $db->free($res);
-        return $ok;
-    }
-    return false;
-}
+dol_include_once('/projet/class/project.class.php');
 
-$col = '';
-if (safraAjaxColumnExists($db, 'projet_extrafields', 'fk_talhao')) {
-    $col = 'fk_talhao';
-} elseif (safraAjaxColumnExists($db, 'projet_extrafields', 'options_fk_talhao')) {
-    $col = 'options_fk_talhao';
+$project = new Project($db);
+$project->fetch($projectId);
+if (method_exists($project, 'fetch_optionals')) {
+    $project->fetch_optionals($project->id, $project->table_element);
 }
 
 $talhaoId = 0;
-if ($col !== '') {
-    $sql = 'SELECT '.$col.' as talhao_id FROM '.$db->prefix().'projet_extrafields WHERE fk_object='.(int) $projectId.' LIMIT 1';
-    $resql = $db->query($sql);
-    if ($resql) {
-        $obj = $db->fetch_object($resql);
-        if ($obj) {
-            $talhaoId = (int) $obj->talhao_id;
+$extrafieldKeys = array('options_fk_talhao', 'fk_talhao');
+foreach ($extrafieldKeys as $key) {
+    if (!empty($project->array_options[$key])) {
+        $talhaoId = (int) $project->array_options[$key];
+        break;
+    }
+}
+
+// Fallback to direct column check for older data
+if ($talhaoId === 0) {
+    // Detect column name in extrafields
+    function safraAjaxColumnExists(DoliDB $db, $tablename, $columnname)
+    {
+        $sql = "SHOW COLUMNS FROM " . $db->prefix() . $tablename . " LIKE '" . $db->escape($columnname) . "'";
+        $res = $db->query($sql);
+        if ($res) {
+            $ok = ($db->num_rows($res) > 0);
+            $db->free($res);
+            return $ok;
         }
-        $db->free($resql);
+        return false;
+    }
+
+    $col = '';
+    if (safraAjaxColumnExists($db, 'projet_extrafields', 'fk_talhao')) {
+        $col = 'fk_talhao';
+    } elseif (safraAjaxColumnExists($db, 'projet_extrafields', 'options_fk_talhao')) {
+        $col = 'options_fk_talhao';
+    }
+
+    if ($col !== '') {
+        $sql = 'SELECT ' . $col . ' as talhao_id FROM ' . $db->prefix() . 'projet_extrafields WHERE fk_object=' . (int) $projectId . ' LIMIT 1';
+        $resql = $db->query($sql);
+        if ($resql) {
+            $obj = $db->fetch_object($resql);
+            if ($obj) {
+                $talhaoId = (int) $obj->talhao_id;
+            }
+            $db->free($resql);
+        }
     }
 }
 
@@ -72,7 +92,8 @@ if ($talhaoId > 0) {
         if ($o) {
             $talhao = array(
                 'id' => (int) $o->rowid,
-                'label' => trim(($o->ref ? $o->ref.' - ' : '').($o->label ? $o->label : '')),
+                'ref' => $o->ref,
+                'label' => $o->label,
                 'area' => (float) $o->area,
                 'municipio' => $o->municipio_label,
                 'url' => dol_buildpath('/safra/talhao_card.php', 1).'?id='.(int) $o->rowid,
@@ -82,5 +103,6 @@ if ($talhaoId > 0) {
     }
 }
 
-echo json_encode(array('success' => true, 'talhao_id' => $talhaoId, 'talhao' => $talhao));
+$success = ($talhaoId > 0 && !empty($talhao));
+echo json_encode(array('success' => $success, 'talhao_id' => $talhaoId, 'talhao' => $talhao));
 exit;
