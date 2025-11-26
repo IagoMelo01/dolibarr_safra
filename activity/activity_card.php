@@ -456,12 +456,29 @@ print '<style>
         border-bottom: none;
         padding: 1rem 1.25rem;
     }
-    .safra-activity-card .card-header .btn-light {
+    .safra-activity-card .card-header .btn-light,
+    .safra-activity-card .btn-soft {
         color: #0d6efd;
-        background: #e7f1ff;
-        border: none;
-        font-weight: 600;
-        box-shadow: 0 6px 18px rgba(13, 110, 253, 0.18);
+        background: #ecf4ff;
+        border: 1px solid #d8e6ff;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 10px 30px rgba(13, 110, 253, 0.18);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    .safra-activity-card .btn-soft:hover {
+        background: #e1edff;
+        transform: translateY(-1px);
+        box-shadow: 0 14px 34px rgba(13, 110, 253, 0.22);
+    }
+    .safra-activity-card .btn-soft .mixture-dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        margin-right: 6px;
+        border-radius: 50%;
+        background: linear-gradient(120deg, #0d6efd, #20c997);
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
     }
     .safra-activity-card .section-title {
         font-size: 0.95rem;
@@ -565,6 +582,71 @@ print '<style>
     .safra-activity-card .table-modern td select.form-select,
     .safra-activity-card .table-modern td .form-control {
         min-width: 130px;
+    }
+    .safra-activity-card .btn-primary,
+    .safra-activity-card .btn-success,
+    .safra-activity-card .btn-outline-danger,
+    .safra-activity-card .btn-outline-warning {
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+    }
+    .safra-activity-card .btn-primary,
+    .safra-activity-card .btn-success {
+        box-shadow: 0 14px 30px rgba(15, 118, 110, 0.22);
+    }
+    .safra-activity-card .btn-outline-danger,
+    .safra-activity-card .btn-outline-warning {
+        box-shadow: none;
+    }
+    .safra-activity-card .mixture-modal .modal-content {
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.25);
+    }
+    .safra-activity-card .mixture-modal .modal-header {
+        border-bottom: none;
+        background: linear-gradient(120deg, #0d6efd, #20c997);
+        color: #fff;
+    }
+    .safra-activity-card .mixture-modal .modal-title {
+        letter-spacing: 0.01em;
+        font-weight: 700;
+    }
+    .safra-activity-card .mixture-modal .form-control {
+        border-radius: 10px;
+        border-color: #e2e8f0;
+    }
+    .safra-activity-card .mixture-summary {
+        background: #f8fafc;
+        border: 1px dashed #d8e3f0;
+        border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    .safra-activity-card .mixture-summary .line {
+        padding: 0.3rem 0.4rem;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        margin-bottom: 0.35rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+    .safra-activity-card .mixture-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+    .safra-activity-card .mixture-meta {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.55rem 0.65rem;
+        font-weight: 600;
+        color: #0f172a;
     }
 </style>';
 
@@ -687,7 +769,7 @@ print '<div>
         <div class="text-uppercase small opacity-75">' . $langs->trans('Products') . '</div>
         <h5 class="mb-0">' . $langs->trans('Products') . '</h5>
     </div>';
-print '<button type="button" class="btn btn-light btn-sm" id="open-mixture">' . $langs->trans('MixtureCalculation') . '</button>';
+print '<button type="button" class="btn btn-soft btn-sm" id="open-mixture"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>';
 print '</div>';
 print '<div class="card-body">';
 
@@ -795,33 +877,37 @@ if ($activity->id) {
 
 // Modal for mixture calculation
 ?>
-<div class="modal fade" id="mixtureModal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><?php echo dol_escape_htmltag($langs->trans('MixtureCalculation')); ?></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label><?php echo $langs->trans('ApplicationRate'); ?> (L/ha)</label>
-                    <input type="number" class="form-control" id="application-rate" step="0.01" value="0">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="mixture-label"><?php echo $langs->trans('ApplicationRate'); ?> (L/ha)</label>
+                        <input type="text" class="form-control" id="application-rate" inputmode="decimal" value="0">
+                        <small class="text-muted"><?php echo dol_escape_htmltag($langs->trans('EnterRatePerHectare')); ?></small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="mixture-label"><?php echo $langs->trans('TankCapacity'); ?> (L)</label>
+                        <input type="text" class="form-control" id="tank-capacity" inputmode="decimal" value="0">
+                        <small class="text-muted"><?php echo dol_escape_htmltag($langs->trans('EnterTankCapacity')); ?></small>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label><?php echo $langs->trans('TankCapacity'); ?> (L)</label>
-                    <input type="number" class="form-control" id="tank-capacity" step="0.01" value="0">
+                <div class="row g-3 mb-3 align-items-center">
+                    <div class="col-md-6">
+                        <div class="mixture-label mb-1"><?php echo $langs->trans('AppliedAreaPerTank'); ?></div>
+                        <div class="mixture-meta" id="area-per-tank">0,00 ha</div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label><?php echo $langs->trans('AppliedAreaPerTank'); ?></label>
-                    <input type="text" class="form-control" id="area-per-tank" readonly>
-                </div>
-                <div class="form-group">
-                    <label><?php echo $langs->trans('QuantityPerTank'); ?></label>
-                    <div id="mixture-lines"></div>
-                </div>
+                <div class="mixture-label mb-2"><?php echo $langs->trans('QuantityPerTank'); ?></div>
+                <div class="mixture-summary" id="mixture-lines"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
+            <div class="modal-footer border-0 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
                 <button type="button" class="btn btn-success" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
             </div>
         </div>
@@ -833,6 +919,7 @@ print '<script>';
 var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
 var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->trans('SelectProjectToAutoFillFieldPlot')); ?>';
 var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
+var mixtureEmptyText = '<?php echo dol_escape_js($langs->trans('NoProductForMixture')); ?>';
 var areaBaseInput = document.getElementById('area-base');
 var areaPercentageInput = document.getElementById('area-percentage');
 var areaTotalInput = document.getElementById('area-total');
@@ -1144,8 +1231,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.getElementById('application-rate').addEventListener('input', updateMixtureModal);
-    document.getElementById('tank-capacity').addEventListener('input', updateMixtureModal);
+    var appRateInput = document.getElementById('application-rate');
+    if (appRateInput) {
+        maskInputValue(appRateInput, 2);
+        appRateInput.addEventListener('input', function () {
+            maskInputValue(appRateInput, 2);
+            updateMixtureModal();
+        });
+    }
+
+    var tankInput = document.getElementById('tank-capacity');
+    if (tankInput) {
+        maskInputValue(tankInput, 2);
+        tankInput.addEventListener('input', function () {
+            maskInputValue(tankInput, 2);
+            updateMixtureModal();
+        });
+    }
 
     document.getElementById('save-mixture-note').addEventListener('click', function () {
         var noteField = document.getElementById('note_public');
@@ -1159,13 +1261,14 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function updateMixtureModal() {
-    var rate = parseFloat(document.getElementById('application-rate').value) || 0;
-    var capacity = parseFloat(document.getElementById('tank-capacity').value) || 0;
+    var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
+    var capacity = parseDecimalFromMask(document.getElementById('tank-capacity').value, 2) || 0;
     var areaPerTank = rate > 0 ? (capacity / rate) : 0;
-    document.getElementById('area-per-tank').value = areaPerTank.toFixed(2);
+    document.getElementById('area-per-tank').textContent = formatDecimalToMask(areaPerTank, 2) + ' ha';
 
     var container = document.getElementById('mixture-lines');
     container.innerHTML = '';
+    var hasLine = false;
 
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         var productSelect = row.querySelector('select[name="product_id[]"]');
@@ -1177,14 +1280,23 @@ function updateMixtureModal() {
         }
         var qty = dose * areaPerTank;
         var item = document.createElement('div');
-        item.textContent = productLabel + ': ' + qty.toFixed(2) + ' ' + (unit || '');
+        item.className = 'line';
+        item.textContent = productLabel + ': ' + formatDecimalToMask(qty, 2) + ' ' + (unit || '');
         container.appendChild(item);
+        hasLine = true;
     });
+
+    if (!hasLine) {
+        var empty = document.createElement('div');
+        empty.className = 'text-muted';
+        empty.textContent = mixtureEmptyText;
+        container.appendChild(empty);
+    }
 }
 
 function buildMixtureSummary() {
-    var rate = parseFloat(document.getElementById('application-rate').value) || 0;
-    var capacity = parseFloat(document.getElementById('tank-capacity').value) || 0;
+    var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
+    var capacity = parseDecimalFromMask(document.getElementById('tank-capacity').value, 2) || 0;
     var areaPerTank = rate > 0 ? (capacity / rate) : 0;
     var lines = [];
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
@@ -1196,12 +1308,12 @@ function buildMixtureSummary() {
             return;
         }
         var qty = dose * areaPerTank;
-        lines.push(productLabel + ' = ' + qty.toFixed(2) + ' ' + (unit || ''));
+        lines.push(productLabel + ' = ' + formatDecimalToMask(qty, 2) + ' ' + (unit || ''));
     });
     if (!lines.length) {
         return '';
     }
-    var summary = 'Taxa: ' + rate.toFixed(2) + ' L/ha; Capacidade: ' + capacity.toFixed(2) + ' L; Área/tanque: ' + areaPerTank.toFixed(2) + ' ha';
+    var summary = 'Taxa: ' + formatDecimalToMask(rate, 2) + ' L/ha; Capacidade: ' + formatDecimalToMask(capacity, 2) + ' L; Área/tanque: ' + formatDecimalToMask(areaPerTank, 2) + ' ha';
     summary += "\n" + lines.join("\n");
     return summary;
 }
