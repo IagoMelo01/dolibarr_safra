@@ -445,7 +445,8 @@ if ($errors) {
 }
 
 // Modern styles for a cleaner card layout
-print '<style>
+print <<<'HTML'
+<style>
     .safra-activity-card {
         border-radius: 18px;
         overflow: hidden;
@@ -654,25 +655,37 @@ print '<style>
         backdrop-filter: blur(3px);
     }
     .safra-activity-card .mixture-modal .modal-dialog {
-        margin-top: 8vh;
+        margin-top: 6vh;
     }
     .safra-activity-card .mixture-modal .modal-content {
-        border-radius: 16px;
-        border: none;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
         box-shadow: 0 18px 48px rgba(15, 23, 42, 0.25);
+        position: relative;
+        overflow: hidden;
+    }
+    .safra-activity-card .mixture-modal .modal-content:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(120deg, #2ecc71, #1abc9c);
     }
     .safra-activity-card .mixture-modal .modal-header {
-        border-bottom: none;
-        background: linear-gradient(120deg, #0f172a, #1d4ed8);
-        color: #fff;
+        border: none;
+        padding-bottom: 0.25rem;
     }
     .safra-activity-card .mixture-modal .modal-title {
         letter-spacing: 0.01em;
-        font-weight: 700;
+        font-weight: 800;
+        color: #0f172a;
     }
     .safra-activity-card .mixture-modal .form-control {
         border-radius: 10px;
         border-color: #e2e8f0;
+        background: #f8fafc;
     }
     .safra-activity-card .mixture-summary {
         background: #f8fafc;
@@ -703,6 +716,19 @@ print '<style>
         padding: 0.55rem 0.65rem;
         font-weight: 600;
         color: #0f172a;
+    }
+    .safra-activity-card .mixture-helper {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #16a34a;
+        font-weight: 700;
+    }
+    .safra-activity-card .mixture-helper .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(120deg, #22c55e, #16a34a);
     }
     .safra-activity-card .product-footer {
         background: linear-gradient(120deg, #0f172a, #111827);
@@ -760,7 +786,8 @@ print '<style>
         filter: brightness(1.05);
         box-shadow: 0 16px 32px rgba(37, 99, 235, 0.28);
     }
-</style>';
+</style>
+HTML;
 
 print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
 print '<input type="hidden" name="token" value="' . newToken() . '">';
@@ -903,7 +930,7 @@ print '<div>
         <div class="text-muted">' . $langs->trans('Products') . ' + ' . $langs->trans('MixtureCalculation') . '</div>
     </div>';
 print '<div class="d-flex gap-2 flex-wrap">
-        <button type="button" class="btn btn-soft btn-sm" id="open-mixture"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>
+        <button type="button" class="btn btn-soft btn-sm" id="open-mixture" data-bs-toggle="modal" data-bs-target="#mixtureModal"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>
     </div>';
 print '</div>';
 
@@ -1012,7 +1039,7 @@ if ($activity->id) {
 
 // Modal for mixture calculation
 ?>
-<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog" aria-hidden="true" style="display:none;">
+<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog" aria-modal="true" style="display:none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -1020,6 +1047,10 @@ if ($activity->id) {
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="mixture-helper"><span class="dot"></span><?php echo $langs->trans('MixtureCalculation'); ?></div>
+                    <small class="text-muted">L/ha · L</small>
+                </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="mixture-label"><?php echo $langs->trans('ApplicationRate'); ?> (L/ha)</label>
@@ -1042,8 +1073,8 @@ if ($activity->id) {
                 <div class="mixture-summary" id="mixture-lines"></div>
             </div>
             <div class="modal-footer border-0 d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
-                <button type="button" class="btn btn-success" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
+                <button type="button" class="btn btn-success px-4" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
             </div>
         </div>
     </div>
@@ -1356,17 +1387,40 @@ document.addEventListener('DOMContentLoaded', function () {
     applyAreaToLines(areaTotalInput ? areaTotalInput.value : 0);
 
     var mixtureButton = document.getElementById('open-mixture');
+    var mixtureModal = document.getElementById('mixtureModal');
     if (mixtureButton) {
-        mixtureButton.addEventListener('click', function () {
+        mixtureButton.addEventListener('click', function (event) {
             updateMixtureModal();
             showMixtureModal();
+            event.preventDefault();
+        });
+    }
+
+    if (mixtureModal) {
+        ['show.bs.modal', 'hidden.bs.modal'].forEach(function (evName) {
+            mixtureModal.addEventListener(evName, function (evt) {
+                if (evName === 'show.bs.modal') {
+                    updateMixtureModal();
+                    mixtureModal.setAttribute('aria-hidden', 'false');
+                } else {
+                    mixtureModal.setAttribute('aria-hidden', 'true');
+                    removeMixtureBackdrop();
+                }
+            });
         });
     }
 
     document.querySelectorAll('#mixtureModal [data-bs-dismiss="modal"], #mixtureModal .btn-close').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
             hideMixtureModal();
         });
+    });
+
+    document.addEventListener('keydown', function (evt) {
+        if (evt.key === 'Escape') {
+            hideMixtureModal();
+        }
     });
 
     var appRateInput = document.getElementById('application-rate');
@@ -1414,12 +1468,7 @@ function showMixtureModal() {
     modalEl.removeAttribute('aria-hidden');
     document.body.classList.add('modal-open');
 
-    if (!document.getElementById('mixture-backdrop')) {
-        var backdrop = document.createElement('div');
-        backdrop.id = 'mixture-backdrop';
-        backdrop.className = 'modal-backdrop fade show';
-        document.body.appendChild(backdrop);
-    }
+    addMixtureBackdrop();
 }
 
 function hideMixtureModal() {
@@ -1439,6 +1488,18 @@ function hideMixtureModal() {
     modalEl.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('modal-open');
 
+    removeMixtureBackdrop();
+}
+
+function addMixtureBackdrop() {
+    if (document.getElementById('mixture-backdrop')) return;
+    var backdrop = document.createElement('div');
+    backdrop.id = 'mixture-backdrop';
+    backdrop.className = 'modal-backdrop fade show';
+    document.body.appendChild(backdrop);
+}
+
+function removeMixtureBackdrop() {
     var backdrop = document.getElementById('mixture-backdrop');
     if (backdrop && backdrop.parentNode) {
         backdrop.parentNode.removeChild(backdrop);
