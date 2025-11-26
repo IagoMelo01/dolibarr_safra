@@ -646,25 +646,37 @@ print <<<'HTML'
     .safra-activity-card .product-toolbar .text-muted {
         font-size: 0.9rem;
     }
-    .safra-activity-card .mixture-modal {
+    .mixture-modal {
         display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1050;
         background: rgba(15, 23, 42, 0.65);
+        overflow-y: auto;
+        padding: 1.75rem 1rem;
     }
-    .safra-activity-card .mixture-modal.show {
-        display: block;
+    .mixture-modal.show {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
         backdrop-filter: blur(3px);
     }
-    .safra-activity-card .mixture-modal .modal-dialog {
-        margin-top: 6vh;
+    .mixture-modal .modal-dialog {
+        margin: 0;
+        width: 100%;
+        max-width: 820px;
     }
-    .safra-activity-card .mixture-modal .modal-content {
+    .mixture-modal .modal-content {
         border-radius: 14px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 18px 48px rgba(15, 23, 42, 0.25);
         position: relative;
         overflow: hidden;
     }
-    .safra-activity-card .mixture-modal .modal-content:before {
+    .mixture-modal .modal-content:before {
         content: '';
         position: absolute;
         top: 0;
@@ -673,16 +685,16 @@ print <<<'HTML'
         height: 6px;
         background: linear-gradient(120deg, #2ecc71, #1abc9c);
     }
-    .safra-activity-card .mixture-modal .modal-header {
+    .mixture-modal .modal-header {
         border: none;
         padding-bottom: 0.25rem;
     }
-    .safra-activity-card .mixture-modal .modal-title {
+    .mixture-modal .modal-title {
         letter-spacing: 0.01em;
         font-weight: 800;
         color: #0f172a;
     }
-    .safra-activity-card .mixture-modal .form-control {
+    .mixture-modal .form-control {
         border-radius: 10px;
         border-color: #e2e8f0;
         background: #f8fafc;
