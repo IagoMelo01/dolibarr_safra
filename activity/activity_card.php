@@ -449,27 +449,33 @@ print '<style>
     .safra-activity-card {
         border-radius: 18px;
         overflow: hidden;
+        background: #fff;
+        border: 1px solid #e5e7eb;
     }
     .safra-activity-card .card-header {
-        background: linear-gradient(120deg, #0d6efd, #20c997);
+        background: linear-gradient(120deg, #0f172a, #1d4ed8);
         color: #fff;
         border-bottom: none;
-        padding: 1rem 1.25rem;
+        padding: 1.1rem 1.25rem;
+    }
+    .safra-activity-card .card-subtitle {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.9rem;
     }
     .safra-activity-card .card-header .btn-light,
     .safra-activity-card .btn-soft {
-        color: #0d6efd;
-        background: #ecf4ff;
-        border: 1px solid #d8e6ff;
+        color: #0f172a;
+        background: #eef2ff;
+        border: 1px solid #d7ddf7;
         font-weight: 700;
         letter-spacing: 0.01em;
-        box-shadow: 0 10px 30px rgba(13, 110, 253, 0.18);
+        box-shadow: 0 8px 24px rgba(30, 64, 175, 0.18);
         transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
     .safra-activity-card .btn-soft:hover {
-        background: #e1edff;
+        background: #e4e9ff;
         transform: translateY(-1px);
-        box-shadow: 0 14px 34px rgba(13, 110, 253, 0.22);
+        box-shadow: 0 12px 30px rgba(30, 64, 175, 0.22);
     }
     .safra-activity-card .btn-soft .mixture-dot {
         display: inline-block;
@@ -477,8 +483,8 @@ print '<style>
         height: 9px;
         margin-right: 6px;
         border-radius: 50%;
-        background: linear-gradient(120deg, #0d6efd, #20c997);
-        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
+        background: linear-gradient(120deg, #22d3ee, #a855f7);
+        box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1);
     }
     .safra-activity-card .section-title {
         font-size: 0.95rem;
@@ -494,7 +500,7 @@ print '<style>
     }
     .safra-activity-card .floating-box {
         border-radius: 14px;
-        background: #f8fafc;
+        background: linear-gradient(180deg, #f8fafc, #f1f5f9);
         border: 1px solid #e2e8f0;
         padding: 1rem;
     }
@@ -505,8 +511,8 @@ print '<style>
         width: 100%;
     }
     .safra-activity-card .form-control:focus, .safra-activity-card select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        border-color: #1d4ed8;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
     }
     .safra-activity-card .summary-pill {
         background: #f8fafc;
@@ -527,7 +533,7 @@ print '<style>
         height: 9px;
         border-radius: 50%;
         display: inline-block;
-        background: #20c997;
+        background: #22d3ee;
     }
     .safra-activity-card .note-area {
         background: #f8fafc;
@@ -539,12 +545,15 @@ print '<style>
         background: #0f172a;
         color: #fff;
         border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.01em;
+        font-size: 0.78rem;
     }
     .safra-activity-card .table-modern tbody tr {
         transition: background 0.2s ease, transform 0.2s ease;
     }
     .safra-activity-card .table-modern tbody tr:hover {
-        background: #f1f5f9;
+        background: #f8fafc;
         transform: translateY(-1px);
     }
     .safra-activity-card .table-modern td {
@@ -600,6 +609,26 @@ print '<style>
     .safra-activity-card .btn-outline-warning {
         box-shadow: none;
     }
+    .safra-activity-card .product-toolbar {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+    }
+    .safra-activity-card .product-toolbar .text-muted {
+        font-size: 0.9rem;
+    }
+    .safra-activity-card .mixture-modal {
+        display: none;
+        background: rgba(15, 23, 42, 0.65);
+    }
+    .safra-activity-card .mixture-modal.show {
+        display: block;
+        backdrop-filter: blur(3px);
+    }
+    .safra-activity-card .mixture-modal .modal-dialog {
+        margin-top: 8vh;
+    }
     .safra-activity-card .mixture-modal .modal-content {
         border-radius: 16px;
         border: none;
@@ -607,7 +636,7 @@ print '<style>
     }
     .safra-activity-card .mixture-modal .modal-header {
         border-bottom: none;
-        background: linear-gradient(120deg, #0d6efd, #20c997);
+        background: linear-gradient(120deg, #0f172a, #1d4ed8);
         color: #fff;
     }
     .safra-activity-card .mixture-modal .modal-title {
@@ -662,6 +691,7 @@ print '<div class="card-header d-flex flex-wrap align-items-center justify-conte
 print '<div class="d-flex flex-column">
         <span class="text-uppercase small opacity-75">' . $langs->trans('SafraActivity') . '</span>
         <span class="fw-semibold fs-5">' . ($activity->label ? dol_escape_htmltag($activity->label) : $langs->trans('NewActivity')) . '</span>
+        <span class="card-subtitle">' . $langs->trans('KeepYourActivityDetailsOrganized') . '</span>
     </div>';
 
 print '<div class="d-flex align-items-center gap-2">';
@@ -769,9 +799,19 @@ print '<div>
         <div class="text-uppercase small opacity-75">' . $langs->trans('Products') . '</div>
         <h5 class="mb-0">' . $langs->trans('Products') . '</h5>
     </div>';
-print '<button type="button" class="btn btn-soft btn-sm" id="open-mixture"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>';
+print '<span class="badge bg-light text-dark">' . $langs->trans('MixtureCalculation') . '</span>';
 print '</div>';
 print '<div class="card-body">';
+print '<div class="product-toolbar d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">';
+print '<div>
+        <div class="fw-semibold">' . $langs->trans('MixtureCalculation') . '</div>
+        <div class="text-muted">' . $langs->trans('Products') . ' + ' . $langs->trans('MixtureCalculation') . '</div>
+    </div>';
+print '<div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-soft btn-sm" id="open-mixture"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>
+        <button type="button" class="btn btn-primary btn-sm" id="add-line">+ ' . $langs->trans('Add') . '</button>
+    </div>';
+print '</div>';
 
 print '<div class="table-responsive">';
 print '<table class="table table-modern align-middle" id="products-table">';
@@ -832,8 +872,6 @@ print '<td><button type="button" class="btn btn-outline-danger btn-icon remove-l
 print '</tr>';
 print '</template>';
 print '</div>'; // responsive
-
-print '<button type="button" class="btn btn-primary btn-sm" id="add-line">+ ' . $langs->trans('Add') . '</button>';
 print '</div>'; // card-body
 print '</div>'; // card
 
@@ -877,7 +915,7 @@ if ($activity->id) {
 
 // Modal for mixture calculation
 ?>
-<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog">
+<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog" aria-hidden="true" style="display:none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
