@@ -5,8 +5,9 @@ $res = 0;
 if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
     $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'].'/main.inc.php';
 }
-if (!$res && file_exists('../../main.inc.php')) {
-    $res = @include '../../main.inc.php';
+// From htdocs/custom/safra/ajax -> htdocs/main.inc.php
+if (!$res && file_exists(__DIR__.'/../../../main.inc.php')) {
+    $res = @include __DIR__.'/../../../main.inc.php';
 }
 if (!$res) {
     http_response_code(500);
