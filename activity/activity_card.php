@@ -905,6 +905,25 @@ function fetchTalhaoForProject(projectId) {
         });
 }
 
+function getProjectId() {
+    var projectSelect = document.querySelector('select[name="fk_project"]');
+    if (!projectSelect) {
+        return '';
+    }
+
+    var currentValue = projectSelect.value || '';
+
+    if (window.jQuery) {
+        var jqValue = jQuery(projectSelect).val();
+        if (jqValue !== null && jqValue !== undefined) {
+            currentValue = jqValue;
+        }
+    }
+
+    console.log('[Safra] read project id', { domValue: projectSelect.value, jqValue: window.jQuery ? jQuery(projectSelect).val() : null, resolved: currentValue });
+    return currentValue;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     var lineTemplate = document.getElementById('product-line-template');
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
@@ -946,10 +965,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var projectSelect = document.querySelector('select[name="fk_project"]');
     if (projectSelect) {
-        projectSelect.addEventListener('change', function () {
-            fetchTalhaoForProject(projectSelect.value);
-        });
-        fetchTalhaoForProject(projectSelect.value || '');
+        var triggerFetch = function () {
+            fetchTalhaoForProject(getProjectId());
+        };
+
+        projectSelect.addEventListener('change', triggerFetch, { passive: true });
+
+        if (window.jQuery) {
+            jQuery(projectSelect).on('select2:select select2:clear', triggerFetch);
+        }
+
+        fetchTalhaoForProject(getProjectId());
     }
 
     updateTalhaoArea(document.querySelector('input[name="fk_fieldplot"]').value || '');
