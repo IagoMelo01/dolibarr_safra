@@ -875,8 +875,8 @@ function fetchTalhaoForProject(projectId) {
             var talhaoId = String(data.talhao_id);
             if (data.talhao) {
                 talhaoData[talhaoId] = {
-                    ref: data.talhao.label,
-                    label: data.talhao.label,
+                    ref: data.talhao.ref || '',
+                    label: data.talhao.label || '',
                     area: data.talhao.area,
                     municipio: data.talhao.municipio || ''
                 };
