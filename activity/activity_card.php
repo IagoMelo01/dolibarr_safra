@@ -649,7 +649,7 @@ print '<div class="col-lg-4">';
 print '<div class="floating-box h-100">';
 print '<input type="hidden" name="area_base" id="area-base" value="' . dol_escape_htmltag(price2num($talhaoDetails[$activity->fk_fieldplot]['area'] ?? '')) . '">';
 print '<label class="section-title mb-1">' . $langs->trans('Area') . ' (%)</label>';
-print '<input class="form-control" id="area-percentage" name="area_percentage" value="' . dol_escape_htmltag(price2num($areaPercentage)) . '" step="0.01" type="number" min="0" max="100" placeholder="100">';
+print '<input class="form-control" id="area-percentage" name="area_percentage" value="' . dol_escape_htmltag(price2num($areaPercentage)) . '" inputmode="decimal" placeholder="100">';
 print '<div class="helper-text mt-2">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
 print '<label class="section-title mt-3 mb-1">' . $langs->trans('Area') . ' (ha)</label>';
 print '<input class="form-control" id="area-total" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0" placeholder="0.00" readonly>';
@@ -714,7 +714,7 @@ if (!empty($activity->lines)) {
         print '<tr>';
         print '<td>' . $form->selectarray('product_id[]', $productOptions, $line->fk_product, 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
         print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->area_applied)) . '" readonly></td>';
-        print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->dose)) . '"></td>';
+        print '<td><input type="text" name="line_dose[]" class="form-control dose-input" inputmode="decimal" value="' . dol_escape_htmltag(price2num($line->dose)) . '"></td>';
         print '<td>' . $form->selectarray('line_unit[]', $unitOptsForLine, $line->dose_unit, 1, 0, 0, '', 0, 0, 0, '', 'form-select unit-input') . '</td>';
         print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->total)) . '" readonly></td>';
         print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1) . '</td>';
@@ -726,7 +726,7 @@ if (!empty($activity->lines)) {
     print '<tr>';
     print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
     print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0" readonly></td>';
-    print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
+    print '<td><input type="text" name="line_dose[]" class="form-control dose-input" inputmode="decimal" value="0"></td>';
     print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'form-select unit-input') . '</td>';
     print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
     print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
@@ -741,7 +741,7 @@ print '<template id="product-line-template">';
 print '<tr>';
 print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
 print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0" readonly></td>';
-print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
+print '<td><input type="text" name="line_dose[]" class="form-control dose-input" inputmode="decimal" value="0"></td>';
 print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'form-select unit-input') . '</td>';
 print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
 print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
@@ -837,15 +837,63 @@ var areaBaseInput = document.getElementById('area-base');
 var areaPercentageInput = document.getElementById('area-percentage');
 var areaTotalInput = document.getElementById('area-total');
 
+function normalizeNumber(value) {
+    var normalized = (value || '').toString().replace(',', '.');
+    var num = parseFloat(normalized);
+    return isNaN(num) ? 0 : num;
+}
+
+function parseDecimalFromMask(value, decimals) {
+    var digits = (value || '').toString().replace(/\D/g, '');
+    if (!digits) return 0;
+    return parseInt(digits, 10) / Math.pow(10, decimals);
+}
+
+function formatDecimalToMask(number, decimals) {
+    if (number === null || number === undefined || isNaN(number)) {
+        return '';
+    }
+
+    var negative = number < 0;
+    var absolute = Math.abs(number);
+    var fixed = absolute.toFixed(decimals);
+    var parts = fixed.split('.');
+    var formatted = (parts[0] || '0') + ',' + (parts[1] || ''.padStart(decimals, '0'));
+    return negative ? '-' + formatted : formatted;
+}
+
+function maskInputValue(input, decimals, clampMax) {
+    if (!input) return 0;
+
+    var digits = (input.value || '').toString().replace(/\D/g, '');
+    if (!digits) {
+        input.value = '';
+        return 0;
+    }
+
+    while (digits.length <= decimals) {
+        digits = '0' + digits;
+    }
+
+    var numeric = parseInt(digits, 10) / Math.pow(10, decimals);
+    if (numeric < 0) numeric = 0;
+    if (typeof clampMax === 'number' && clampMax >= 0) {
+        numeric = Math.min(clampMax, numeric);
+    }
+
+    input.value = formatDecimalToMask(numeric, decimals);
+    return numeric;
+}
+
 function recalcLineTotal(row) {
-    var area = parseFloat(row.querySelector('.area-input').value) || 0;
-    var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
+    var area = normalizeNumber(row.querySelector('.area-input').value) || 0;
+    var dose = parseDecimalFromMask(row.querySelector('.dose-input').value, 4) || 0;
     var total = dose * area;
     row.querySelector('.total-input').value = total.toFixed(4);
 }
 
 function applyAreaToLines(areaValue) {
-    var normalized = parseFloat(areaValue);
+    var normalized = normalizeNumber(areaValue);
     if (isNaN(normalized)) normalized = 0;
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         var areaInput = row.querySelector('.area-input');
@@ -856,11 +904,20 @@ function applyAreaToLines(areaValue) {
 }
 
 function bindLine(row) {
-    row.querySelectorAll('.area-input, .dose-input').forEach(function (input) {
+    row.querySelectorAll('.area-input').forEach(function (input) {
         input.addEventListener('input', function () {
             recalcLineTotal(row);
         });
     });
+
+    var doseInput = row.querySelector('.dose-input');
+    if (doseInput) {
+        maskInputValue(doseInput, 4);
+        doseInput.addEventListener('input', function () {
+            maskInputValue(doseInput, 4);
+            recalcLineTotal(row);
+        });
+    }
     var removeBtn = row.querySelector('.remove-line');
     if (removeBtn) {
         removeBtn.addEventListener('click', function () {
@@ -885,17 +942,17 @@ function updateTalhaoArea(talhaoId) {
         hiddenField.value = data ? talhaoId : '';
     }
 
-    var normalizedArea = data && data.area ? parseFloat(data.area) || 0 : 0;
+    var normalizedArea = data && data.area ? normalizeNumber(data.area) || 0 : 0;
     if (baseField) {
         baseField.value = normalizedArea ? normalizedArea.toFixed(4) : '';
     }
 
     if (percentField && !percentField.value) {
-        percentField.value = '100';
+        percentField.value = formatDecimalToMask(100, 2);
     }
 
     if (areaField) {
-        var computedArea = percentField ? normalizedArea * ((parseFloat(percentField.value) || 0) / 100) : normalizedArea;
+        var computedArea = percentField ? normalizedArea * ((parseDecimalFromMask(percentField.value, 2) || 0) / 100) : normalizedArea;
         if (isNaN(computedArea)) computedArea = 0;
         areaField.value = computedArea.toFixed(4);
         applyAreaToLines(computedArea);
@@ -907,7 +964,7 @@ function updateTalhaoArea(talhaoId) {
             if (data.ref) labelParts.push(data.ref);
             if (data.label) labelParts.push(data.label);
             var baseLabel = labelParts.join(' - ');
-            var areaText = data.area ? (parseFloat(data.area).toFixed(4) + ' ha') : talhaoAreaDefault;
+            var areaText = data.area ? (normalizeNumber(data.area).toFixed(4) + ' ha') : talhaoAreaDefault;
             var extras = [];
             if (data.municipio) extras.push(data.municipio);
             var infoPieces = [];
@@ -928,14 +985,14 @@ function syncAreaFromPercentage() {
         return;
     }
 
-    var pct = parseFloat(areaPercentageInput ? areaPercentageInput.value : '') || 0;
+    var pct = parseDecimalFromMask(areaPercentageInput ? areaPercentageInput.value : '', 2) || 0;
     if (pct < 0) pct = 0;
     if (pct > 100) pct = 100;
     if (areaPercentageInput) {
-        areaPercentageInput.value = pct.toFixed(2);
+        areaPercentageInput.value = formatDecimalToMask(pct, 2);
     }
 
-    var baseArea = parseFloat(areaBaseInput.value) || 0;
+    var baseArea = normalizeNumber(areaBaseInput.value) || 0;
     var computed = baseArea * (pct / 100);
     areaTotalInput.value = computed.toFixed(4);
     applyAreaToLines(computed);
@@ -1018,12 +1075,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!row.querySelector('.unit-input').value) {
             row.querySelector('.unit-input').value = 'L/ha';
         }
-        recalcLineTotal(row);
         bindLine(row);
+        recalcLineTotal(row);
     });
 
     if (areaPercentageInput) {
-        areaPercentageInput.addEventListener('input', syncAreaFromPercentage);
+        maskInputValue(areaPercentageInput, 2, 100);
+        areaPercentageInput.addEventListener('input', function () {
+            maskInputValue(areaPercentageInput, 2, 100);
+            syncAreaFromPercentage();
+        });
     }
 
     document.getElementById('add-line').addEventListener('click', function () {
@@ -1047,9 +1108,9 @@ document.addEventListener('DOMContentLoaded', function () {
         clone.querySelectorAll('select').forEach(function (select) {
             select.selectedIndex = 0;
         });
-        recalcLineTotal(clone);
         tbody.appendChild(clone);
         bindLine(clone);
+        recalcLineTotal(clone);
         applyAreaToLines(areaTotalInput ? areaTotalInput.value : 0);
     });
 
@@ -1109,7 +1170,7 @@ function updateMixtureModal() {
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         var productSelect = row.querySelector('select[name="product_id[]"]');
         var productLabel = productSelect.options[productSelect.selectedIndex] ? productSelect.options[productSelect.selectedIndex].text : '';
-        var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
+        var dose = parseDecimalFromMask(row.querySelector('.dose-input').value, 4) || 0;
         var unit = row.querySelector('.unit-input').value || '';
         if (!productLabel || dose === 0) {
             return;
@@ -1129,7 +1190,7 @@ function buildMixtureSummary() {
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         var productSelect = row.querySelector('select[name="product_id[]"]');
         var productLabel = productSelect.options[productSelect.selectedIndex] ? productSelect.options[productSelect.selectedIndex].text : '';
-        var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
+        var dose = parseDecimalFromMask(row.querySelector('.dose-input').value, 4) || 0;
         var unit = row.querySelector('.unit-input').value || '';
         if (!productLabel || dose === 0) {
             return;
