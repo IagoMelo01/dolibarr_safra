@@ -453,7 +453,7 @@ print '<style>
         border: 1px solid #e5e7eb;
     }
     .safra-activity-card .card-header {
-        background: linear-gradient(120deg, #0f172a, #1d4ed8);
+        background: linear-gradient(140deg, #0b1224, #0f172a 45%, #1d4ed8);
         color: #fff;
         border-bottom: none;
         padding: 1.1rem 1.25rem;
@@ -495,8 +495,35 @@ print '<style>
         gap: 0.35rem;
         letter-spacing: 0.01em;
     }
+    .safra-activity-card .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.75rem;
+    }
+    .safra-activity-card .section-heading small {
+        color: #475569;
+        font-weight: 600;
+    }
     .safra-activity-card .section-title .badge {
         font-weight: 500;
+    }
+    .safra-activity-card .section-block {
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+    }
+    .safra-activity-card .section-block + .section-block {
+        margin-top: 0.85rem;
+    }
+    .safra-activity-card .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        margin: 1.2rem 0;
     }
     .safra-activity-card .floating-box {
         border-radius: 14px;
@@ -677,6 +704,51 @@ print '<style>
         font-weight: 600;
         color: #0f172a;
     }
+    .safra-activity-card .product-footer {
+        background: linear-gradient(120deg, #0f172a, #111827);
+        border-radius: 0 0 14px 14px;
+        padding: 0.8rem 1.1rem;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .safra-activity-card .product-footer .footer-note {
+        color: #cbd5e1;
+        font-weight: 600;
+    }
+    .safra-activity-card .btn-add-line {
+        background: linear-gradient(120deg, #22c55e, #16a34a);
+        border: none;
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        padding: 0.65rem 1.2rem;
+        border-radius: 12px;
+        box-shadow: 0 16px 32px rgba(22, 163, 74, 0.25);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .safra-activity-card .btn-add-line:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 38px rgba(22, 163, 74, 0.28);
+    }
+    .safra-activity-card .btn-save-primary {
+        background: linear-gradient(120deg, #2563eb, #1d4ed8);
+        border: none;
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        padding: 0.8rem 1.4rem;
+        border-radius: 14px;
+        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.25);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .safra-activity-card .btn-save-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 24px 46px rgba(37, 99, 235, 0.28);
+    }
 </style>';
 
 print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
@@ -718,6 +790,8 @@ print '</div>';
 print '</div>';
 
 print '<div class="card-body">';
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('Details') . '</span><small>' . $langs->trans('KeepYourActivityDetailsOrganized') . '</small></div>';
 print '<div class="row g-4">';
 print '<div class="col-lg-6">';
 print '<label class="section-title">' . $langs->trans('Label') . '</label>';
@@ -736,11 +810,13 @@ print $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 
 print '<div class="helper-text mt-1">' . $langs->trans('SelectProjectToAutoFillFieldPlot') . '</div>';
 print '</div>';
 print '</div>';
+print '</div>';
 
-print '<div class="row g-4 mt-1">';
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('FieldPlot') . '</span><small>' . $langs->trans('AutoFilledFromFieldPlot') . '</small></div>';
+print '<div class="row g-4">';
 print '<div class="col-lg-8">';
 print '<div class="floating-box h-100">';
-print '<label class="section-title mb-1">' . $langs->trans('FieldPlot') . '</label>';
 print '<input type="hidden" name="fk_fieldplot" value="' . ((int) $activity->fk_fieldplot) . '">';
 $talhaoLabel = $talhaoPlaceholder;
 if (!empty($activity->fk_fieldplot) && !empty($talhaoDetails[$activity->fk_fieldplot])) {
@@ -754,7 +830,7 @@ if (!empty($activity->fk_fieldplot) && !empty($talhaoDetails[$activity->fk_field
     $talhaoLabel = implode(' • ', array_filter($pieces));
 }
 print '<div class="info-strip" id="talhao-area-info">' . dol_escape_htmltag($talhaoLabel) . '</div>';
-print '<div class="helper-text mt-1">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
+print '<div class="helper-text mt-1">' . $langs->trans('SelectProjectToAutoFillFieldPlot') . '</div>';
 print '</div>';
 print '</div>';
 print '<div class="col-lg-4">';
@@ -768,8 +844,13 @@ print '<input class="form-control" id="area-total" name="area_total" value="' . 
 print '</div>';
 print '</div>';
 print '</div>';
+print '</div>';
 
-print '<div class="row g-4 mt-1">';
+print '<div class="section-divider"></div>';
+
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('Resources') . '</span><small>' . $langs->trans('Machine') . ' • ' . $langs->trans('Implements') . ' • ' . $langs->trans('Employees') . '</small></div>';
+print '<div class="row g-4">';
 print '<div class="col-lg-4">';
 print '<label class="section-title">' . $langs->trans('Machine') . '</label>';
 print $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
@@ -783,11 +864,14 @@ print '<label class="section-title">' . $langs->trans('Employees') . '</label>';
 print $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
 print '</div>';
 print '</div>';
+print '</div>';
 
-print '<div class="row g-3 mt-3">';
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('Note') . '</span><small>' . $langs->trans('Optional') . '</small></div>';
+print '<div class="row g-3">';
 print '<div class="col-12">';
-print '<label class="section-title">' . $langs->trans('Note') . '</label>';
 print '<textarea class="form-control note-area" name="note_public" id="note_public" rows="4" placeholder="' . dol_escape_htmltag($langs->trans('Note')) . '">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
+print '</div>';
 print '</div>';
 print '</div>';
 print '</div>'; // card-body
@@ -809,7 +893,6 @@ print '<div>
     </div>';
 print '<div class="d-flex gap-2 flex-wrap">
         <button type="button" class="btn btn-soft btn-sm" id="open-mixture"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>
-        <button type="button" class="btn btn-primary btn-sm" id="add-line">+ ' . $langs->trans('Add') . '</button>
     </div>';
 print '</div>';
 
@@ -872,11 +955,15 @@ print '<td><button type="button" class="btn btn-outline-danger btn-icon remove-l
 print '</tr>';
 print '</template>';
 print '</div>'; // responsive
+print '<div class="product-footer">';
+print '<span class="footer-note">' . $langs->trans('Add') . ' ' . $langs->trans('Products') . '</span>';
+print '<button type="button" class="btn btn-add-line" id="add-line">+ ' . $langs->trans('Add') . '</button>';
+print '</div>';
 print '</div>'; // card-body
 print '</div>'; // card
 
-print '<div class="mt-3">';
-print '<button class="btn btn-success" type="submit">' . $langs->trans('Save') . '</button>';
+print '<div class="mt-3 text-end">';
+print '<button class="btn btn-save-primary" type="submit">💾 ' . $langs->trans('Save') . '</button>';
 print '</div>';
 
 print '</form>';
