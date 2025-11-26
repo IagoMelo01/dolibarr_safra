@@ -79,6 +79,8 @@ if ($id > 0) {
     $activity->fetch($id);
 }
 
+$areaPercentage = price2num(GETPOST('area_percentage', 'alpha'), 'MT');
+
 // Helpers
 function safra_load_options($db, $table, $labelField)
 {
@@ -191,6 +193,15 @@ if (!empty($talhaoDetails[$activity->fk_fieldplot]) && empty($activity->area_tot
     $activity->area_total = $talhaoDetails[$activity->fk_fieldplot]['area'];
 }
 
+if (empty($areaPercentage)) {
+    $baseAreaForPercent = (!empty($talhaoDetails[$activity->fk_fieldplot]['area'])) ? price2num($talhaoDetails[$activity->fk_fieldplot]['area'], 'MT') : 0;
+    if ($activity->area_total > 0 && $baseAreaForPercent > 0) {
+        $areaPercentage = min(100, max(0, round(($activity->area_total / $baseAreaForPercent) * 100, 2)));
+    } else {
+        $areaPercentage = 100;
+    }
+}
+
 $warehouses = safra_load_options($db, 'entrepot', 'lieu');
 
 $userOptions = array();
@@ -217,6 +228,14 @@ if ($resProducts) {
         $productOptions[$obj->rowid] = $obj->ref . ' - ' . $obj->label;
     }
 }
+
+$unitOptions = array(
+    'L/ha' => 'L/ha',
+    'kg/ha' => 'kg/ha',
+    'g/ha' => 'g/ha',
+    'mL/ha' => 'mL/ha',
+    'un/ha' => 'un/ha',
+);
 
 $movementTypes = array(
     'consume' => $langs->trans('Consume'),
@@ -466,6 +485,7 @@ print '<style>
         border-radius: 0.65rem;
         border-color: #e5e7eb;
         box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+        width: 100%;
     }
     .safra-activity-card .form-control:focus, .safra-activity-card select:focus {
         border-color: #0d6efd;
@@ -496,6 +516,7 @@ print '<style>
         background: #f8fafc;
         border: 1px dashed #cbd5e1;
         border-radius: 0.75rem;
+        min-height: 140px;
     }
     .safra-activity-card .table-modern thead th {
         background: #0f172a;
@@ -534,6 +555,16 @@ print '<style>
         align-items: center;
         font-weight: 600;
         color: #0f172a;
+    }
+    .safra-activity-card .select2-container .select2-selection--multiple,
+    .safra-activity-card .select2-container .select2-selection--single {
+        min-height: 40px;
+        border-radius: 0.65rem;
+        border-color: #e5e7eb;
+    }
+    .safra-activity-card .table-modern td select.form-select,
+    .safra-activity-card .table-modern td .form-control {
+        min-width: 130px;
     }
 </style>';
 
@@ -616,9 +647,12 @@ print '</div>';
 print '</div>';
 print '<div class="col-lg-4">';
 print '<div class="floating-box h-100">';
-print '<label class="section-title mb-1">' . $langs->trans('Area') . ' (ha)</label>';
-print '<input class="form-control" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0" placeholder="0.00" readonly>';
+print '<input type="hidden" name="area_base" id="area-base" value="' . dol_escape_htmltag(price2num($talhaoDetails[$activity->fk_fieldplot]['area'] ?? '')) . '">';
+print '<label class="section-title mb-1">' . $langs->trans('Area') . ' (%)</label>';
+print '<input class="form-control" id="area-percentage" name="area_percentage" value="' . dol_escape_htmltag(price2num($areaPercentage)) . '" step="0.01" type="number" min="0" max="100" placeholder="100">';
 print '<div class="helper-text mt-2">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
+print '<label class="section-title mt-3 mb-1">' . $langs->trans('Area') . ' (ha)</label>';
+print '<input class="form-control" id="area-total" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0" placeholder="0.00" readonly>';
 print '</div>';
 print '</div>';
 print '</div>';
@@ -641,7 +675,7 @@ print '</div>';
 print '<div class="row g-3 mt-3">';
 print '<div class="col-12">';
 print '<label class="section-title">' . $langs->trans('Note') . '</label>';
-print '<textarea class="form-control note-area" name="note_public" id="note_public" rows="3" placeholder="' . dol_escape_htmltag($langs->trans('Note')) . '">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
+print '<textarea class="form-control note-area" name="note_public" id="note_public" rows="4" placeholder="' . dol_escape_htmltag($langs->trans('Note')) . '">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
 print '</div>';
 print '</div>';
 print '</div>'; // card-body
@@ -673,11 +707,15 @@ print '<tbody>';
 
 if (!empty($activity->lines)) {
     foreach ($activity->lines as $line) {
+        $unitOptsForLine = $unitOptions;
+        if (!empty($line->dose_unit) && !isset($unitOptsForLine[$line->dose_unit])) {
+            $unitOptsForLine[$line->dose_unit] = $line->dose_unit;
+        }
         print '<tr>';
         print '<td>' . $form->selectarray('product_id[]', $productOptions, $line->fk_product, 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
-        print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->area_applied)) . '"></td>';
+        print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->area_applied)) . '" readonly></td>';
         print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->dose)) . '"></td>';
-        print '<td><input type="text" name="line_unit[]" class="form-control unit-input" value="' . dol_escape_htmltag($line->dose_unit) . '"></td>';
+        print '<td>' . $form->selectarray('line_unit[]', $unitOptsForLine, $line->dose_unit, 1, 0, 0, '', 0, 0, 0, '', 'form-select unit-input') . '</td>';
         print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="' . dol_escape_htmltag(price2num($line->total)) . '" readonly></td>';
         print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1) . '</td>';
         print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, $line->fk_warehouse, 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
@@ -687,9 +725,9 @@ if (!empty($activity->lines)) {
 } else {
     print '<tr>';
     print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
-    print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0"></td>';
+    print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0" readonly></td>';
     print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
-    print '<td><input type="text" name="line_unit[]" class="form-control unit-input" value="L/ha"></td>';
+    print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'form-select unit-input') . '</td>';
     print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
     print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
     print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
@@ -702,9 +740,9 @@ print '</table>';
 print '<template id="product-line-template">';
 print '<tr>';
 print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth200') . '</td>';
-print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0"></td>';
+print '<td><input type="number" name="line_area[]" class="form-control area-input" step="0.0001" value="0" readonly></td>';
 print '<td><input type="number" name="line_dose[]" class="form-control dose-input" step="0.0001" value="0"></td>';
-print '<td><input type="text" name="line_unit[]" class="form-control unit-input" value="L/ha"></td>';
+print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'form-select unit-input') . '</td>';
 print '<td><input type="number" name="line_total[]" class="form-control total-input" step="0.0001" value="0" readonly></td>';
 print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1) . '</td>';
 print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'minwidth150') . '</td>';
@@ -795,12 +833,26 @@ print '<script>';
 var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
 var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->trans('SelectProjectToAutoFillFieldPlot')); ?>';
 var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
+var areaBaseInput = document.getElementById('area-base');
+var areaPercentageInput = document.getElementById('area-percentage');
+var areaTotalInput = document.getElementById('area-total');
 
 function recalcLineTotal(row) {
     var area = parseFloat(row.querySelector('.area-input').value) || 0;
     var dose = parseFloat(row.querySelector('.dose-input').value) || 0;
     var total = dose * area;
     row.querySelector('.total-input').value = total.toFixed(4);
+}
+
+function applyAreaToLines(areaValue) {
+    var normalized = parseFloat(areaValue);
+    if (isNaN(normalized)) normalized = 0;
+    document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
+        var areaInput = row.querySelector('.area-input');
+        if (!areaInput) return;
+        areaInput.value = normalized.toFixed(4);
+        recalcLineTotal(row);
+    });
 }
 
 function bindLine(row) {
@@ -820,7 +872,9 @@ function bindLine(row) {
 }
 
 function updateTalhaoArea(talhaoId) {
-    var areaField = document.querySelector('input[name="area_total"]');
+    var areaField = areaTotalInput;
+    var baseField = areaBaseInput;
+    var percentField = areaPercentageInput;
     var info = document.getElementById('talhao-area-info');
     var hiddenField = document.querySelector('input[name="fk_fieldplot"]');
     var data = talhaoData[talhaoId] || null;
@@ -831,9 +885,20 @@ function updateTalhaoArea(talhaoId) {
         hiddenField.value = data ? talhaoId : '';
     }
 
+    var normalizedArea = data && data.area ? parseFloat(data.area) || 0 : 0;
+    if (baseField) {
+        baseField.value = normalizedArea ? normalizedArea.toFixed(4) : '';
+    }
+
+    if (percentField && !percentField.value) {
+        percentField.value = '100';
+    }
+
     if (areaField) {
-        var normalizedArea = data && data.area ? parseFloat(data.area) || 0 : 0;
-        areaField.value = normalizedArea ? normalizedArea.toFixed(4) : '';
+        var computedArea = percentField ? normalizedArea * ((parseFloat(percentField.value) || 0) / 100) : normalizedArea;
+        if (isNaN(computedArea)) computedArea = 0;
+        areaField.value = computedArea.toFixed(4);
+        applyAreaToLines(computedArea);
     }
 
     if (info) {
@@ -854,6 +919,26 @@ function updateTalhaoArea(talhaoId) {
             info.textContent = talhaoPlaceholderText;
         }
     }
+
+    syncAreaFromPercentage();
+}
+
+function syncAreaFromPercentage() {
+    if (!areaTotalInput || !areaBaseInput) {
+        return;
+    }
+
+    var pct = parseFloat(areaPercentageInput ? areaPercentageInput.value : '') || 0;
+    if (pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+    if (areaPercentageInput) {
+        areaPercentageInput.value = pct.toFixed(2);
+    }
+
+    var baseArea = parseFloat(areaBaseInput.value) || 0;
+    var computed = baseArea * (pct / 100);
+    areaTotalInput.value = computed.toFixed(4);
+    applyAreaToLines(computed);
 }
 
 function fetchTalhaoForProject(projectId) {
@@ -937,6 +1022,10 @@ document.addEventListener('DOMContentLoaded', function () {
         bindLine(row);
     });
 
+    if (areaPercentageInput) {
+        areaPercentageInput.addEventListener('input', syncAreaFromPercentage);
+    }
+
     document.getElementById('add-line').addEventListener('click', function () {
         var tbody = document.querySelector('#products-table tbody');
         var baseRow = null;
@@ -961,6 +1050,7 @@ document.addEventListener('DOMContentLoaded', function () {
         recalcLineTotal(clone);
         tbody.appendChild(clone);
         bindLine(clone);
+        applyAreaToLines(areaTotalInput ? areaTotalInput.value : 0);
     });
 
     var projectSelect = document.querySelector('select[name="fk_project"]');
@@ -979,6 +1069,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     updateTalhaoArea(document.querySelector('input[name="fk_fieldplot"]').value || '');
+    syncAreaFromPercentage();
+    applyAreaToLines(areaTotalInput ? areaTotalInput.value : 0);
 
     var mixtureButton = document.getElementById('open-mixture');
     if (mixtureButton) {
