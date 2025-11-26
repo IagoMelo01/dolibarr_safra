@@ -649,7 +649,7 @@ print '<div class="col-lg-4">';
 print '<div class="floating-box h-100">';
 print '<input type="hidden" name="area_base" id="area-base" value="' . dol_escape_htmltag(price2num($talhaoDetails[$activity->fk_fieldplot]['area'] ?? '')) . '">';
 print '<label class="section-title mb-1">' . $langs->trans('Area') . ' (%)</label>';
-print '<input class="form-control" id="area-percentage" name="area_percentage" value="' . dol_escape_htmltag(price2num($areaPercentage)) . '" inputmode="decimal" placeholder="100">';
+print '<input class="form-control" id="area-percentage" name="area_percentage" value="' . dol_escape_htmltag(price2num($areaPercentage*100)) . '" inputmode="decimal" placeholder="100">';
 print '<div class="helper-text mt-2">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
 print '<label class="section-title mt-3 mb-1">' . $langs->trans('Area') . ' (ha)</label>';
 print '<input class="form-control" id="area-total" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" step="0.0001" type="number" min="0" placeholder="0.00" readonly>';
