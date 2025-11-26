@@ -825,6 +825,8 @@ function updateTalhaoArea(talhaoId) {
     var hiddenField = document.querySelector('input[name="fk_fieldplot"]');
     var data = talhaoData[talhaoId] || null;
 
+    console.log('[Safra] updateTalhaoArea', { talhaoId: talhaoId, data: data });
+
     if (hiddenField) {
         hiddenField.value = data ? talhaoId : '';
     }
@@ -855,19 +857,32 @@ function updateTalhaoArea(talhaoId) {
 }
 
 function fetchTalhaoForProject(projectId) {
-    if (!projectId) {
+    var numericProjectId = parseInt(projectId, 10) || 0;
+    console.log('[Safra] fetchTalhaoForProject', { raw: projectId, normalized: numericProjectId });
+
+    if (!numericProjectId) {
+        console.log('[Safra] No valid project selected, clearing talhão/area');
         updateTalhaoArea('');
         return;
     }
 
     updateTalhaoArea('');
 
-    fetch('<?php echo dol_buildpath('/safra/ajax/project_talhao.php', 1); ?>?id=' + encodeURIComponent(projectId), {
-        credentials: 'same-origin'
-    })
-        .then(function (response) { return response.json(); })
+    var url = '<?php echo dol_buildpath('/safra/ajax/project_talhao.php', 1); ?>?id=' + encodeURIComponent(numericProjectId);
+    console.log('[Safra] Requesting talhão from project', url);
+
+    fetch(url, { credentials: 'same-origin' })
+        .then(function (response) {
+            console.log('[Safra] talhão response status', response.status);
+            return response.json().catch(function (err) {
+                console.error('[Safra] Error parsing talhão JSON', err);
+                throw err;
+            });
+        })
         .then(function (data) {
+            console.log('[Safra] talhão payload', data);
             if (!data || !data.success || !data.talhao_id) {
+                console.warn('[Safra] Talhão missing in response, clearing selection');
                 updateTalhaoArea('');
                 return;
             }
@@ -884,7 +899,8 @@ function fetchTalhaoForProject(projectId) {
 
             updateTalhaoArea(talhaoId);
         })
-        .catch(function () {
+        .catch(function (err) {
+            console.error('[Safra] talhão fetch failed', err);
             updateTalhaoArea('');
         });
 }
