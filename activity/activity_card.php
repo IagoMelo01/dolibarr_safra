@@ -685,17 +685,20 @@ print <<<'HTML'
     }
     .mixture-modal .modal-header {
         border: none;
-        padding: 1.3rem 1.35rem 1rem;
-        background: linear-gradient(135deg, rgba(31, 99, 235, 0.16), rgba(12, 26, 60, 0.12));
+        padding: 1.65rem 1.6rem 1.25rem;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 64, 175, 0.82));
         align-items: flex-start;
+        min-height: 96px;
+        color: #f8fafc;
     }
     .mixture-modal .modal-title {
         letter-spacing: 0.01em;
         font-weight: 800;
-        color: #0f172a;
+        color: #f8fafc;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.65rem;
+        font-size: 1.22rem;
     }
     .mixture-modal .modal-title:before {
         content: '';
