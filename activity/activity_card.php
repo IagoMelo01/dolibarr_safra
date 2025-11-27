@@ -649,32 +649,30 @@ print <<<'HTML'
     .mixture-modal {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1050;
-        background: rgba(15, 23, 42, 0.65);
+        inset: 0;
+        z-index: 1090;
+        background: radial-gradient(120% 120% at 50% 10%, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.82));
         overflow-y: auto;
-        padding: 1.75rem 1rem;
+        padding: 2.25rem 1rem;
     }
     .mixture-modal.show {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: center;
         backdrop-filter: blur(3px);
     }
     .mixture-modal .modal-dialog {
-        margin: 0;
+        margin: 0 auto;
         width: 100%;
-        max-width: 820px;
+        max-width: 860px;
     }
     .mixture-modal .modal-content {
-        border-radius: 14px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.25);
+        border-radius: 16px;
+        border: 1px solid #d9e2f3;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.35);
         position: relative;
         overflow: hidden;
+        background: linear-gradient(180deg, #ffffff, #f8fbff 45%, #f4f7fb);
     }
     .mixture-modal .modal-content:before {
         content: '';
@@ -682,22 +680,39 @@ print <<<'HTML'
         top: 0;
         left: 0;
         right: 0;
-        height: 6px;
-        background: linear-gradient(120deg, #2ecc71, #1abc9c);
+        height: 8px;
+        background: linear-gradient(120deg, #22c55e, #14b8a6, #0ea5e9);
     }
     .mixture-modal .modal-header {
         border: none;
-        padding-bottom: 0.25rem;
+        padding-bottom: 0.35rem;
+        background: linear-gradient(120deg, rgba(34, 197, 94, 0.08), rgba(14, 165, 233, 0.08));
     }
     .mixture-modal .modal-title {
         letter-spacing: 0.01em;
         font-weight: 800;
         color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .mixture-modal .modal-title:before {
+        content: '';
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: linear-gradient(140deg, #22c55e, #0ea5e9);
+        box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.12);
+    }
+    .mixture-modal .modal-body {
+        padding-top: 0.25rem;
     }
     .mixture-modal .form-control {
-        border-radius: 10px;
-        border-color: #e2e8f0;
+        border-radius: 12px;
+        border-color: #dbe4f3;
         background: #f8fafc;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
     }
     .safra-activity-card .mixture-summary {
         background: #f8fafc;
@@ -741,6 +756,35 @@ print <<<'HTML'
         height: 10px;
         border-radius: 50%;
         background: linear-gradient(120deg, #22c55e, #16a34a);
+    }
+    .safra-activity-card .mixture-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(120deg, rgba(34, 197, 94, 0.12), rgba(14, 165, 233, 0.1));
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        border-radius: 12px;
+        padding: 0.55rem 0.8rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+    .safra-activity-card .mixture-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 0.4rem 0.65rem;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.28);
+    }
+    .safra-activity-card .mixture-chip .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(140deg, #22c55e, #0ea5e9);
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.14);
     }
     .safra-activity-card .product-footer {
         background: linear-gradient(120deg, #0f172a, #111827);
@@ -1059,9 +1103,9 @@ if ($activity->id) {
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="mixture-topbar mb-3">
                     <div class="mixture-helper"><span class="dot"></span><?php echo $langs->trans('MixtureCalculation'); ?></div>
-                    <small class="text-muted">L/ha · L</small>
+                    <div class="mixture-chip"><span class="dot"></span>L/ha · L</div>
                 </div>
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
