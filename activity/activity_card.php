@@ -647,32 +647,32 @@ print <<<'HTML'
         font-size: 0.9rem;
     }
     .mixture-modal {
-        display: none;
         position: fixed;
         inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
         z-index: 1090;
         background: radial-gradient(120% 120% at 50% 10%, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.82));
         overflow-y: auto;
-        padding: 2.25rem 1rem;
+        padding: 2.4rem 1.25rem;
     }
     .mixture-modal.show {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(3px);
+        backdrop-filter: blur(4px);
     }
     .mixture-modal .modal-dialog {
         margin: 0 auto;
         width: 100%;
-        max-width: 860px;
+        max-width: 880px;
     }
     .mixture-modal .modal-content {
-        border-radius: 16px;
-        border: 1px solid #d9e2f3;
-        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.35);
+        border-radius: 18px;
+        border: 1px solid #dfe7f3;
+        box-shadow: 0 28px 90px rgba(15, 23, 42, 0.38);
         position: relative;
         overflow: hidden;
-        background: linear-gradient(180deg, #ffffff, #f8fbff 45%, #f4f7fb);
+        background: linear-gradient(180deg, #0d162a 0%, #0d162a 14%, #0b1224 28%, #f8fafc 28%);
     }
     .mixture-modal .modal-content:before {
         content: '';
@@ -680,13 +680,14 @@ print <<<'HTML'
         top: 0;
         left: 0;
         right: 0;
-        height: 8px;
+        height: 9px;
         background: linear-gradient(120deg, #22c55e, #14b8a6, #0ea5e9);
     }
     .mixture-modal .modal-header {
         border: none;
-        padding-bottom: 0.35rem;
+        padding: 1.35rem 1.35rem 0.9rem;
         background: linear-gradient(120deg, rgba(34, 197, 94, 0.08), rgba(14, 165, 233, 0.08));
+        align-items: flex-start;
     }
     .mixture-modal .modal-title {
         letter-spacing: 0.01em;
@@ -694,7 +695,7 @@ print <<<'HTML'
         color: #0f172a;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.6rem;
     }
     .mixture-modal .modal-title:before {
         content: '';
@@ -706,13 +707,44 @@ print <<<'HTML'
         box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.12);
     }
     .mixture-modal .modal-body {
-        padding-top: 0.25rem;
+        padding: 1.1rem 1.35rem 1.35rem;
+    }
+    .mixture-modal .modal-footer {
+        padding: 1rem 1.35rem 1.3rem;
+        background: #f8fafc;
+        gap: 0.85rem;
     }
     .mixture-modal .form-control {
         border-radius: 12px;
         border-color: #dbe4f3;
         background: #f8fafc;
         box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+        padding: 0.6rem 0.75rem;
+    }
+    .mixture-modal .mixture-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 0.95rem;
+        margin-bottom: 1.1rem;
+    }
+    .mixture-modal .mixture-fieldset {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.95rem 1rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+        height: 100%;
+    }
+    .mixture-modal .mixture-stat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        background: linear-gradient(120deg, #f8fafc, #f1f5f9);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        margin-bottom: 0.35rem;
     }
     .safra-activity-card .mixture-summary {
         background: #f8fafc;
@@ -723,13 +755,17 @@ print <<<'HTML'
         overflow-y: auto;
     }
     .safra-activity-card .mixture-summary .line {
-        padding: 0.3rem 0.4rem;
-        border-radius: 8px;
-        background: #fff;
+        padding: 0.45rem 0.6rem;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
         border: 1px solid #e5e7eb;
         margin-bottom: 0.35rem;
-        font-weight: 600;
+        font-weight: 700;
         color: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
     }
     .safra-activity-card .mixture-label {
         font-size: 0.9rem;
@@ -785,6 +821,23 @@ print <<<'HTML'
         border-radius: 50%;
         background: linear-gradient(140deg, #22c55e, #0ea5e9);
         box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.14);
+    }
+    .mixture-modal .btn-outline-secondary {
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 0.7rem 1.3rem;
+        border-color: #cbd5e1;
+        color: #0f172a;
+        background: #fff;
+    }
+    .mixture-modal .btn-primary {
+        border-radius: 12px;
+        font-weight: 800;
+        padding: 0.8rem 1.6rem;
+        letter-spacing: 0.01em;
+        background: linear-gradient(120deg, #2c7be5, #2563eb);
+        border: none;
+        box-shadow: 0 14px 32px rgba(37, 99, 235, 0.28);
     }
     .safra-activity-card .product-footer {
         background: linear-gradient(120deg, #0f172a, #111827);
@@ -1107,30 +1160,31 @@ if ($activity->id) {
                     <div class="mixture-helper"><span class="dot"></span><?php echo $langs->trans('MixtureCalculation'); ?></div>
                     <div class="mixture-chip"><span class="dot"></span>L/ha · L</div>
                 </div>
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
+                <div class="mixture-grid">
+                    <div class="mixture-fieldset">
                         <label class="mixture-label"><?php echo $langs->trans('ApplicationRate'); ?> (L/ha)</label>
                         <input type="text" class="form-control" id="application-rate" inputmode="decimal" value="0">
-                        <small class="text-muted"><?php echo dol_escape_htmltag($langs->trans('EnterRatePerHectare')); ?></small>
+                        <div class="helper-text mt-2"><?php echo dol_escape_htmltag($langs->trans('EnterRatePerHectare')); ?></div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="mixture-fieldset">
                         <label class="mixture-label"><?php echo $langs->trans('TankCapacity'); ?> (L)</label>
                         <input type="text" class="form-control" id="tank-capacity" inputmode="decimal" value="0">
-                        <small class="text-muted"><?php echo dol_escape_htmltag($langs->trans('EnterTankCapacity')); ?></small>
+                        <div class="helper-text mt-2"><?php echo dol_escape_htmltag($langs->trans('EnterTankCapacity')); ?></div>
                     </div>
                 </div>
-                <div class="row g-3 mb-3 align-items-center">
-                    <div class="col-md-6">
-                        <div class="mixture-label mb-1"><?php echo $langs->trans('AppliedAreaPerTank'); ?></div>
-                        <div class="mixture-meta" id="area-per-tank">0,00 ha</div>
+                <div class="mixture-fieldset mb-3">
+                    <div class="mixture-label mb-2"><?php echo $langs->trans('AppliedAreaPerTank'); ?></div>
+                    <div class="mixture-stat">
+                        <div class="text-muted"><?php echo $langs->trans('Area'); ?></div>
+                        <div class="mixture-meta mb-0" id="area-per-tank">0,00 ha</div>
                     </div>
+                    <div class="mixture-label mb-2 mt-3"><?php echo $langs->trans('QuantityPerTank'); ?></div>
+                    <div class="mixture-summary" id="mixture-lines"></div>
                 </div>
-                <div class="mixture-label mb-2"><?php echo $langs->trans('QuantityPerTank'); ?></div>
-                <div class="mixture-summary" id="mixture-lines"></div>
             </div>
-            <div class="modal-footer border-0 d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
-                <button type="button" class="btn btn-success px-4" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
+            <div class="modal-footer border-0 d-flex justify-content-between align-items-center">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
+                <button type="button" class="btn btn-primary" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
             </div>
         </div>
     </div>
@@ -1583,7 +1637,14 @@ function updateMixtureModal() {
         var qty = dose * areaPerTank;
         var item = document.createElement('div');
         item.className = 'line';
-        item.textContent = productLabel + ': ' + formatDecimalToMask(qty, 2) + ' ' + (unit || '');
+        var name = document.createElement('span');
+        name.textContent = productLabel;
+        name.className = 'text-truncate';
+        var amount = document.createElement('span');
+        amount.textContent = formatDecimalToMask(qty, 2) + ' ' + (unit || '');
+        amount.className = 'fw-semibold';
+        item.appendChild(name);
+        item.appendChild(amount);
         container.appendChild(item);
         hasLine = true;
     });
