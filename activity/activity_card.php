@@ -653,26 +653,26 @@ print <<<'HTML'
         align-items: center;
         justify-content: center;
         z-index: 1090;
-        background: radial-gradient(120% 120% at 50% 10%, rgba(99, 102, 241, 0.12), rgba(15, 23, 42, 0.82));
+        background: radial-gradient(130% 130% at 50% 18%, rgba(47, 72, 122, 0.18), rgba(6, 17, 38, 0.85));
         overflow-y: auto;
         padding: 2.4rem 1.25rem;
     }
     .mixture-modal.show {
         display: flex;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(6px);
     }
     .mixture-modal .modal-dialog {
         margin: 0 auto;
         width: 100%;
-        max-width: 880px;
+        max-width: 900px;
     }
     .mixture-modal .modal-content {
         border-radius: 18px;
-        border: 1px solid #dfe7f3;
-        box-shadow: 0 28px 90px rgba(15, 23, 42, 0.38);
+        border: 1px solid #d9e5f6;
+        box-shadow: 0 26px 80px rgba(7, 11, 26, 0.5);
         position: relative;
         overflow: hidden;
-        background: linear-gradient(180deg, #0d162a 0%, #0d162a 14%, #0b1224 28%, #f8fafc 28%);
+        background: linear-gradient(180deg, #0c1a36 0%, #0c1a36 16%, #0b1a3c 28%, #f7f9fc 28%);
     }
     .mixture-modal .modal-content:before {
         content: '';
@@ -681,12 +681,12 @@ print <<<'HTML'
         left: 0;
         right: 0;
         height: 9px;
-        background: linear-gradient(120deg, #22c55e, #14b8a6, #0ea5e9);
+        background: linear-gradient(120deg, #22c55e, #1f8ef1, #2563eb);
     }
     .mixture-modal .modal-header {
         border: none;
-        padding: 1.35rem 1.35rem 0.9rem;
-        background: linear-gradient(120deg, rgba(34, 197, 94, 0.08), rgba(14, 165, 233, 0.08));
+        padding: 1.3rem 1.35rem 1rem;
+        background: linear-gradient(135deg, rgba(31, 99, 235, 0.16), rgba(12, 26, 60, 0.12));
         align-items: flex-start;
     }
     .mixture-modal .modal-title {
@@ -703,36 +703,36 @@ print <<<'HTML'
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        background: linear-gradient(140deg, #22c55e, #0ea5e9);
-        box-shadow: 0 0 0 6px rgba(14, 165, 233, 0.12);
+        background: linear-gradient(140deg, #22c55e, #1f8ef1);
+        box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
     }
     .mixture-modal .modal-body {
-        padding: 1.1rem 1.35rem 1.35rem;
+        padding: 1.15rem 1.35rem 1.4rem;
     }
     .mixture-modal .modal-footer {
-        padding: 1rem 1.35rem 1.3rem;
-        background: #f8fafc;
+        padding: 1.05rem 1.35rem 1.35rem;
+        background: linear-gradient(180deg, #f7f9fc, #eef2f7);
         gap: 0.85rem;
     }
     .mixture-modal .form-control {
         border-radius: 12px;
-        border-color: #dbe4f3;
-        background: #f8fafc;
-        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+        border-color: #d4def0;
+        background: #f8fbff;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
         padding: 0.6rem 0.75rem;
     }
     .mixture-modal .mixture-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 0.95rem;
-        margin-bottom: 1.1rem;
+        gap: 1.05rem;
+        margin-bottom: 1.2rem;
     }
     .mixture-modal .mixture-fieldset {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 0.95rem 1rem;
-        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+        background: linear-gradient(180deg, #ffffff, #f8fbff);
+        border: 1px solid #dfe7f3;
+        border-radius: 14px;
+        padding: 1rem 1.05rem;
+        box-shadow: 0 10px 26px rgba(12, 26, 60, 0.08);
         height: 100%;
     }
     .mixture-modal .mixture-stat {
@@ -740,10 +740,10 @@ print <<<'HTML'
         align-items: center;
         justify-content: space-between;
         gap: 0.75rem;
-        background: linear-gradient(120deg, #f8fafc, #f1f5f9);
-        border: 1px solid #e2e8f0;
+        background: linear-gradient(120deg, #f5f8ff, #eef2f7);
+        border: 1px solid #dde6f4;
         border-radius: 12px;
-        padding: 0.85rem 1rem;
+        padding: 0.95rem 1.05rem;
         margin-bottom: 0.35rem;
     }
     .safra-activity-card .mixture-summary {
@@ -784,73 +784,74 @@ print <<<'HTML'
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        color: #16a34a;
+        color: #1f8ef1;
         font-weight: 700;
     }
     .safra-activity-card .mixture-helper .dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: linear-gradient(120deg, #22c55e, #16a34a);
+        background: linear-gradient(120deg, #22c55e, #1f8ef1);
     }
     .safra-activity-card .mixture-topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: linear-gradient(120deg, rgba(34, 197, 94, 0.12), rgba(14, 165, 233, 0.1));
-        border: 1px solid rgba(34, 197, 94, 0.2);
+        background: linear-gradient(120deg, rgba(37, 99, 235, 0.08), rgba(34, 197, 94, 0.12));
+        border: 1px solid rgba(37, 99, 235, 0.18);
         border-radius: 12px;
-        padding: 0.55rem 0.8rem;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        padding: 0.65rem 0.95rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
     }
     .safra-activity-card .mixture-chip {
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
-        background: #0f172a;
+        background: linear-gradient(120deg, #1f4e9f, #2563eb);
         color: #f8fafc;
-        padding: 0.4rem 0.65rem;
+        padding: 0.42rem 0.7rem;
         border-radius: 999px;
         font-weight: 700;
         letter-spacing: 0.01em;
-        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.28);
+        box-shadow: 0 12px 26px rgba(12, 26, 60, 0.32);
     }
     .safra-activity-card .mixture-chip .dot {
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        background: linear-gradient(140deg, #22c55e, #0ea5e9);
-        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.14);
+        background: linear-gradient(140deg, #22c55e, #1f8ef1);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
     }
     .mixture-modal .btn-outline-secondary {
         border-radius: 12px;
         font-weight: 700;
         padding: 0.7rem 1.3rem;
-        border-color: #cbd5e1;
+        border-color: #d5deeb;
         color: #0f172a;
-        background: #fff;
+        background: #f7f9fc;
+        box-shadow: 0 10px 20px rgba(12, 26, 60, 0.08);
     }
     .mixture-modal .btn-primary {
         border-radius: 12px;
         font-weight: 800;
-        padding: 0.8rem 1.6rem;
+        padding: 0.85rem 1.65rem;
         letter-spacing: 0.01em;
-        background: linear-gradient(120deg, #2c7be5, #2563eb);
+        background: linear-gradient(120deg, #1f4e9f, #2563eb);
         border: none;
-        box-shadow: 0 14px 32px rgba(37, 99, 235, 0.28);
+        box-shadow: 0 14px 32px rgba(31, 78, 159, 0.32);
     }
     .safra-activity-card .product-footer {
-        background: linear-gradient(120deg, #0f172a, #111827);
+        background: linear-gradient(120deg, #0f1b34, #1f4e9f);
         border-radius: 0 0 14px 14px;
-        padding: 0.8rem 1.1rem;
-        color: #e2e8f0;
+        padding: 0.9rem 1.1rem;
+        color: #e7edf7;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 0.75rem;
         flex-wrap: wrap;
-        border-top: 1px solid rgba(255,255,255,0.08);
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        border-top: 1px solid rgba(255,255,255,0.12);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
     }
     .safra-activity-card .product-footer .footer-note {
         color: #cbd5e1;
