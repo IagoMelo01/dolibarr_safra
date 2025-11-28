@@ -509,17 +509,25 @@ SafraAplicacaoViewTask = View task
 SafraAplicacaoComplete = Mark as completed
 
 SafraAplicacaoCaldaCalculation = Mixture calculation
-ApplicationRate = Application rate (L/ha)
-TankCapacity = Tank capacity (L)
+MixtureCalculation = Mixture calculation
+ApplicationRate = Application rate
+EnterRatePerHectare = Enter the application rate per hectare
+TankCapacity = Tank capacity
+EnterTankCapacity = Enter the spray tank capacity
+AppliedAreaPerTank = Applied area per tank
 AreaPerTank = Area per tank
 QuantityPerTank = Quantity per tank
 SaveAsNote = Save as note
+NoProductForMixture = Add products to calculate the mixture
 SafraCaldaNoteHeader = Mixture calculation:
 SafraCaldaNoteRate = - Rate: %s L/ha
 SafraCaldaNoteTank = - Tank: %s L
 SafraCaldaNoteArea = - Area per tank: %s ha
 SafraCaldaNoteItemsHeader = - Inputs per tank:
 SafraCaldaNoteItem =   * %s: %s
+KeepYourActivityDetailsOrganized = Keep your activity details organized
+SelectProjectToAutoFillFieldPlot = Select a project to auto-fill the field plot and area
+AutoFilledFromFieldPlot = Auto-filled from field plot
 
 
 SafraOperationType = Activity type
