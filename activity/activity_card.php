@@ -1197,16 +1197,16 @@ if ($activity->id) {
 print '<script>';
 ?>
 var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
-var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->trans('SelectProjectToAutoFillFieldPlot')); ?>';
-var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
-var mixtureEmptyText = '<?php echo dol_escape_js($langs->trans('NoProductForMixture')); ?>';
-var perTankSuffix = '<?php echo dol_escape_js($langs->trans('PerTankSuffix')); ?>';
-var noteHeader = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteHeader')); ?>';
-var noteRateTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteRate')); ?>';
-var noteTankTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteTank')); ?>';
-var noteAreaTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteArea')); ?>';
-var noteItemsHeader = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteItemsHeader')); ?>';
-var noteItemTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteItemPerTank')); ?>';
+var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SelectProjectToAutoFillFieldPlot')); ?>';
+var talhaoAreaDefault = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('Area')); ?>';
+var mixtureEmptyText = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('NoProductForMixture')); ?>';
+var perTankSuffix = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('PerTankSuffix')); ?>';
+var noteHeader = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteHeader')); ?>';
+var noteRateTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteRate')); ?>';
+var noteTankTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteTank')); ?>';
+var noteAreaTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteArea')); ?>';
+var noteItemsHeader = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteItemsHeader')); ?>';
+var noteItemTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteItemPerTank')); ?>';
 var areaBaseInput = document.getElementById('area-base');
 var areaPercentageInput = document.getElementById('area-percentage');
 var areaTotalInput = document.getElementById('area-total');
