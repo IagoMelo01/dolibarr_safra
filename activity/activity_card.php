@@ -238,9 +238,9 @@ $unitOptions = array(
 );
 
 $movementTypes = array(
-    'consume' => $langs->trans('Consume'),
-    'return' => $langs->trans('Return'),
-    'transfer' => $langs->trans('Transfer'),
+    'consume' => $langs->trans('SafraLineMovementConsume'),
+    'return' => $langs->trans('SafraLineMovementReturn'),
+    'transfer' => $langs->trans('SafraLineMovementTransfer'),
 );
 
 $errors = array();
@@ -445,31 +445,38 @@ if ($errors) {
 }
 
 // Modern styles for a cleaner card layout
-print '<style>
+print <<<'HTML'
+<style>
     .safra-activity-card {
         border-radius: 18px;
         overflow: hidden;
+        background: #fff;
+        border: 1px solid #e5e7eb;
     }
     .safra-activity-card .card-header {
-        background: linear-gradient(120deg, #0d6efd, #20c997);
+        background: linear-gradient(140deg, #0b1224, #0f172a 45%, #1d4ed8);
         color: #fff;
         border-bottom: none;
-        padding: 1rem 1.25rem;
+        padding: 1.1rem 1.25rem;
+    }
+    .safra-activity-card .card-subtitle {
+        color: rgba(255,255,255,0.75);
+        font-size: 0.9rem;
     }
     .safra-activity-card .card-header .btn-light,
     .safra-activity-card .btn-soft {
-        color: #0d6efd;
-        background: #ecf4ff;
-        border: 1px solid #d8e6ff;
+        color: #0f172a;
+        background: #eef2ff;
+        border: 1px solid #d7ddf7;
         font-weight: 700;
         letter-spacing: 0.01em;
-        box-shadow: 0 10px 30px rgba(13, 110, 253, 0.18);
+        box-shadow: 0 8px 24px rgba(30, 64, 175, 0.18);
         transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     }
     .safra-activity-card .btn-soft:hover {
-        background: #e1edff;
+        background: #e4e9ff;
         transform: translateY(-1px);
-        box-shadow: 0 14px 34px rgba(13, 110, 253, 0.22);
+        box-shadow: 0 12px 30px rgba(30, 64, 175, 0.22);
     }
     .safra-activity-card .btn-soft .mixture-dot {
         display: inline-block;
@@ -477,8 +484,8 @@ print '<style>
         height: 9px;
         margin-right: 6px;
         border-radius: 50%;
-        background: linear-gradient(120deg, #0d6efd, #20c997);
-        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
+        background: linear-gradient(120deg, #22d3ee, #a855f7);
+        box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.1);
     }
     .safra-activity-card .section-title {
         font-size: 0.95rem;
@@ -489,12 +496,39 @@ print '<style>
         gap: 0.35rem;
         letter-spacing: 0.01em;
     }
+    .safra-activity-card .section-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.75rem;
+    }
+    .safra-activity-card .section-heading small {
+        color: #475569;
+        font-weight: 600;
+    }
     .safra-activity-card .section-title .badge {
         font-weight: 500;
     }
+    .safra-activity-card .section-block {
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.05);
+    }
+    .safra-activity-card .section-block + .section-block {
+        margin-top: 0.85rem;
+    }
+    .safra-activity-card .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #cbd5e1, transparent);
+        margin: 1.2rem 0;
+    }
     .safra-activity-card .floating-box {
         border-radius: 14px;
-        background: #f8fafc;
+        background: linear-gradient(180deg, #f8fafc, #f1f5f9);
         border: 1px solid #e2e8f0;
         padding: 1rem;
     }
@@ -505,8 +539,8 @@ print '<style>
         width: 100%;
     }
     .safra-activity-card .form-control:focus, .safra-activity-card select:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+        border-color: #1d4ed8;
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
     }
     .safra-activity-card .summary-pill {
         background: #f8fafc;
@@ -527,7 +561,7 @@ print '<style>
         height: 9px;
         border-radius: 50%;
         display: inline-block;
-        background: #20c997;
+        background: #22d3ee;
     }
     .safra-activity-card .note-area {
         background: #f8fafc;
@@ -539,12 +573,15 @@ print '<style>
         background: #0f172a;
         color: #fff;
         border: none;
+        text-transform: uppercase;
+        letter-spacing: 0.01em;
+        font-size: 0.78rem;
     }
     .safra-activity-card .table-modern tbody tr {
         transition: background 0.2s ease, transform 0.2s ease;
     }
     .safra-activity-card .table-modern tbody tr:hover {
-        background: #f1f5f9;
+        background: #f8fafc;
         transform: translateY(-1px);
     }
     .safra-activity-card .table-modern td {
@@ -600,23 +637,117 @@ print '<style>
     .safra-activity-card .btn-outline-warning {
         box-shadow: none;
     }
-    .safra-activity-card .mixture-modal .modal-content {
-        border-radius: 16px;
+    .safra-activity-card .product-toolbar {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+    }
+    .safra-activity-card .product-toolbar .text-muted {
+        font-size: 0.9rem;
+    }
+    .mixture-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1090;
+        background: radial-gradient(130% 130% at 50% 18%, rgba(47, 72, 122, 0.18), rgba(6, 17, 38, 0.85));
+        overflow-y: auto;
+        padding: 2.4rem 1.25rem;
+    }
+    .mixture-modal.show {
+        display: flex;
+        backdrop-filter: blur(6px);
+    }
+    .mixture-modal .modal-dialog {
+        margin: 0 auto;
+        width: 100%;
+        max-width: 900px;
+    }
+    .mixture-modal .modal-content {
+        border-radius: 18px;
+        border: 1px solid #d9e5f6;
+        box-shadow: 0 26px 80px rgba(7, 11, 26, 0.5);
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(180deg, #0c1a36 0%, #0c1a36 16%, #0b1a3c 28%, #f7f9fc 28%);
+    }
+    .mixture-modal .modal-content:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 9px;
+        background: linear-gradient(120deg, #22c55e, #1f8ef1, #2563eb);
+    }
+    .mixture-modal .modal-header {
         border: none;
-        box-shadow: 0 18px 48px rgba(15, 23, 42, 0.25);
+        padding: 1.65rem 1.6rem 1.25rem;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 64, 175, 0.82));
+        align-items: flex-start;
+        min-height: 96px;
+        color: #f8fafc;
     }
-    .safra-activity-card .mixture-modal .modal-header {
-        border-bottom: none;
-        background: linear-gradient(120deg, #0d6efd, #20c997);
-        color: #fff;
-    }
-    .safra-activity-card .mixture-modal .modal-title {
+    .mixture-modal .modal-title {
         letter-spacing: 0.01em;
-        font-weight: 700;
+        font-weight: 800;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-size: 1.22rem;
     }
-    .safra-activity-card .mixture-modal .form-control {
-        border-radius: 10px;
-        border-color: #e2e8f0;
+    .mixture-modal .modal-title:before {
+        content: '';
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: linear-gradient(140deg, #22c55e, #1f8ef1);
+        box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.12);
+    }
+    .mixture-modal .modal-body {
+        padding: 1.15rem 1.35rem 1.4rem;
+    }
+    .mixture-modal .modal-footer {
+        padding: 1.05rem 1.35rem 1.35rem;
+        background: linear-gradient(180deg, #f7f9fc, #eef2f7);
+        gap: 0.85rem;
+    }
+    .mixture-modal .form-control {
+        border-radius: 12px;
+        border-color: #d4def0;
+        background: #f8fbff;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+        padding: 0.6rem 0.75rem;
+    }
+    .mixture-modal .mixture-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.05rem;
+        margin-bottom: 1.2rem;
+    }
+    .mixture-modal .mixture-fieldset {
+        background: linear-gradient(180deg, #ffffff, #f8fbff);
+        border: 1px solid #dfe7f3;
+        border-radius: 14px;
+        padding: 1rem 1.05rem;
+        box-shadow: 0 10px 26px rgba(12, 26, 60, 0.08);
+        height: 100%;
+    }
+    .mixture-modal .mixture-stat {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        background: linear-gradient(120deg, #f5f8ff, #eef2f7);
+        border: 1px solid #dde6f4;
+        border-radius: 12px;
+        padding: 0.95rem 1.05rem;
+        margin-bottom: 0.35rem;
     }
     .safra-activity-card .mixture-summary {
         background: #f8fafc;
@@ -627,13 +758,17 @@ print '<style>
         overflow-y: auto;
     }
     .safra-activity-card .mixture-summary .line {
-        padding: 0.3rem 0.4rem;
-        border-radius: 8px;
-        background: #fff;
+        padding: 0.45rem 0.6rem;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
         border: 1px solid #e5e7eb;
         margin-bottom: 0.35rem;
-        font-weight: 600;
+        font-weight: 700;
         color: #0f172a;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.65rem;
     }
     .safra-activity-card .mixture-label {
         font-size: 0.9rem;
@@ -648,7 +783,124 @@ print '<style>
         font-weight: 600;
         color: #0f172a;
     }
-</style>';
+    .safra-activity-card .mixture-helper {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #1f8ef1;
+        font-weight: 700;
+    }
+    .safra-activity-card .mixture-helper .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(120deg, #22c55e, #1f8ef1);
+    }
+    .safra-activity-card .mixture-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(120deg, rgba(37, 99, 235, 0.08), rgba(34, 197, 94, 0.12));
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        border-radius: 12px;
+        padding: 0.65rem 0.95rem;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+    .safra-activity-card .mixture-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: linear-gradient(120deg, #1f4e9f, #2563eb);
+        color: #f8fafc;
+        padding: 0.42rem 0.7rem;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: 0 12px 26px rgba(12, 26, 60, 0.32);
+    }
+    .safra-activity-card .mixture-chip .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: linear-gradient(140deg, #22c55e, #1f8ef1);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+    }
+    .mixture-modal .btn-outline-secondary {
+        border-radius: 12px;
+        font-weight: 700;
+        padding: 0.7rem 1.3rem;
+        border-color: #d5deeb;
+        color: #0f172a;
+        background: #f7f9fc;
+        box-shadow: 0 10px 20px rgba(12, 26, 60, 0.08);
+    }
+    .mixture-modal .btn-primary {
+        border-radius: 12px;
+        font-weight: 800;
+        padding: 0.85rem 1.65rem;
+        letter-spacing: 0.01em;
+        background: linear-gradient(120deg, #1f4e9f, #2563eb);
+        border: none;
+        box-shadow: 0 14px 32px rgba(31, 78, 159, 0.32);
+    }
+    .safra-activity-card .product-footer {
+        background: linear-gradient(120deg, #0f1b34, #1f4e9f);
+        border-radius: 0 0 14px 14px;
+        padding: 0.9rem 1.1rem;
+        color: #e7edf7;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        border-top: 1px solid rgba(255,255,255,0.12);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .safra-activity-card .product-footer .footer-note {
+        color: #cbd5e1;
+        font-weight: 600;
+    }
+    .safra-activity-card .product-footer .left-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    .safra-activity-card .btn-add-line {
+        background: linear-gradient(120deg, #22c55e, #16a34a);
+        border: none;
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        padding: 0.65rem 1.2rem;
+        border-radius: 12px;
+        box-shadow: 0 16px 32px rgba(22, 163, 74, 0.25);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    .safra-activity-card .btn-add-line:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 22px 38px rgba(22, 163, 74, 0.28);
+    }
+    .safra-activity-card .safra-save-action {
+        min-width: 190px;
+        text-align: center;
+        font-size: 1.05rem;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+        padding: 0.8rem 1.5rem;
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 12px 26px rgba(37, 99, 235, 0.25);
+        background: var(--safra-save-color, linear-gradient(120deg, #2c7be5, #2563eb));
+        color: #fff;
+        cursor: pointer;
+    }
+    .safra-activity-card .safra-save-action:hover {
+        filter: brightness(1.05);
+        box-shadow: 0 16px 32px rgba(37, 99, 235, 0.28);
+    }
+</style>
+HTML;
 
 print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
 print '<input type="hidden" name="token" value="' . newToken() . '">';
@@ -662,6 +914,7 @@ print '<div class="card-header d-flex flex-wrap align-items-center justify-conte
 print '<div class="d-flex flex-column">
         <span class="text-uppercase small opacity-75">' . $langs->trans('SafraActivity') . '</span>
         <span class="fw-semibold fs-5">' . ($activity->label ? dol_escape_htmltag($activity->label) : $langs->trans('NewActivity')) . '</span>
+        <span class="card-subtitle">' . $langs->trans('KeepYourActivityDetailsOrganized') . '</span>
     </div>';
 
 print '<div class="d-flex align-items-center gap-2">';
@@ -688,6 +941,8 @@ print '</div>';
 print '</div>';
 
 print '<div class="card-body">';
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('Details') . '</span><small>' . $langs->trans('KeepYourActivityDetailsOrganized') . '</small></div>';
 print '<div class="row g-4">';
 print '<div class="col-lg-6">';
 print '<label class="section-title">' . $langs->trans('Label') . '</label>';
@@ -706,11 +961,13 @@ print $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 
 print '<div class="helper-text mt-1">' . $langs->trans('SelectProjectToAutoFillFieldPlot') . '</div>';
 print '</div>';
 print '</div>';
+print '</div>';
 
-print '<div class="row g-4 mt-1">';
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('FieldPlot') . '</span><small>' . $langs->trans('AutoFilledFromFieldPlot') . '</small></div>';
+print '<div class="row g-4">';
 print '<div class="col-lg-8">';
 print '<div class="floating-box h-100">';
-print '<label class="section-title mb-1">' . $langs->trans('FieldPlot') . '</label>';
 print '<input type="hidden" name="fk_fieldplot" value="' . ((int) $activity->fk_fieldplot) . '">';
 $talhaoLabel = $talhaoPlaceholder;
 if (!empty($activity->fk_fieldplot) && !empty($talhaoDetails[$activity->fk_fieldplot])) {
@@ -724,7 +981,7 @@ if (!empty($activity->fk_fieldplot) && !empty($talhaoDetails[$activity->fk_field
     $talhaoLabel = implode(' • ', array_filter($pieces));
 }
 print '<div class="info-strip" id="talhao-area-info">' . dol_escape_htmltag($talhaoLabel) . '</div>';
-print '<div class="helper-text mt-1">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
+print '<div class="helper-text mt-1">' . $langs->trans('SelectProjectToAutoFillFieldPlot') . '</div>';
 print '</div>';
 print '</div>';
 print '<div class="col-lg-4">';
@@ -738,26 +995,34 @@ print '<input class="form-control" id="area-total" name="area_total" value="' . 
 print '</div>';
 print '</div>';
 print '</div>';
+print '</div>';
 
-print '<div class="row g-4 mt-1">';
+print '<div class="section-divider"></div>';
+
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('SafraAplicacaoResources') . '</span><small>' . $langs->trans('SafraMachineLabel') . ' • ' . $langs->trans('SafraImplementsLabel') . ' • ' . $langs->trans('SafraEmployeesLabel') . '</small></div>';
+print '<div class="row g-4">';
 print '<div class="col-lg-4">';
-print '<label class="section-title">' . $langs->trans('Machine') . '</label>';
+print '<label class="section-title">' . $langs->trans('SafraMachineLabel') . '</label>';
 print $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
 print '</div>';
 print '<div class="col-lg-4">';
-print '<label class="section-title">' . $langs->trans('Implements') . '</label>';
+print '<label class="section-title">' . $langs->trans('SafraImplementsLabel') . '</label>';
 print $form->multiselectarray('implement_ids', $implements, $selectedImplements, '', 0, '', 1);
 print '</div>';
 print '<div class="col-lg-4">';
-print '<label class="section-title">' . $langs->trans('Employees') . '</label>';
+print '<label class="section-title">' . $langs->trans('SafraEmployeesLabel') . '</label>';
 print $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
 print '</div>';
 print '</div>';
+print '</div>';
 
-print '<div class="row g-3 mt-3">';
+print '<div class="section-block">';
+print '<div class="section-heading"><span>' . $langs->trans('Note') . '</span><small>' . $langs->trans('Optional') . '</small></div>';
+print '<div class="row g-3">';
 print '<div class="col-12">';
-print '<label class="section-title">' . $langs->trans('Note') . '</label>';
 print '<textarea class="form-control note-area" name="note_public" id="note_public" rows="4" placeholder="' . dol_escape_htmltag($langs->trans('Note')) . '">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
+print '</div>';
 print '</div>';
 print '</div>';
 print '</div>'; // card-body
@@ -769,9 +1034,18 @@ print '<div>
         <div class="text-uppercase small opacity-75">' . $langs->trans('Products') . '</div>
         <h5 class="mb-0">' . $langs->trans('Products') . '</h5>
     </div>';
-print '<button type="button" class="btn btn-soft btn-sm" id="open-mixture"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>';
+print '<span class="badge bg-light text-dark">' . $langs->trans('MixtureCalculation') . '</span>';
 print '</div>';
 print '<div class="card-body">';
+print '<div class="product-toolbar d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">';
+print '<div>
+        <div class="fw-semibold">' . $langs->trans('MixtureCalculation') . '</div>
+        <div class="text-muted">' . $langs->trans('Products') . ' + ' . $langs->trans('MixtureCalculation') . '</div>
+    </div>';
+print '<div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-soft btn-sm" id="open-mixture" data-bs-toggle="modal" data-bs-target="#mixtureModal"><span class="mixture-dot"></span>' . $langs->trans('MixtureCalculation') . '</button>
+    </div>';
+print '</div>';
 
 print '<div class="table-responsive">';
 print '<table class="table table-modern align-middle" id="products-table">';
@@ -832,14 +1106,15 @@ print '<td><button type="button" class="btn btn-outline-danger btn-icon remove-l
 print '</tr>';
 print '</template>';
 print '</div>'; // responsive
-
-print '<button type="button" class="btn btn-primary btn-sm" id="add-line">+ ' . $langs->trans('Add') . '</button>';
+print '<div class="product-footer">';
+print '<div class="left-group">';
+print '<button type="button" class="btn btn-add-line" id="add-line">+ ' . $langs->trans('Add') . '</button>';
+print '<span class="footer-note">' . $langs->trans('Add') . ' ' . $langs->trans('Products') . '</span>';
+print '</div>';
+print '<button class="butAction safra-save-action" type="submit" style="text-decoration:none;">💾 ' . $langs->trans('Save') . '</button>';
+print '</div>';
 print '</div>'; // card-body
 print '</div>'; // card
-
-print '<div class="mt-3">';
-print '<button class="btn btn-success" type="submit">' . $langs->trans('Save') . '</button>';
-print '</div>';
 
 print '</form>';
 
@@ -877,7 +1152,7 @@ if ($activity->id) {
 
 // Modal for mixture calculation
 ?>
-<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog">
+<div class="modal fade mixture-modal" id="mixtureModal" tabindex="-1" role="dialog" aria-modal="true" style="display:none;">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -885,30 +1160,35 @@ if ($activity->id) {
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
+                <div class="mixture-topbar mb-3">
+                    <div class="mixture-helper"><span class="dot"></span><?php echo $langs->trans('MixtureCalculation'); ?></div>
+                    <div class="mixture-chip"><span class="dot"></span>L/ha · L</div>
+                </div>
+                <div class="mixture-grid">
+                    <div class="mixture-fieldset">
                         <label class="mixture-label"><?php echo $langs->trans('ApplicationRate'); ?> (L/ha)</label>
                         <input type="text" class="form-control" id="application-rate" inputmode="decimal" value="0">
-                        <small class="text-muted"><?php echo dol_escape_htmltag($langs->trans('EnterRatePerHectare')); ?></small>
+                        <div class="helper-text mt-2"><?php echo dol_escape_htmltag($langs->trans('EnterRatePerHectare')); ?></div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="mixture-fieldset">
                         <label class="mixture-label"><?php echo $langs->trans('TankCapacity'); ?> (L)</label>
                         <input type="text" class="form-control" id="tank-capacity" inputmode="decimal" value="0">
-                        <small class="text-muted"><?php echo dol_escape_htmltag($langs->trans('EnterTankCapacity')); ?></small>
+                        <div class="helper-text mt-2"><?php echo dol_escape_htmltag($langs->trans('EnterTankCapacity')); ?></div>
                     </div>
                 </div>
-                <div class="row g-3 mb-3 align-items-center">
-                    <div class="col-md-6">
-                        <div class="mixture-label mb-1"><?php echo $langs->trans('AppliedAreaPerTank'); ?></div>
-                        <div class="mixture-meta" id="area-per-tank">0,00 ha</div>
+                <div class="mixture-fieldset mb-3">
+                    <div class="mixture-label mb-2"><?php echo $langs->trans('AppliedAreaPerTank'); ?></div>
+                    <div class="mixture-stat">
+                        <div class="text-muted"><?php echo $langs->trans('Area'); ?></div>
+                        <div class="mixture-meta mb-0" id="area-per-tank">0,00 ha</div>
                     </div>
+                    <div class="mixture-label mb-2 mt-3"><?php echo $langs->trans('QuantityPerTank'); ?></div>
+                    <div class="mixture-summary" id="mixture-lines"></div>
                 </div>
-                <div class="mixture-label mb-2"><?php echo $langs->trans('QuantityPerTank'); ?></div>
-                <div class="mixture-summary" id="mixture-lines"></div>
             </div>
-            <div class="modal-footer border-0 d-flex justify-content-between">
+            <div class="modal-footer border-0 d-flex justify-content-between align-items-center">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><?php echo $langs->trans('Cancel'); ?></button>
-                <button type="button" class="btn btn-success" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
+                <button type="button" class="btn btn-primary" id="save-mixture-note"><?php echo $langs->trans('SaveAsNote'); ?></button>
             </div>
         </div>
     </div>
@@ -917,9 +1197,16 @@ if ($activity->id) {
 print '<script>';
 ?>
 var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
-var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->trans('SelectProjectToAutoFillFieldPlot')); ?>';
-var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
-var mixtureEmptyText = '<?php echo dol_escape_js($langs->trans('NoProductForMixture')); ?>';
+var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SelectProjectToAutoFillFieldPlot')); ?>';
+var talhaoAreaDefault = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('Area')); ?>';
+var mixtureEmptyText = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('NoProductForMixture')); ?>';
+var perTankSuffix = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('PerTankSuffix')); ?>';
+var noteHeader = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteHeader')); ?>';
+var noteRateTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteRate')); ?>';
+var noteTankTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteTank')); ?>';
+var noteAreaTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteArea')); ?>';
+var noteItemsHeader = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteItemsHeader')); ?>';
+var noteItemTpl = '<?php echo dol_escape_js($langs->transnoentitiesnoconv('SafraCaldaNoteItemPerTank')); ?>';
 var areaBaseInput = document.getElementById('area-base');
 var areaPercentageInput = document.getElementById('area-percentage');
 var areaTotalInput = document.getElementById('area-total');
@@ -1221,15 +1508,41 @@ document.addEventListener('DOMContentLoaded', function () {
     applyAreaToLines(areaTotalInput ? areaTotalInput.value : 0);
 
     var mixtureButton = document.getElementById('open-mixture');
+    var mixtureModal = document.getElementById('mixtureModal');
     if (mixtureButton) {
-        mixtureButton.addEventListener('click', function () {
+        mixtureButton.addEventListener('click', function (event) {
             updateMixtureModal();
-            if (window.bootstrap && bootstrap.Modal) {
-                var modal = new bootstrap.Modal(document.getElementById('mixtureModal'));
-                modal.show();
-            }
+            showMixtureModal();
+            event.preventDefault();
         });
     }
+
+    if (mixtureModal) {
+        ['show.bs.modal', 'hidden.bs.modal'].forEach(function (evName) {
+            mixtureModal.addEventListener(evName, function (evt) {
+                if (evName === 'show.bs.modal') {
+                    updateMixtureModal();
+                    mixtureModal.setAttribute('aria-hidden', 'false');
+                } else {
+                    mixtureModal.setAttribute('aria-hidden', 'true');
+                    removeMixtureBackdrop();
+                }
+            });
+        });
+    }
+
+    document.querySelectorAll('#mixtureModal [data-bs-dismiss="modal"], #mixtureModal .btn-close').forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+            event.preventDefault();
+            hideMixtureModal();
+        });
+    });
+
+    document.addEventListener('keydown', function (evt) {
+        if (evt.key === 'Escape') {
+            hideMixtureModal();
+        }
+    });
 
     var appRateInput = document.getElementById('application-rate');
     if (appRateInput) {
@@ -1249,16 +1562,81 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    document.getElementById('save-mixture-note').addEventListener('click', function () {
-        var noteField = document.getElementById('note_public');
-        var summary = buildMixtureSummary();
-        if (summary) {
-            noteField.value = (noteField.value ? noteField.value + "\n\n" : '') + summary;
-        }
-        var modal = bootstrap.Modal.getInstance(document.getElementById('mixtureModal'));
-        modal.hide();
-    });
+    var saveMixtureBtn = document.getElementById('save-mixture-note');
+    if (saveMixtureBtn) {
+        saveMixtureBtn.addEventListener('click', function () {
+            var noteField = document.getElementById('note_public');
+            var summary = buildMixtureSummary();
+            if (summary) {
+                noteField.value = (noteField.value ? noteField.value + "\n\n" : '') + summary;
+            }
+            hideMixtureModal();
+        });
+    }
 });
+
+function showMixtureModal() {
+    var modalEl = document.getElementById('mixtureModal');
+    if (!modalEl) return;
+
+    if (window.bootstrap && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        return;
+    }
+
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.removeAttribute('aria-hidden');
+    document.body.classList.add('modal-open');
+
+    addMixtureBackdrop();
+}
+
+function hideMixtureModal() {
+    var modalEl = document.getElementById('mixtureModal');
+    if (!modalEl) return;
+
+    if (window.bootstrap && bootstrap.Modal) {
+        var instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) {
+            instance.hide();
+        }
+        return;
+    }
+
+    modalEl.classList.remove('show');
+    modalEl.style.display = 'none';
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+
+    removeMixtureBackdrop();
+}
+
+function addMixtureBackdrop() {
+    if (document.getElementById('mixture-backdrop')) return;
+    var backdrop = document.createElement('div');
+    backdrop.id = 'mixture-backdrop';
+    backdrop.className = 'modal-backdrop fade show';
+    document.body.appendChild(backdrop);
+}
+
+function removeMixtureBackdrop() {
+    var backdrop = document.getElementById('mixture-backdrop');
+    if (backdrop && backdrop.parentNode) {
+        backdrop.parentNode.removeChild(backdrop);
+    }
+}
+
+function normalizeUnitForTank(unit) {
+    if (!unit) return '';
+
+    var base = unit.toString();
+    if (base.indexOf('/') !== -1) {
+        base = base.split('/')[0];
+    }
+
+    return base.trim();
+}
 
 function updateMixtureModal() {
     var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
@@ -1281,7 +1659,20 @@ function updateMixtureModal() {
         var qty = dose * areaPerTank;
         var item = document.createElement('div');
         item.className = 'line';
-        item.textContent = productLabel + ': ' + formatDecimalToMask(qty, 2) + ' ' + (unit || '');
+        var name = document.createElement('span');
+        name.textContent = productLabel;
+        name.className = 'text-truncate';
+        var amount = document.createElement('span');
+        var unitForTank = normalizeUnitForTank(unit);
+        var amountText = formatDecimalToMask(qty, 2);
+        if (unitForTank) {
+            amountText += ' ' + unitForTank;
+        }
+        amountText += ' ' + perTankSuffix;
+        amount.textContent = amountText;
+        amount.className = 'fw-semibold';
+        item.appendChild(name);
+        item.appendChild(amount);
         container.appendChild(item);
         hasLine = true;
     });
@@ -1298,7 +1689,14 @@ function buildMixtureSummary() {
     var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
     var capacity = parseDecimalFromMask(document.getElementById('tank-capacity').value, 2) || 0;
     var areaPerTank = rate > 0 ? (capacity / rate) : 0;
-    var lines = [];
+    var summaryLines = [];
+    var itemLines = [];
+
+    summaryLines.push(noteHeader);
+    summaryLines.push(noteRateTpl.replace('%s', formatDecimalToMask(rate, 2)));
+    summaryLines.push(noteTankTpl.replace('%s', formatDecimalToMask(capacity, 2)));
+    summaryLines.push(noteAreaTpl.replace('%s', formatDecimalToMask(areaPerTank, 2)));
+
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         var productSelect = row.querySelector('select[name="product_id[]"]');
         var productLabel = productSelect.options[productSelect.selectedIndex] ? productSelect.options[productSelect.selectedIndex].text : '';
@@ -1308,14 +1706,21 @@ function buildMixtureSummary() {
             return;
         }
         var qty = dose * areaPerTank;
-        lines.push(productLabel + ' = ' + formatDecimalToMask(qty, 2) + ' ' + (unit || ''));
+        var unitForTank = normalizeUnitForTank(unit);
+        var amountText = formatDecimalToMask(qty, 2);
+        if (unitForTank) {
+            amountText += ' ' + unitForTank;
+        }
+        amountText += ' ' + perTankSuffix;
+        itemLines.push(noteItemTpl.replace('%s', productLabel).replace('%s', amountText));
     });
-    if (!lines.length) {
-        return '';
+
+    if (itemLines.length) {
+        summaryLines.push(noteItemsHeader);
+        summaryLines = summaryLines.concat(itemLines);
     }
-    var summary = 'Taxa: ' + formatDecimalToMask(rate, 2) + ' L/ha; Capacidade: ' + formatDecimalToMask(capacity, 2) + ' L; Área/tanque: ' + formatDecimalToMask(areaPerTank, 2) + ' ha';
-    summary += "\n" + lines.join("\n");
-    return summary;
+
+    return summaryLines.join("\n");
 }
 <?php
 print '</script>';
