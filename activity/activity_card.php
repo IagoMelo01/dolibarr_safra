@@ -238,9 +238,9 @@ $unitOptions = array(
 );
 
 $movementTypes = array(
-    'consume' => $langs->trans('Consume'),
-    'return' => $langs->trans('Return'),
-    'transfer' => $langs->trans('Transfer'),
+    'consume' => $langs->trans('SafraLineMovementConsume'),
+    'return' => $langs->trans('SafraLineMovementReturn'),
+    'transfer' => $langs->trans('SafraLineMovementTransfer'),
 );
 
 $errors = array();
@@ -1000,18 +1000,18 @@ print '</div>';
 print '<div class="section-divider"></div>';
 
 print '<div class="section-block">';
-print '<div class="section-heading"><span>' . $langs->trans('Resources') . '</span><small>' . $langs->trans('Machine') . ' • ' . $langs->trans('Implements') . ' • ' . $langs->trans('Employees') . '</small></div>';
+print '<div class="section-heading"><span>' . $langs->trans('SafraAplicacaoResources') . '</span><small>' . $langs->trans('SafraMachineLabel') . ' • ' . $langs->trans('SafraImplementsLabel') . ' • ' . $langs->trans('SafraEmployeesLabel') . '</small></div>';
 print '<div class="row g-4">';
 print '<div class="col-lg-4">';
-print '<label class="section-title">' . $langs->trans('Machine') . '</label>';
+print '<label class="section-title">' . $langs->trans('SafraMachineLabel') . '</label>';
 print $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
 print '</div>';
 print '<div class="col-lg-4">';
-print '<label class="section-title">' . $langs->trans('Implements') . '</label>';
+print '<label class="section-title">' . $langs->trans('SafraImplementsLabel') . '</label>';
 print $form->multiselectarray('implement_ids', $implements, $selectedImplements, '', 0, '', 1);
 print '</div>';
 print '<div class="col-lg-4">';
-print '<label class="section-title">' . $langs->trans('Employees') . '</label>';
+print '<label class="section-title">' . $langs->trans('SafraEmployeesLabel') . '</label>';
 print $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
 print '</div>';
 print '</div>';
@@ -1200,6 +1200,13 @@ var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
 var talhaoPlaceholderText = '<?php echo dol_escape_js($langs->trans('SelectProjectToAutoFillFieldPlot')); ?>';
 var talhaoAreaDefault = '<?php echo dol_escape_js($langs->trans('Area')); ?>';
 var mixtureEmptyText = '<?php echo dol_escape_js($langs->trans('NoProductForMixture')); ?>';
+var perTankSuffix = '<?php echo dol_escape_js($langs->trans('PerTankSuffix')); ?>';
+var noteHeader = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteHeader')); ?>';
+var noteRateTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteRate')); ?>';
+var noteTankTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteTank')); ?>';
+var noteAreaTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteArea')); ?>';
+var noteItemsHeader = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteItemsHeader')); ?>';
+var noteItemTpl = '<?php echo dol_escape_js($langs->trans('SafraCaldaNoteItemPerTank')); ?>';
 var areaBaseInput = document.getElementById('area-base');
 var areaPercentageInput = document.getElementById('area-percentage');
 var areaTotalInput = document.getElementById('area-total');
@@ -1620,6 +1627,17 @@ function removeMixtureBackdrop() {
     }
 }
 
+function normalizeUnitForTank(unit) {
+    if (!unit) return '';
+
+    var base = unit.toString();
+    if (base.indexOf('/') !== -1) {
+        base = base.split('/')[0];
+    }
+
+    return base.trim();
+}
+
 function updateMixtureModal() {
     var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
     var capacity = parseDecimalFromMask(document.getElementById('tank-capacity').value, 2) || 0;
@@ -1645,7 +1663,13 @@ function updateMixtureModal() {
         name.textContent = productLabel;
         name.className = 'text-truncate';
         var amount = document.createElement('span');
-        amount.textContent = formatDecimalToMask(qty, 2) + ' ' + (unit || '');
+        var unitForTank = normalizeUnitForTank(unit);
+        var amountText = formatDecimalToMask(qty, 2);
+        if (unitForTank) {
+            amountText += ' ' + unitForTank;
+        }
+        amountText += ' ' + perTankSuffix;
+        amount.textContent = amountText;
         amount.className = 'fw-semibold';
         item.appendChild(name);
         item.appendChild(amount);
@@ -1665,7 +1689,14 @@ function buildMixtureSummary() {
     var rate = parseDecimalFromMask(document.getElementById('application-rate').value, 2) || 0;
     var capacity = parseDecimalFromMask(document.getElementById('tank-capacity').value, 2) || 0;
     var areaPerTank = rate > 0 ? (capacity / rate) : 0;
-    var lines = [];
+    var summaryLines = [];
+    var itemLines = [];
+
+    summaryLines.push(noteHeader);
+    summaryLines.push(noteRateTpl.replace('%s', formatDecimalToMask(rate, 2)));
+    summaryLines.push(noteTankTpl.replace('%s', formatDecimalToMask(capacity, 2)));
+    summaryLines.push(noteAreaTpl.replace('%s', formatDecimalToMask(areaPerTank, 2)));
+
     document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
         var productSelect = row.querySelector('select[name="product_id[]"]');
         var productLabel = productSelect.options[productSelect.selectedIndex] ? productSelect.options[productSelect.selectedIndex].text : '';
@@ -1675,14 +1706,21 @@ function buildMixtureSummary() {
             return;
         }
         var qty = dose * areaPerTank;
-        lines.push(productLabel + ' = ' + formatDecimalToMask(qty, 2) + ' ' + (unit || ''));
+        var unitForTank = normalizeUnitForTank(unit);
+        var amountText = formatDecimalToMask(qty, 2);
+        if (unitForTank) {
+            amountText += ' ' + unitForTank;
+        }
+        amountText += ' ' + perTankSuffix;
+        itemLines.push(noteItemTpl.replace('%s', productLabel).replace('%s', amountText));
     });
-    if (!lines.length) {
-        return '';
+
+    if (itemLines.length) {
+        summaryLines.push(noteItemsHeader);
+        summaryLines = summaryLines.concat(itemLines);
     }
-    var summary = 'Taxa: ' + formatDecimalToMask(rate, 2) + ' L/ha; Capacidade: ' + formatDecimalToMask(capacity, 2) + ' L; Área/tanque: ' + formatDecimalToMask(areaPerTank, 2) + ' ha';
-    summary += "\n" + lines.join("\n");
-    return summary;
+
+    return summaryLines.join("\n");
 }
 <?php
 print '</script>';
