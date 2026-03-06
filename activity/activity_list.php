@@ -62,8 +62,11 @@ $search_ref = GETPOST('search_ref', 'alpha');
 $search_label = GETPOST('search_label', 'alpha');
 $search_project = GETPOST('search_project', 'alpha');
 $search_fieldplot = GETPOST('search_fieldplot', 'alpha');
-$search_type = GETPOST('search_type', 'alpha');
-$search_status = GETPOSTINT('search_status');
+$search_type = GETPOST('search_type', 'alphanohtml');
+$search_status = GETPOST('search_status', 'alpha');
+if ($search_type !== '') {
+    $search_type = FvActivity::normalizeType($search_type);
+}
 
 $object = new FvActivity($db);
 $form = new Form($db);
@@ -102,7 +105,7 @@ if ($search_fieldplot !== '') {
     $sql .= natural_search('tp.label', $search_fieldplot);
 }
 if ($search_type !== '') {
-    $sql .= natural_search('t.type', $search_type);
+    $sql .= " AND t.type = '" . $db->escape($search_type) . "'";
 }
 if ($search_status !== '') {
     $sql .= ' AND t.status = ' . ((int) $search_status);
@@ -160,14 +163,13 @@ print '<td class="liste_titre"><input class="flat" type="text" name="search_ref"
 print '<td class="liste_titre"><input class="flat" type="text" name="search_label" value="' . dol_escape_htmltag($search_label) . '" size="12"></td>';
 print '<td class="liste_titre"><input class="flat" type="text" name="search_project" value="' . dol_escape_htmltag($search_project) . '" size="10"></td>';
 print '<td class="liste_titre"><input class="flat" type="text" name="search_fieldplot" value="' . dol_escape_htmltag($search_fieldplot) . '" size="10"></td>';
-print '<td class="liste_titre"><input class="flat" type="text" name="search_type" value="' . dol_escape_htmltag($search_type) . '" size="8"></td>';
+$typeOptions = array('' => '') + FvActivity::getTypeOptions($langs);
 print '<td class="liste_titre">';
-print $form->selectarray('search_status', array(
-    '' => '',
-    FvActivity::STATUS_DRAFT => $langs->trans('Draft'),
-    FvActivity::STATUS_COMPLETED => $langs->trans('SafraActivityStatusCompleted'),
-    FvActivity::STATUS_CANCELED => $langs->trans('SafraActivityStatusCanceled'),
-), $search_status, 0, 0, 0, '', 0, 0, 0, '', '', 1);
+print $form->selectarray('search_type', $typeOptions, $search_type, 0, 0, 0, '', 0, 0, 0, '', '', 1);
+print '</td>';
+print '<td class="liste_titre">';
+$statusOptions = array('' => '') + FvActivity::getStatusOptions($langs);
+print $form->selectarray('search_status', $statusOptions, $search_status, 0, 0, 0, '', 0, 0, 0, '', '', 1);
 print '</td>';
 print '<td class="liste_titre center">';
 print '</td>';
@@ -198,15 +200,8 @@ foreach ($activities as $i => $obj) {
 
     print '<td>' . dol_escape_htmltag($obj->fieldplot_label) . '</td>';
 
-    print '<td>' . dol_escape_htmltag($obj->type) . '</td>';
-
-    $statusLabel = $langs->trans('Draft');
-    if ((int) $obj->status === FvActivity::STATUS_COMPLETED) {
-        $statusLabel = $langs->trans('SafraActivityStatusCompleted');
-    } elseif ((int) $obj->status === FvActivity::STATUS_CANCELED) {
-        $statusLabel = $langs->trans('SafraActivityStatusCanceled');
-    }
-    print '<td>' . $statusLabel . '</td>';
+    print '<td>' . dol_escape_htmltag(FvActivity::getTypeLabel($obj->type, $langs)) . '</td>';
+    print '<td>' . dol_escape_htmltag(FvActivity::getStatusLabel((int) $obj->status, $langs)) . '</td>';
 
     print '<td class="center">' . dol_print_date($db->jdate($obj->date_creation), 'dayhour') . '</td>';
 

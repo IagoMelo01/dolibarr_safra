@@ -2551,12 +2551,27 @@ class modSafra extends DolibarrModules
 			array()                                  // Extra params
 		);
 
-		// Adicionar extrafield para vincular Aplicação às tarefas
+		// Adicionar extrafield para vincular Atividade Agricola as tarefas
 		$extrafields->addExtraField(
-			'fk_aplicacao',
-			'Aplicação',
+			'fk_activity',
+			'SafraActivity',
 			'link',
 			150,
+			'',
+			'projet_task',
+			0,
+			0,
+			'',
+			array('options' => array("FvActivity:safra/class/FvActivity.class.php:1"=>null)),
+			1,
+			'',
+			'isModEnabled("safra")'
+		);
+		$extrafields->addExtraField(
+			'fk_aplicacao',
+			'Aplicacao',
+			'link',
+			151,
 			'',
 			'projet_task',
 			0,

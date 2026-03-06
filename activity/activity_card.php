@@ -61,18 +61,7 @@ $id = GETPOSTINT('id');
 $form = new Form($db);
 $formproject = new FormProjets($db);
 $formproduct = new FormProduct($db);
-$activityTypes = array(
-    'Preparo do solo' => 'Preparo do solo',
-    'Tratamento de semente' => 'Tratamento de semente',
-    'Plantio' => 'Plantio',
-    'Fertilização' => 'Fertilização',
-    'Aplicação' => 'Aplicação',
-    'Colheita' => 'Colheita',
-    'Monitoramento' => 'Monitoramento',
-    'Instalação de armadilhas' => 'Instalação de armadilhas',
-    'Leitura de armadilhas' => 'Leitura de armadilhas',
-    'Outro' => 'Outro',
-);
+$activityTypes = FvActivity::getTypeOptions($langs);
 
 $activity = new FvActivity($db);
 if ($id > 0) {
@@ -245,6 +234,17 @@ $movementTypes = array(
 
 $errors = array();
 
+if ($action === 'start' && $activity->id) {
+    $result = $activity->start($user);
+    if ($result > 0) {
+        setEventMessages($langs->trans('SafraActivityStart'), null, 'mesgs');
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+        exit;
+    } else {
+        $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+    }
+}
+
 if ($action === 'complete' && $activity->id) {
     $result = $activity->complete($user);
     if ($result > 0) {
@@ -268,21 +268,10 @@ if ($action === 'cancel' && $activity->id) {
 }
 
 if ($action === 'delete' && $activity->id) {
-    $result = $activity->cancel($user, true);
+    $result = $activity->delete($user);
     if ($result > 0) {
-        if ($result === 2) {
-            setEventMessages($langs->trans('SafraActivityDeleted'), null, 'mesgs');
-            header('Location: ' . dol_buildpath('/safra/safraindex.php', 1));
-            exit;
-        }
-
-        if (!empty($activity->deletionPrevented)) {
-            setEventMessages($langs->trans('ErrorSafraActivityDeleteWithStock'), null, 'warnings');
-        } else {
-            setEventMessages($langs->trans('SafraActivityCanceled'), null, 'mesgs');
-        }
-
-        header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+        setEventMessages($langs->trans('SafraActivityDeleted'), null, 'mesgs');
+        header('Location: ' . dol_buildpath('/safra/safraindex.php', 1));
         exit;
     }
 
@@ -291,13 +280,11 @@ if ($action === 'delete' && $activity->id) {
 
 if ($action === 'save') {
     $isNew = empty($activity->id);
-    $wasCompleted = !$isNew && $activity->isCompleted();
-    $hadStockMovements = !$isNew && $activity->hasStockMovements();
-    $activity->label = GETPOST('label', 'alpha');
-    $activity->type = GETPOST('type', 'alpha');
+    $activity->label = GETPOST('label', 'alphanohtml');
+    $activity->type = GETPOST('type', 'alphanohtml');
     $activity->fk_project = GETPOSTINT('fk_project');
     $activity->fk_fieldplot = GETPOSTINT('fk_fieldplot');
-    $activity->area_total = price2num(GETPOST('area_total', 'alpha'), 'MT');
+    $activity->area_total = price2num(GETPOST('area_total', 'alphanohtml'), 'MT');
     $activity->note_public = GETPOST('note_public', 'restricthtml');
 
     if (empty($activity->label)) {
@@ -307,46 +294,9 @@ if ($action === 'save') {
     if (!$errors) {
         $db->begin();
 
-        $stockReverted = false;
-        $stockRecreated = false;
-        $result = 0;
-
-        if (!$isNew && $wasCompleted && $hadStockMovements) {
-            $revertResult = $activity->revertStockMovements($user, false);
-            if ($revertResult < 0) {
-                $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
-            } else {
-                $stockReverted = $revertResult > 0;
-            }
-        }
-
-        if (!$errors) {
-            $result = $isNew ? $activity->create($user) : $activity->update($user);
-        }
+        $result = $isNew ? $activity->create($user) : $activity->update($user);
 
         if (!$errors && $result > 0) {
-            // Create project task when creating activity
-            if ($isNew && $activity->fk_project > 0 && isModEnabled('project')) {
-                dol_include_once('/projet/class/task.class.php');
-                $task = new Task($db);
-                $task->fk_project = $activity->fk_project;
-                $task->label = $activity->label;
-                $task->date_c = dol_now();
-                $task->date_start = dol_now();
-                $task->progress = 0;
-                $task->description = $langs->trans('Activity') . ' #' . $activity->id;
-                $taskId = $task->create($user);
-                if ($taskId > 0) {
-                    $activity->fk_task = $taskId;
-                    $activity->update($user);
-
-                    $activityUrl = dol_buildpath('/safra/activity/activity_card.php?id=' . $activity->id, 1);
-                    $task->fetch($taskId);
-                    $task->note_private .= "\n" . $langs->trans('Link') . ': ' . $activityUrl;
-                    $task->update($user);
-                }
-            }
-
             // Replace relations
             $machinesSelected = GETPOST('machine_ids', 'array');
             $implementsSelected = GETPOST('implement_ids', 'array');
@@ -397,27 +347,9 @@ if ($action === 'save') {
                 $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
             }
 
-            if (!$errors && !$isNew && $activity->isCompleted()) {
-                $stockResult = $activity->createStockMovements($user, true, false);
-                if ($stockResult < 0) {
-                    $errors[] = $activity->error ?: $langs->trans('ErrorSafraActivityStockMovement');
-                } else {
-                    $stockRecreated = $stockResult > 0;
-                }
-            }
-
             if (!$errors) {
-                $messages = array();
-                if ($stockRecreated) {
-                    $messages[] = $langs->trans('SafraActivityStockRecalculated');
-                } elseif ($stockReverted) {
-                    $messages[] = $langs->trans('SafraActivityStockReverted');
-                }
-
-                $messages[] = $langs->trans('SafraActivitySaved');
-
                 $db->commit();
-                setEventMessages($messages, null, 'mesgs');
+                setEventMessages($langs->trans('SafraActivitySaved'), null, 'mesgs');
                 header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
                 exit;
             } else {
@@ -926,16 +858,7 @@ if ($activity->fk_task) {
 print '<span class="summary-pill">';
 print '<span class="dot"></span>';
 print '<span class="fw-semibold">' . $langs->trans('Status') . ':</span> ';
-switch ((int) $activity->status) {
-    case FvActivity::STATUS_COMPLETED:
-        print $langs->trans('SafraActivityStatusCompleted');
-        break;
-    case FvActivity::STATUS_CANCELED:
-        print $langs->trans('SafraActivityStatusCanceled');
-        break;
-    default:
-        print $langs->trans('Draft');
-}
+print FvActivity::getStatusLabel((int) $activity->status, $langs);
 print '</span>';
 print '</div>';
 print '</div>';
@@ -950,10 +873,8 @@ print '<input class="form-control" name="label" value="' . dol_escape_htmltag($a
 print '</div>';
 print '<div class="col-lg-3">';
 print '<label class="section-title">' . $langs->trans('Type') . '</label>';
-if ($activity->type && !isset($activityTypes[$activity->type])) {
-    $activityTypes = array($activity->type => $activity->type) + $activityTypes;
-}
-print $form->selectarray('type', $activityTypes, $activity->type, 1, 0, 0, '', 0, 0, 0, '', 'form-control minwidth200');
+$selectedType = FvActivity::normalizeType($activity->type);
+print $form->selectarray('type', $activityTypes, $selectedType, 1, 0, 0, '', 0, 0, 0, '', 'form-control minwidth200');
 print '</div>';
 print '<div class="col-lg-3">';
 print '<label class="section-title">' . $langs->trans('Project') . '</label>';
@@ -1111,7 +1032,7 @@ print '<div class="left-group">';
 print '<button type="button" class="btn btn-add-line" id="add-line">+ ' . $langs->trans('Add') . '</button>';
 print '<span class="footer-note">' . $langs->trans('Add') . ' ' . $langs->trans('Products') . '</span>';
 print '</div>';
-print '<button class="butAction safra-save-action" type="submit" style="text-decoration:none;">💾 ' . $langs->trans('Save') . '</button>';
+print '<button class="butAction safra-save-action" type="submit" style="text-decoration:none;">' . $langs->trans('Save') . '</button>';
 print '</div>';
 print '</div>'; // card-body
 print '</div>'; // card
@@ -1120,6 +1041,15 @@ print '</form>';
 
 if ($activity->id) {
     print '<div class="d-flex flex-wrap gap-2 mt-2">';
+
+    if (!$activity->isCompleted() && !$activity->isCanceled() && !$activity->isInProgress()) {
+        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0">';
+        print '<input type="hidden" name="token" value="' . newToken() . '">';
+        print '<input type="hidden" name="action" value="start">';
+        print '<input type="hidden" name="id" value="' . $activity->id . '">';
+        print '<button class="btn btn-outline-primary" type="submit">' . $langs->trans('SafraActivityStart') . '</button>';
+        print '</form>';
+    }
 
     if (!$activity->isCompleted() && !$activity->isCanceled()) {
         print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0">';
@@ -1130,7 +1060,7 @@ if ($activity->id) {
         print '</form>';
     }
 
-    if (!$activity->isCanceled()) {
+    if (!$activity->isCanceled() && !$activity->isCompleted()) {
         print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="mb-0">';
         print '<input type="hidden" name="token" value="' . newToken() . '">';
         print '<input type="hidden" name="action" value="cancel">';

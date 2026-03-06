@@ -542,6 +542,7 @@ SafraOperationPlantio = Planting
 SafraOperationFertilizacao = Fertilization
 SafraOperationAplicacao = Application
 SafraOperationColheita = Harvest
+SafraOperationMonitoramento = Monitoring
 SafraOperationOutro = Other
 SafraLineMovement = Stock movement
 SafraLineMovementConsume = Consumption

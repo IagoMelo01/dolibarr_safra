@@ -14,7 +14,7 @@ class InterfaceModSafraActivityTrigger extends DolibarrTriggers
         $this->db = $db;
         $this->name = preg_replace('/^Interface/i', '', get_class($this));
         $this->family = 'safra';
-        $this->description = 'Sync activity completion and stock movements with project tasks.';
+        $this->description = 'Sync Safra activity status and lifecycle with project tasks.';
         $this->version = 'dolibarr';
         $this->picto = 'safra@safra';
     }
@@ -36,15 +36,17 @@ class InterfaceModSafraActivityTrigger extends DolibarrTriggers
         }
 
         switch ($action) {
-            case 'SAFRA_ACTIVITY_CLOSE':
-                if ($object instanceof FvActivity) {
-                    return $this->handleActivityClose($object, $user);
-                }
-                break;
+            case 'TASK_CREATE':
             case 'TASK_MODIFY':
             case 'TASK_CLOSE':
                 if ($object instanceof Task) {
-                    return $this->handleTaskCompletion($object, $user);
+                    return $this->handleTaskUpdate($object, $user);
+                }
+                break;
+
+            case 'TASK_DELETE':
+                if ($object instanceof Task) {
+                    return $this->handleTaskDelete($object, $user);
                 }
                 break;
         }
@@ -52,48 +54,89 @@ class InterfaceModSafraActivityTrigger extends DolibarrTriggers
         return 0;
     }
 
-    private function handleActivityClose(FvActivity $activity, User $user)
+    /**
+     * Mirror task status and relation data on linked Safra activity.
+     *
+     * @param Task $task
+     * @param User $user
+     * @return int
+     */
+    private function handleTaskUpdate(Task $task, User $user)
     {
-        if ($activity->hasStockMovements()) {
+        if (empty($task->id)) {
             return 0;
         }
 
-        return $activity->createStockMovements($user);
-    }
-
-    private function handleTaskCompletion(Task $task, User $user)
-    {
-        if ((int) $task->progress !== 100 && (int) $task->fk_statut !== Task::STATUS_CLOSED) {
-            return 0;
-        }
-
-        $activity = FvActivity::fetchByTaskId($this->db, $task->id);
+        $activity = FvActivity::fetchByTaskId($this->db, (int) $task->id);
         if (!$activity) {
             return 0;
         }
 
-        $this->db->begin();
+        $mustUpdate = false;
 
-        if (!$activity->isCompleted()) {
-            $activity->status = FvActivity::STATUS_COMPLETED;
-            $activity->fk_user_modif = $user->id;
-
-            $updateResult = $activity->update($user);
-            if ($updateResult < 0) {
-                $this->db->rollback();
-
-                return -1;
-            }
+        if ((int) $activity->fk_task !== (int) $task->id) {
+            $activity->fk_task = (int) $task->id;
+            $mustUpdate = true;
         }
 
-        $stockResult = $activity->createStockMovements($user);
-        if ($stockResult < 0) {
-            $this->db->rollback();
+        if (!empty($task->fk_project) && (int) $activity->fk_project !== (int) $task->fk_project) {
+            $activity->fk_project = (int) $task->fk_project;
+            $mustUpdate = true;
+        }
+
+        $mappedStatus = FvActivity::mapTaskToActivityStatus((int) $task->status, (int) $task->progress);
+        if ((int) $activity->status !== (int) $mappedStatus) {
+            $activity->status = (int) $mappedStatus;
+            $mustUpdate = true;
+        }
+
+        if (!$mustUpdate) {
+            return 0;
+        }
+
+        $activity->context['skip_task_sync'] = 1;
+        $updateResult = $activity->update($user);
+        unset($activity->context['skip_task_sync']);
+
+        if ($updateResult < 0) {
+            $this->error = $activity->error ?: $activity->errorsToString();
 
             return -1;
         }
 
-        $this->db->commit();
+        return 1;
+    }
+
+    /**
+     * Ensure deletion is mirrored from task to activity.
+     *
+     * @param Task $task
+     * @param User $user
+     * @return int
+     */
+    private function handleTaskDelete(Task $task, User $user)
+    {
+        if (empty($task->id)) {
+            return 0;
+        }
+        if (!empty($task->context['skip_activity_delete'])) {
+            return 0;
+        }
+
+        $activity = FvActivity::fetchByTaskId($this->db, (int) $task->id);
+        if (!$activity) {
+            return 0;
+        }
+
+        $activity->context['skip_task_delete'] = 1;
+        $deleteResult = $activity->delete($user, false);
+        unset($activity->context['skip_task_delete']);
+
+        if ($deleteResult < 0) {
+            $this->error = $activity->error ?: $activity->errorsToString();
+
+            return -1;
+        }
 
         return 1;
     }

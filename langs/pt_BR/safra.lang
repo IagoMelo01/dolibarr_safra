@@ -503,6 +503,7 @@ SafraOperationPlantio = Plantio
 SafraOperationFertilizacao = Fertilização
 SafraOperationAplicacao = Atividade com insumos
 SafraOperationColheita = Colheita
+SafraOperationMonitoramento = Monitoramento
 SafraOperationOutro = Outro
 SafraLineMovement = Movimento de estoque
 SafraLineMovementConsume = Consumo
