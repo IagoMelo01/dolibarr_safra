@@ -1,0 +1,33 @@
+classDiagram
+    direction LR
+
+    namespace Estoque de Insumos {
+        class ActivityStockService {
+            +createConsumptionMovements(activity, user, force, tx) int
+            +revertConsumptionMovements(activity, user, tx) int
+        }
+
+        class FvActivity {
+            +createStockMovements(user, force, tx) int
+            +revertStockMovements(user, tx) int
+        }
+
+        class FvActivityLine {
+            +fk_product
+            +fk_warehouse
+            +qty
+            +unit
+        }
+    }
+
+    class Product
+    class Entrepot
+    class MouvementStock
+    class User
+
+    FvActivity "1" o-- "0..*" FvActivityLine : itens consumidos
+    FvActivity ..> ActivityStockService : delega lancamentos
+    ActivityStockService ..> User : operador
+    ActivityStockService ..> MouvementStock : registro de consumo
+    FvActivityLine ..> Product : insumo
+    FvActivityLine ..> Entrepot : armazem

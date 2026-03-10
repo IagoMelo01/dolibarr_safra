@@ -73,15 +73,15 @@ class FvActivity extends CommonObject
      * @var array
      */
     public $fields = array(
-        'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'visible' => -1, 'notnull' => 1),
-        'entity' => array('type' => 'integer', 'label' => 'Entity', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'default' => 1, 'index' => 1),
-        'ref' => array('type' => 'varchar(128)', 'label' => 'Ref', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'default' => '(PROV)', 'index' => 1, 'searchall' => 1),
-        'label' => array('type' => 'varchar(255)', 'label' => 'Label', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'searchall' => 1),
-        'fk_project' => array('type' => 'integer:Project:projet/class/project.class.php:1', 'label' => 'Project', 'enabled' => "isModEnabled('project')", 'visible' => 1, 'notnull' => 0, 'index' => 1),
-        'fk_task' => array('type' => 'integer:Task:projet/class/task.class.php:1', 'label' => 'Task', 'enabled' => "isModEnabled('project')", 'visible' => 1, 'notnull' => 0, 'index' => 1),
-        'fk_thirdparty' => array('type' => 'integer:ThirdParty:societe/class/societe.class.php:1', 'label' => 'ThirdParty', 'enabled' => "isModEnabled('societe')", 'visible' => 1, 'notnull' => 0, 'index' => 1),
-        'fk_fieldplot' => array('type' => 'integer:Talhao:custom/safra/class/talhao.class.php:1', 'label' => 'FieldPlot', 'enabled' => 1, 'visible' => 1, 'notnull' => 0, 'index' => 1),
-        'area_total' => array('type' => 'double(24,8)', 'label' => 'AreaTotal', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'default' => '0'),
+        'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'visible' => -1, 'notnull' => 1, 'position' => 10),
+        'entity' => array('type' => 'integer', 'label' => 'Entity', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'default' => 1, 'index' => 1, 'position' => 20),
+        'ref' => array('type' => 'varchar(128)', 'label' => 'Ref', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'default' => '(PROV)', 'index' => 1, 'searchall' => 1, 'position' => 30),
+        'label' => array('type' => 'varchar(255)', 'label' => 'Label', 'enabled' => '1', 'visible' => 1, 'notnull' => 1, 'searchall' => 1, 'position' => 40),
+        'fk_project' => array('type' => 'integer:Project:projet/class/project.class.php:1', 'label' => 'Project', 'enabled' => "isModEnabled('project')", 'visible' => 1, 'notnull' => 0, 'index' => 1, 'position' => 50),
+        'fk_task' => array('type' => 'integer:Task:projet/class/task.class.php:1', 'label' => 'Task', 'enabled' => "isModEnabled('project')", 'visible' => 1, 'notnull' => 0, 'index' => 1, 'position' => 60),
+        'fk_thirdparty' => array('type' => 'integer:ThirdParty:societe/class/societe.class.php:1', 'label' => 'ThirdParty', 'enabled' => "isModEnabled('societe')", 'visible' => 1, 'notnull' => 0, 'index' => 1, 'position' => 70),
+        'fk_fieldplot' => array('type' => 'integer:Talhao:custom/safra/class/talhao.class.php:1', 'label' => 'FieldPlot', 'enabled' => 1, 'visible' => 1, 'notnull' => 0, 'index' => 1, 'position' => 80),
+        'area_total' => array('type' => 'double(24,8)', 'label' => 'AreaTotal', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'default' => '0', 'position' => 90),
         'type' => array(
             'type' => 'varchar(32)',
             'label' => 'Type',
@@ -90,6 +90,7 @@ class FvActivity extends CommonObject
             'notnull' => 1,
             'default' => self::TYPE_OTHER,
             'index' => 1,
+            'position' => 100,
             'arrayofkeyval' => array(
                 self::TYPE_SOIL_PREPARATION => 'SafraOperationPreparoSolo',
                 self::TYPE_SEED_PREPARATION => 'SafraOperationTratamentoSemente',
@@ -109,6 +110,7 @@ class FvActivity extends CommonObject
             'notnull' => 1,
             'default' => '0',
             'index' => 1,
+            'position' => 110,
             'arrayofkeyval' => array(
                 self::STATUS_DRAFT => 'Draft',
                 self::STATUS_IN_PROGRESS => 'SafraActivityStatusInProgress',
@@ -116,12 +118,12 @@ class FvActivity extends CommonObject
                 self::STATUS_CANCELED => 'SafraActivityStatusCanceled',
             ),
         ),
-        'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'visible' => 1),
-        'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'visible' => 0),
-        'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'visible' => -2, 'notnull' => 1),
-        'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'visible' => -2, 'notnull' => 0),
-        'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'visible' => -2, 'notnull' => 1),
-        'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'visible' => -2, 'notnull' => 0),
+        'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'visible' => 1, 'position' => 120),
+        'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'visible' => 0, 'position' => 130),
+        'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 140),
+        'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 150),
+        'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 160),
+        'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 170),
     );
 
     public function __construct(DoliDB $db)
@@ -142,6 +144,17 @@ class FvActivity extends CommonObject
             if (isset($val['enabled']) && empty($val['enabled'])) {
                 unset($this->fields[$key]);
             }
+        }
+
+        // Module Builder expects every field to have a position index.
+        $nextPosition = 10;
+        foreach ($this->fields as $key => $val) {
+            $pos = isset($val['position']) ? (int) $val['position'] : 0;
+            if ($pos <= 0) {
+                $pos = $nextPosition;
+                $this->fields[$key]['position'] = $pos;
+            }
+            $nextPosition = $pos + 10;
         }
 
         // Translate array values

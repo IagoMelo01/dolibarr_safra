@@ -1,0 +1,543 @@
+﻿classDiagram
+direction TB
+
+%% =========================
+%% Core and Integration Layer
+%% =========================
+namespace Core {
+
+class modSafra {
+    +numero
+    +rights_class
+    +family
+    +module_position
+    +name
+    +description
+    +version
+    +const_name
+    +picto
+    +module_parts
+    +depends
+    +dirs
+    +cronjobs
+    +rights
+    +menu
+    +init(options) int
+    +remove(options) int
+}
+
+class ActionsSafra {
+    +db
+    +error
+    +errors
+    +results
+    +resprints
+    +priority
+    +doActions(parameters, object, action, hookmanager) int
+    +formObjectOptions(parameters, object, action, hookmanager) int
+}
+
+class InterfaceModSafraActivityTrigger {
+    +db
+    +name
+    +family
+    +description
+    +version
+    +picto
+    +runTrigger(action, object, user, langs, conf) int
+    -handleTaskUpdate(task, user) int
+    -handleTaskDelete(task, user) int
+}
+
+class InterfaceSafraTriggers {
+    +db
+    +name
+    +family
+    +description
+    +version
+    +picto
+    +runTrigger(action, object, user, langs, conf) int
+}
+
+}
+
+class DolibarrModules
+class CommonHookActions
+class DolibarrTriggers
+
+DolibarrModules <|-- modSafra
+CommonHookActions <|-- ActionsSafra
+DolibarrTriggers <|-- InterfaceModSafraActivityTrigger
+DolibarrTriggers <|-- InterfaceSafraTriggers
+
+
+%% =========================
+%% Activity Management
+%% =========================
+namespace ActivityManagement {
+
+class FvActivity {
+    +STATUS_DRAFT
+    +STATUS_IN_PROGRESS
+    +STATUS_COMPLETED
+    +STATUS_CANCELED
+    +TYPE_SOIL_PREPARATION
+    +TYPE_SEED_PREPARATION
+    +TYPE_PLANTING
+    +TYPE_FERTILIZATION
+    +TYPE_INPUT_APPLICATION
+    +TYPE_HARVEST
+    +TYPE_MONITORING
+    +TYPE_OTHER
+    +module
+    +element
+    +table_element
+    +table_element_line
+    +fk_element
+    +class_element_line
+    +lines
+    +deletionPrevented
+    +ref
+    +label
+    +fk_project
+    +fk_task
+    +fk_thirdparty
+    +fk_fieldplot
+    +area_total
+    +type
+    +status
+    +note_public
+    +note_private
+    +create(user) int
+    +fetch(id, ref) int
+    +update(user) int
+    +delete(user, deleteLinkedTask) int
+    +start(user) int
+    +complete(user) int
+    +cancel(user, allowDelete) int
+    +fetchLines() int
+    +createStockMovements(user, force, tx) int
+    +revertStockMovements(user, tx) int
+}
+
+class FvActivityLine {
+    +module
+    +element
+    +fk_element
+    +table_element
+    +rowid
+    +entity
+    +fk_activity
+    +fk_product
+    +area_applied
+    +dose
+    +dose_unit
+    +total
+    +movement_type
+    +fk_warehouse
+    +create(user) int
+    +deleteForActivity(db, activityId) int
+}
+
+class ActivityStockService {
+    -db
+    +error
+    +createConsumptionMovements(activity, user, force, tx) int
+    +revertConsumptionMovements(activity, user, tx) int
+}
+
+}
+
+class CommonObject
+class CommonObjectLine
+class Task
+class Project
+class User
+class Product
+class Entrepot
+class ThirdParty
+class ExtraFields
+class MouvementStock
+
+CommonObject <|-- FvActivity
+CommonObjectLine <|-- FvActivityLine
+
+FvActivity "1" o-- "0..*" FvActivityLine : lines
+FvActivity ..> ActivityStockService
+FvActivity ..> Task
+FvActivity ..> Project
+FvActivity ..> User
+FvActivity ..> ThirdParty
+FvActivity ..> ExtraFields
+
+FvActivityLine ..> Product
+FvActivityLine ..> Entrepot
+
+ActivityStockService ..> FvActivity
+ActivityStockService ..> FvActivityLine
+ActivityStockService ..> MouvementStock
+
+InterfaceModSafraActivityTrigger ..> FvActivity
+InterfaceModSafraActivityTrigger ..> Task
+
+
+%% =========================
+%% Product Linking
+%% =========================
+namespace ProductCatalogLink {
+
+class SafraProductLink {
+    +TYPE_FORMULADO
+    +TYPE_TECNICO
+    +TYPE_CULTIVAR
+    -postedSelections
+    +ensureDatabaseSchema(db) bool
+    +capturePostedSelections() array
+    +replaceLinks(db, productId, type, ids) bool
+    +fetchLinks(db, productId, type) array
+    +fetchAvailableOptions(db, type, excludeIds) array
+}
+
+}
+
+ActionsSafra ..> SafraProductLink
+
+
+%% =========================
+%% Agronomic Domain
+%% =========================
+namespace AgronomicDomain {
+
+class Talhao {
+    +rowid
+    +ref
+    +label
+    +status
+    +area
+    +wkt
+    +bbox
+    +geo_json
+    +municipio
+}
+
+class Municipio {
+    +rowid
+    +ref
+    +label
+    +status
+    +cod_ibge
+    +uf
+    +data_atualizacao
+}
+
+class Cultura {
+    +rowid
+    +ref
+    +label
+    +status
+    +embrapa_id
+    +necessidade_n
+    +necessidade_p
+    +necessidade_k
+    +saturacao_bases_ideal
+}
+
+class Cultivar {
+    +rowid
+    +ref
+    +label
+    +status
+    +cultura
+    +obtentor_mantenedor
+    +rnc
+    +embrapa_id
+    +safra
+    +potencial_produtivo
+    +grupo
+    +duracao_ciclo
+}
+
+class Pragas {
+    +rowid
+    +ref
+    +label
+    +status
+    +label_cientifico
+    +culturas
+}
+
+class ProdutosTecnicos {
+    +rowid
+    +ref
+    +label
+    +status
+    +ingrediente_ativo
+    +classe
+    +titular_registro
+    +classificacao_toxicologica
+    +classificacao_ambiental
+}
+
+class SafraProdutoFormulado {
+    +STATUS_DISABLED
+    +STATUS_ACTIVE
+    +rowid
+    +ref
+    +label
+    +description
+    +ingrediente_ativo
+    +modo_acao
+    +classe
+    +status
+}
+
+class RecomendacaoAdubo {
+    +rowid
+    +ref
+    +label
+    +status
+    +fk_project
+    +analise_solo
+    +recomendacao
+}
+
+class Evento {
+    +rowid
+    +ref
+    +label
+    +status
+    +amount
+    +qty
+    +fk_soc
+    +fk_project
+}
+
+class AnaliseSolo {
+    +rowid
+    +ref
+    +label
+    +status
+    +data_coleta
+    +localizacao
+    +profundidade_amostra
+    +ph
+    +materia_organica
+    +n_total
+    +fosforo
+    +potassio
+    +calcio
+    +magnesio
+    +enxofre
+    +ctc
+    +saturacao_bases
+}
+
+class Colheita {
+    +rowid
+    +ref
+    +label
+    +status
+    +fk_project
+    +quantidade_colhida
+    +data_colheita
+}
+
+class JanelaPlantio {
+    +rowid
+    +ref
+    +label
+    +status
+    +fk_project
+    +municipio
+}
+
+class Zoneamento {
+    +rowid
+    +ref
+    +label
+    +status
+    +municipio
+    +uf
+    +cultura
+    +ciclo
+    +dia_ini
+    +mes_ini
+    +dia_fim
+    +mes_fim
+    +safra_ini
+    +safra_fim
+    +risco
+    +portaria
+    +janela_plantio
+}
+
+class SafraCultura {
+    +module
+    +element
+    +table_element
+    +rowid
+    +code
+    +label
+    -codeField
+}
+
+class SafraPraga {
+    +module
+    +element
+    +table_element
+    +rowid
+    +ref
+    +label
+    +label_cientifico
+}
+
+}
+
+CommonObject <|-- Talhao
+CommonObject <|-- Municipio
+CommonObject <|-- Cultura
+CommonObject <|-- Cultivar
+CommonObject <|-- Pragas
+CommonObject <|-- ProdutosTecnicos
+CommonObject <|-- SafraProdutoFormulado
+CommonObject <|-- RecomendacaoAdubo
+CommonObject <|-- Evento
+CommonObject <|-- AnaliseSolo
+CommonObject <|-- Colheita
+CommonObject <|-- JanelaPlantio
+CommonObject <|-- Zoneamento
+CommonObject <|-- SafraCultura
+CommonObject <|-- SafraPraga
+
+FvActivity ..> Talhao
+SafraProductLink ..> Cultivar
+SafraProductLink ..> ProdutosTecnicos
+SafraProductLink ..> SafraProdutoFormulado
+
+
+%% =========================
+%% Satellite
+%% =========================
+namespace SatelliteMonitoring {
+
+class NDVI {
+    +STATUS_DRAFT
+    +STATUS_VALIDATED
+    +STATUS_CANCELED
+    +rowid
+    +ref
+    +label
+    +status
+    +data
+    +talhao
+    +caminho_json
+}
+
+class NDMI {
+    +STATUS_DRAFT
+    +STATUS_VALIDATED
+    +STATUS_CANCELED
+    +rowid
+    +ref
+    +label
+    +status
+    +data
+    +talhao
+    +caminho_json
+}
+
+class NDWI {
+    +STATUS_DRAFT
+    +STATUS_VALIDATED
+    +STATUS_CANCELED
+    +rowid
+    +ref
+    +label
+    +status
+    +amount
+    +qty
+    +fk_soc
+    +fk_project
+    +data
+    +talhao
+    +caminho_json
+}
+
+class EVI {
+    +STATUS_DRAFT
+    +STATUS_VALIDATED
+    +STATUS_CANCELED
+    +rowid
+    +ref
+    +label
+    +status
+    +amount
+    +qty
+    +fk_soc
+    +fk_project
+    +data
+    +talhao
+    +caminho_json
+}
+
+class SWIR {
+    +STATUS_DRAFT
+    +STATUS_VALIDATED
+    +STATUS_CANCELED
+    +rowid
+    +ref
+    +label
+    +status
+    +amount
+    +qty
+    +fk_soc
+    +fk_project
+    +data
+    +talhao
+    +caminho_json
+}
+
+class SafraSatelliteStatistics {
+    -CACHE_BASE
+    -TOKEN_FILENAME
+    -indexConfig
+    +getWeeklySeries(db, talhaoId, index, weeks) array
+}
+
+class EmbrapaApi {
+    -db
+    -tokenUrl
+    -produtividadeUrl
+    -zoneamentoUrl
+    -clientId
+    -clientSecret
+    +fetchProdutividade(parameters, error) array
+    +fetchZoneamento(parameters, error) array
+}
+
+}
+
+CommonObject <|-- NDVI
+CommonObject <|-- NDMI
+CommonObject <|-- NDWI
+CommonObject <|-- EVI
+CommonObject <|-- SWIR
+
+NDVI ..> Talhao
+NDMI ..> Talhao
+NDWI ..> Talhao
+EVI ..> Talhao
+SWIR ..> Talhao
+
+SafraSatelliteStatistics ..> Talhao
+SafraSatelliteStatistics ..> NDVI
+SafraSatelliteStatistics ..> NDMI
+SafraSatelliteStatistics ..> NDWI
+SafraSatelliteStatistics ..> EVI
+SafraSatelliteStatistics ..> SWIR
+
+NDVI ..> EmbrapaApi
+NDMI ..> EmbrapaApi
+NDWI ..> EmbrapaApi
+EVI ..> EmbrapaApi
+SWIR ..> EmbrapaApi

@@ -1,0 +1,45 @@
+classDiagram
+    direction TB
+
+    namespace Dominio Agronomico {
+        class Talhao
+        class Municipio
+        class Cultura
+        class Cultivar
+        class Pragas
+        class ProdutosTecnicos
+        class SafraProdutoFormulado
+        class RecomendacaoAdubo
+        class Evento
+        class AnaliseSolo
+        class Colheita
+        class JanelaPlantio
+        class Zoneamento
+        class SafraCultura
+        class SafraPraga
+        class FvActivity
+        class SafraProductLink
+    }
+
+    class CommonObject
+
+    CommonObject <|-- Talhao
+    CommonObject <|-- Municipio
+    CommonObject <|-- Cultura
+    CommonObject <|-- Cultivar
+    CommonObject <|-- Pragas
+    CommonObject <|-- ProdutosTecnicos
+    CommonObject <|-- SafraProdutoFormulado
+    CommonObject <|-- RecomendacaoAdubo
+    CommonObject <|-- Evento
+    CommonObject <|-- AnaliseSolo
+    CommonObject <|-- Colheita
+    CommonObject <|-- JanelaPlantio
+    CommonObject <|-- Zoneamento
+    CommonObject <|-- SafraCultura
+    CommonObject <|-- SafraPraga
+
+    FvActivity ..> Talhao : fk_fieldplot
+    SafraProductLink ..> Cultivar : vinculo com produto Dolibarr
+    SafraProductLink ..> ProdutosTecnicos : vinculo com produto Dolibarr
+    SafraProductLink ..> SafraProdutoFormulado : vinculo com produto Dolibarr

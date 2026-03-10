@@ -1,0 +1,37 @@
+classDiagram
+    direction TB
+
+    namespace `Core Safra` {
+        class modSafra {
+            +init(options) int
+            +remove(options) int
+        }
+        class ActionsSafra {
+            +doActions(parameters, object, action, hookmanager) int
+            +formObjectOptions(parameters, object, action, hookmanager) int
+        }
+        class InterfaceModSafraActivityTrigger {
+            +runTrigger(action, object, user, langs, conf) int
+            -handleTaskUpdate(task, user) int
+            -handleTaskDelete(task, user) int
+        }
+        class InterfaceSafraTriggers
+    }
+
+    class DolibarrModules
+    class CommonHookActions
+    class DolibarrTriggers
+    class FvActivity
+    class Task
+    class SafraProductLink
+    class ActivityStockService
+
+    DolibarrModules <|-- modSafra
+    CommonHookActions <|-- ActionsSafra
+    DolibarrTriggers <|-- InterfaceModSafraActivityTrigger
+    DolibarrTriggers <|-- InterfaceSafraTriggers
+
+    ActionsSafra ..> SafraProductLink : hooks productcard/productdao
+    InterfaceModSafraActivityTrigger ..> FvActivity : sync status/delete
+    InterfaceModSafraActivityTrigger ..> Task : TASK_* events
+    modSafra ..> ActivityStockService : service wiring

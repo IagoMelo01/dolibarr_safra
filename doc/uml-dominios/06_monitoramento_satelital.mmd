@@ -1,0 +1,40 @@
+classDiagram
+    direction LR
+
+    namespace "Monitoramento Satelital" {
+        class NDVI
+        class NDMI
+        class NDWI
+        class EVI
+        class SWIR
+        class SafraSatelliteStatistics
+        class EmbrapaApi
+        class Talhao
+    }
+
+    class CommonObject
+
+    CommonObject <|-- NDVI
+    CommonObject <|-- NDMI
+    CommonObject <|-- NDWI
+    CommonObject <|-- EVI
+    CommonObject <|-- SWIR
+
+    NDVI ..> Talhao
+    NDMI ..> Talhao
+    NDWI ..> Talhao
+    EVI ..> Talhao
+    SWIR ..> Talhao
+
+    SafraSatelliteStatistics ..> Talhao
+    SafraSatelliteStatistics ..> NDVI
+    SafraSatelliteStatistics ..> NDMI
+    SafraSatelliteStatistics ..> NDWI
+    SafraSatelliteStatistics ..> EVI
+    SafraSatelliteStatistics ..> SWIR
+
+    NDVI ..> EmbrapaApi
+    NDMI ..> EmbrapaApi
+    NDWI ..> EmbrapaApi
+    EVI ..> EmbrapaApi
+    SWIR ..> EmbrapaApi

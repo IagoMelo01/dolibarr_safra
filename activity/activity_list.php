@@ -216,9 +216,7 @@ print '</table>';
 print '</div>';
 print '</form>';
 
-print '<div class="pagination">';
-print_pagination($page, $varpage, $param, $num, $nbtotalofrecords, $limit);
-print '</div>';
+print_barre_liste('', $page, $varpage, $param, $sortfield, $sortorder, '', $num, $nbtotalofrecords, '', 0, '', '', $limit, 0, 0, 1);
 
 dol_fiche_end();
 llxFooter();

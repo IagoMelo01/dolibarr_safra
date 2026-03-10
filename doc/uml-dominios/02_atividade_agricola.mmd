@@ -1,0 +1,55 @@
+classDiagram
+    direction TB
+
+    namespace Atividade_Agricola {
+        class FvActivity {
+            +STATUS_DRAFT
+            +STATUS_IN_PROGRESS
+            +STATUS_COMPLETED
+            +STATUS_CANCELED
+            +rowid
+            +ref
+            +label
+            +type
+            +status
+            +fk_project
+            +fk_task
+            +fk_fieldplot
+            +area_total
+            +create(user) int
+            +fetch(id, ref) int
+            +update(user) int
+            +delete(user, deleteLinkedTask) int
+            +start(user) int
+            +complete(user) int
+            +cancel(user, allowDelete) int
+            +fetchLines() int
+        }
+
+        class FvActivityLine {
+            +rowid
+            +fk_activity
+            +fk_product
+            +qty
+            +unit
+            +fk_warehouse
+            +create(user) int
+            +deleteForActivity(db, activityId) int
+        }
+    }
+
+    class CommonObject
+    class CommonObjectLine
+    class User
+    class Project
+    class Task
+    class Talhao
+
+    CommonObject <|-- FvActivity
+    CommonObjectLine <|-- FvActivityLine
+
+    FvActivity "1" o-- "0..*" FvActivityLine : insumos/apontamentos
+    FvActivity ..> User : creator/modifier
+    FvActivity ..> Project : fk_project
+    FvActivity ..> Task : fk_task
+    FvActivity ..> Talhao : fk_fieldplot

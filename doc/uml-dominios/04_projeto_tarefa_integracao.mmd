@@ -1,0 +1,38 @@
+classDiagram
+    direction TB
+
+    namespace Integracao Com Projetos {
+        class FvActivity {
+            +fk_project
+            +fk_task
+            +status
+            +create(user) int
+            +update(user) int
+            +delete(user, deleteLinkedTask) int
+            +start(user) int
+            +complete(user) int
+            +cancel(user, allowDelete) int
+        }
+
+        class InterfaceModSafraActivityTrigger {
+            +runTrigger(action, object, user, langs, conf) int
+            -handleTaskUpdate(task, user) int
+            -handleTaskDelete(task, user) int
+        }
+    }
+
+    class Project
+    class Task {
+        +status
+        +fk_project
+        +array_options[options_safra_activity_id]
+    }
+    class ExtraFields
+    class User
+
+    FvActivity ..> Project : vinculada ao projeto
+    FvActivity ..> Task : cria e referencia tarefa
+    Task ..> ExtraFields : link para atividade (extrafield)
+    InterfaceModSafraActivityTrigger ..> Task : observa alteracoes TASK_*
+    InterfaceModSafraActivityTrigger ..> FvActivity : espelha status/exclusao
+    FvActivity ..> User : acoes de ciclo de vida
