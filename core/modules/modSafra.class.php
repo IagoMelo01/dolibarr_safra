@@ -134,6 +134,7 @@ class modSafra extends DolibarrModules
                         "/custom/safra/json/ndmi",
                         "/custom/safra/json/evi",
                         "/custom/safra/json/savi",
+                        "/custom/safra/json/saude_geral",
                         "/custom/safra/json/cache",
                         "/custom/safra/json/cache/ndvi",
                         "/custom/safra/json/cache/ndmi",
@@ -286,16 +287,16 @@ class modSafra extends DolibarrModules
 			//      'priority' => 50,
 			//  ),
 			 0 => array(
-			     'label' => 'Request NDVI',
+			     'label' => 'Sync satellite layers',
 			     'jobtype' => 'method',
 			     'class' => '/custom/safra/class/ndvi.class.php',
 			     'objectname' => 'ndvi',
-			     'method' => 'requestNDVIData',
+			     'method' => 'doScheduledJob',
 			     'parameters' => '',
-			     'comment' => 'Busca o geojson ndvi do sentinel hub',
+			     'comment' => 'Executa diariamente e processa dados apenas as quartas-feiras',
 			     'frequency' => 1,
-			     'unitfrequency' => 604800,
-			     'status' => 0,
+			     'unitfrequency' => 86400,
+			     'status' => 1,
 			     'test' => 'isModEnabled("safra")',
 			     'priority' => 50,
 			 ),
@@ -1113,7 +1114,7 @@ class modSafra extends DolibarrModules
 			'titre' => 'SafraMenuMonitoramento',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_monitoramento',
-			'url' => '/custom/safra/ndvi_view.php',
+			'url' => '/custom/safra/satellite_view.php',
 			'langs' => 'safra@safra',
 			'position' => 1000,
 			'enabled' => 'isModEnabled(\'safra\')',
@@ -1130,7 +1131,7 @@ class modSafra extends DolibarrModules
 			'titre' => 'SafraMenuNDVI',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_ndvi_list',
-			'url' => '/custom/safra/ndvi_view.php',
+			'url' => '/custom/safra/satellite_view.php?band=ndvi',
 			'langs' => 'safra@safra',
 			'position' => 1000,
 			'enabled' => 'isModEnabled(\'safra\')',
@@ -1147,7 +1148,7 @@ class modSafra extends DolibarrModules
 			'titre' => 'SafraMenuNDMI',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_ndmi_list',
-			'url' => '/custom/safra/ndmi_view.php',
+			'url' => '/custom/safra/satellite_view.php?band=ndmi',
 			'langs' => 'safra@safra',
 			'position' => 1000,
 			'enabled' => 'isModEnabled(\'safra\')',
@@ -1167,7 +1168,7 @@ class modSafra extends DolibarrModules
 			'url' => '/custom/safra/ndwi_view.php',
 			'langs' => 'safra@safra',
 			'position' => 1000,
-			'enabled' => 'isModEnabled(\'safra\')',
+			'enabled' => '0',
 			'perms' => '$user->hasRight(\'safra\', \'ndwi\', \'read\')',
 			'target' => '',
 			'user' => 2,
@@ -1181,7 +1182,7 @@ class modSafra extends DolibarrModules
 			'titre' => 'SafraMenuSWIR',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_swir_list',
-			'url' => '/custom/safra/swir_view.php',
+			'url' => '/custom/safra/satellite_view.php?band=swir',
 			'langs' => 'safra@safra',
 			'position' => 1000,
 			'enabled' => 'isModEnabled(\'safra\')',
@@ -1192,27 +1193,27 @@ class modSafra extends DolibarrModules
 		);
 		/* END MODULEBUILDER LEFTMENU SAFRAMENUSWIR */
 		/* BEGIN MODULEBUILDER LEFTMENU SAFRAMENUEVI */
-		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_monitoramento',
-			'type' => 'left',
-			'titre' => 'SafraMenuEVI',
-			'mainmenu' => 'safra',
-			'leftmenu' => 'safra_evi_list',
-			'url' => '/custom/safra/evi_view.php',
-			'langs' => 'safra@safra',
-			'position' => 1000,
-			'enabled' => 'isModEnabled(\'safra\')',
-			'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
-			'target' => '',
-			'user' => 2,
-			'object' => '',
-		);
+		// $this->menu[$r++] = array(
+		// 	'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_monitoramento',
+		// 	'type' => 'left',
+		// 	'titre' => 'SafraMenuEVI',
+		// 	'mainmenu' => 'safra',
+		// 	'leftmenu' => 'safra_evi_list',
+		// 	'url' => '/custom/safra/evi_view.php',
+		// 	'langs' => 'safra@safra',
+		// 	'position' => 1000,
+		// 	'enabled' => 'isModEnabled(\'safra\')',
+		// 	'perms' => '$user->hasRight(\'safra\', \'evi\', \'read\')',
+		// 	'target' => '',
+		// 	'user' => 2,
+		// 	'object' => '',
+		// );
 		/* END MODULEBUILDER LEFTMENU SAFRAMENUEVI */
 		/* BEGIN MODULEBUILDER LEFTMENU SAFRAMENUANALISESSOLO */
 		$this->menu[$r++] = array(
-			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_monitoramento',
+			'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_analisesolo',
 			'type' => 'left',
-			'titre' => 'SafraMenuAnalisesSolo',
+			'titre' => '<span class="far fa-chart-bar"></span> SafraMenuAnalisesSolo',
 			'mainmenu' => 'safra',
 			'leftmenu' => 'safra_analisesolo_list',
 			'url' => '/custom/safra/analisesolo_list.php',
@@ -1392,11 +1393,11 @@ class modSafra extends DolibarrModules
                 $this->menu[$r++]=array(
                          'fk_menu' => 'fk_mainmenu=safra',
                          'type' => 'left',
-                         'titre' => 'AnÃ¡lises de SatÃ©lite',
+                         'titre' => 'Análises de Satélites',
                          'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
                          'mainmenu' => 'safra',
                          'leftmenu' => 'ndvi',
-                         'url' => '/custom/safra/ndvi_view.php',
+                         'url' => '/custom/safra/satellite_view.php',
                          'langs' => 'safra@safra',
                          'position' => 1000 + $r,
                          'enabled' => 'isModEnabled(\'safra\')',
@@ -1409,13 +1410,13 @@ class modSafra extends DolibarrModules
                         array('code' => 'ndvi', 'title' => 'NDVI'),
                         array('code' => 'ndmi', 'title' => 'NDMI'),
                         array('code' => 'swir', 'title' => 'SWIR'),
-                        array('code' => 'ndwi', 'title' => 'NDWI'),
-                        array('code' => 'evi', 'title' => 'EVI'),
+                        // array('code' => 'evi', 'title' => 'EVI'),
                 );
 
                 foreach ($satelliteMenus as $menuItem) {
                         $code = $menuItem['code'];
                         $title = $menuItem['title'];
+                        $url = '/custom/safra/satellite_view.php?band='.$code;
 
                         $this->menu[$r++] = array(
                                 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=ndvi',
@@ -1423,7 +1424,7 @@ class modSafra extends DolibarrModules
                                 'titre' => $title,
                                 'mainmenu' => 'safra',
                                 'leftmenu' => 'safra_'.$code,
-                                'url' => '/custom/safra/'.$code.'_view.php',
+                                'url' => $url,
                                 'langs' => 'safra@safra',
                                 'position' => 1000 + $r,
                                 'enabled' => 'isModEnabled(\'safra\')',
@@ -1533,7 +1534,7 @@ class modSafra extends DolibarrModules
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra',
 			 'type' => 'left',
-			 'titre' => 'AnaliseSolo',
+			 'titre' => 'buceta AnaliseSolo',
 			 'mainmenu' => 'safra',
 			 'leftmenu' => 'analisesolo',
 			 'url' => '/custom/safra/analisesolo_list.php',
@@ -2340,7 +2341,7 @@ class modSafra extends DolibarrModules
                        'prefix' => img_picto('', 'fa-satellite', 'class="pictofixedwidth valignmiddle"'),
                        'mainmenu' => 'safra',
                        'leftmenu' => 'safra_monitoramento',
-                       'url' => '/custom/safra/ndvi_view.php',
+                       'url' => '/custom/safra/satellite_view.php',
                        'langs' => 'safra@safra',
                        'position' => 1000 + $r,
                        'enabled' => 'isModEnabled("safra")',
@@ -2350,10 +2351,9 @@ class modSafra extends DolibarrModules
                );
 
                $monitoramento = array(
-                       array('labelKey' => 'NDVI', 'code' => 'ndvi'),
-                       array('labelKey' => 'NDMI', 'code' => 'ndmi'),
-                       array('labelKey' => 'NDWI', 'code' => 'ndwi'),
-                       array('labelKey' => 'SWIR', 'code' => 'swir'),
+                       array('labelKey' => 'NDVI', 'code' => 'ndvi', 'listUrl' => '/custom/safra/satellite_view.php?band=ndvi'),
+                       array('labelKey' => 'NDMI', 'code' => 'ndmi', 'listUrl' => '/custom/safra/satellite_view.php?band=ndmi'),
+                       array('labelKey' => 'SWIR', 'code' => 'swir', 'listUrl' => '/custom/safra/satellite_view.php?band=swir'),
                        array('labelKey' => 'EVI', 'code' => 'evi'),
                        array(
                                'labelKey' => 'AnalisesSolo',
@@ -2383,7 +2383,7 @@ class modSafra extends DolibarrModules
                                'user' => 2,
                        );
 
-                       if (!in_array($code, array('ndvi', 'ndmi', 'ndwi', 'swir', 'evi'), true)) {
+                       if (!in_array($code, array('ndvi', 'ndmi', 'swir', 'evi'), true)) {
                                $this->menu[$r++] = array(
                                        'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_'.$code.'_list',
                                        'type' => 'left',

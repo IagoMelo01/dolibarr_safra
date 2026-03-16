@@ -59,6 +59,7 @@
         }
 
         function showEmpty(entry, data) {
+            const options = entry.options || {};
             const canvas = document.getElementById(entry.canvasId);
             const emptyElement = entry.emptyId ? document.getElementById(entry.emptyId) : null;
             const metaElement = entry.metaId ? document.getElementById(entry.metaId) : null;
@@ -68,7 +69,7 @@
             }
             if (emptyElement) {
                 emptyElement.style.display = 'block';
-                emptyElement.textContent = (data && data.message) || entry.options.emptyMessage || '';
+                emptyElement.textContent = (data && data.message) || options.emptyMessage || '';
             }
             if (metaElement) {
                 metaElement.textContent = data && data.message ? data.message : '';
@@ -92,44 +93,109 @@
             return gradient;
         }
 
-        function renderEntry(entry) {
-            const canvas = document.getElementById(entry.canvasId);
-            if (!canvas) {
+        function buildTimelineFromSeries(seriesList) {
+            const timelineMap = {};
+            (seriesList || []).forEach(series => {
+                const points = Array.isArray(series.points) ? series.points : [];
+                points.forEach(point => {
+                    const from = point && point.from ? String(point.from) : '';
+                    const to = point && point.to ? String(point.to) : '';
+                    if (!from && !to) {
+                        return;
+                    }
+                    const key = `${from}|${to}`;
+                    if (!timelineMap[key]) {
+                        timelineMap[key] = { key: key, from: from, to: to };
+                    }
+                });
+            });
+
+            return Object.keys(timelineMap)
+                .sort()
+                .map(key => timelineMap[key]);
+        }
+
+        function buildPointLookup(points) {
+            const lookup = {};
+            (points || []).forEach(point => {
+                const from = point && point.from ? String(point.from) : '';
+                const to = point && point.to ? String(point.to) : '';
+                if (!from && !to) {
+                    return;
+                }
+                lookup[`${from}|${to}`] = point;
+            });
+
+            return lookup;
+        }
+
+        function updateMeta(entry, data, metaElement) {
+            if (!metaElement) {
                 return;
             }
 
-            const data = entry.data || {};
+            const options = entry.options || {};
+            const updated = formatDate(toDate(data.generatedAt));
+            const nextUpdate = formatDate(toDate(data.validUntil));
+            const parts = [];
+            if (updated) {
+                parts.push(formatLabel(options.updatedLabel, updated));
+            }
+            if (nextUpdate) {
+                parts.push(formatLabel(options.nextLabel, nextUpdate));
+            }
+
+            metaElement.textContent = parts.filter(Boolean).join(' - ');
+            metaElement.style.display = parts.length ? 'block' : 'none';
+        }
+
+        function buildDefaultTooltipCallbacks(defaultDecimals) {
+            return {
+                label: context => {
+                    const dataset = context.dataset || {};
+                    const prefix = dataset.tooltipLabel || dataset.label || '';
+                    const decimals = typeof dataset.tooltipDecimals === 'number' ? dataset.tooltipDecimals : defaultDecimals;
+                    const unit = dataset.tooltipUnit || '';
+                    const raw = context.parsed && typeof context.parsed.y === 'number' ? context.parsed.y : NaN;
+                    if (!Number.isFinite(raw)) {
+                        return prefix ? `${prefix}: --` : '--';
+                    }
+                    const value = Number(raw).toFixed(decimals);
+                    return prefix ? `${prefix}: ${value}${unit}` : `${value}${unit}`;
+                },
+            };
+        }
+
+        function renderSingleSeries(entry, data, canvas, metaElement) {
+            const options = entry.options || {};
             const points = Array.isArray(data.points) ? data.points : [];
             if (!points.length) {
                 showEmpty(entry, data);
                 return;
             }
 
-            const emptyElement = entry.emptyId ? document.getElementById(entry.emptyId) : null;
-            const metaElement = entry.metaId ? document.getElementById(entry.metaId) : null;
-
-            if (emptyElement) {
-                emptyElement.style.display = 'none';
-            }
-            canvas.style.display = 'block';
-
             const labels = points.map(point => formatRange(point.from, point.to));
-            const decimals = typeof entry.options.decimals === 'number' ? entry.options.decimals : 2;
+            const decimals = typeof options.decimals === 'number' ? options.decimals : 2;
             const values = points.map(point => parseValue(point.mean));
+            if (!hasNumericValue(values)) {
+                showEmpty(entry, data);
+                return;
+            }
+
             const minValues = points.map(point => parseValue(point.min));
             const maxValues = points.map(point => parseValue(point.max));
             const hasRange = hasNumericValue(minValues) && hasNumericValue(maxValues);
 
             const ctx = canvas.getContext('2d');
-            const datasetColor = entry.options.color || '#2563eb';
-            const background = createGradient(ctx, entry.options.gradient);
+            const datasetColor = options.color || '#2563eb';
+            const background = createGradient(ctx, options.gradient);
             const datasets = [];
 
             if (hasRange) {
-                const rangeFillColor = entry.options.rangeFillColor || 'rgba(37, 99, 235, 0.12)';
-                const rangeLineColor = entry.options.rangeLineColor || 'rgba(148, 163, 184, 0.55)';
-                const minLabel = entry.options.minLabel || '';
-                const maxLabel = entry.options.maxLabel || '';
+                const rangeFillColor = options.rangeFillColor || 'rgba(37, 99, 235, 0.12)';
+                const rangeLineColor = options.rangeLineColor || 'rgba(148, 163, 184, 0.55)';
+                const minLabel = options.minLabel || '';
+                const maxLabel = options.maxLabel || '';
 
                 datasets.push({
                     label: minLabel,
@@ -143,7 +209,9 @@
                     pointHoverRadius: 0,
                     hitRadius: 10,
                     spanGaps: true,
-                    tooltipLabel: entry.options.tooltipMinLabel || minLabel,
+                    tooltipLabel: options.tooltipMinLabel || minLabel,
+                    tooltipDecimals: decimals,
+                    tooltipUnit: '',
                 });
 
                 datasets.push({
@@ -158,12 +226,14 @@
                     pointHoverRadius: 0,
                     hitRadius: 10,
                     spanGaps: true,
-                    tooltipLabel: entry.options.tooltipMaxLabel || maxLabel,
+                    tooltipLabel: options.tooltipMaxLabel || maxLabel,
+                    tooltipDecimals: decimals,
+                    tooltipUnit: '',
                 });
             }
 
             datasets.push({
-                label: entry.options.label || '',
+                label: options.label || '',
                 data: values,
                 borderColor: datasetColor,
                 borderWidth: 2,
@@ -176,7 +246,9 @@
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
                 spanGaps: true,
-                tooltipLabel: entry.options.tooltipMeanLabel || entry.options.tooltipLabel || entry.options.label || '',
+                tooltipLabel: options.tooltipMeanLabel || options.tooltipLabel || options.label || '',
+                tooltipDecimals: decimals,
+                tooltipUnit: options.valueUnit ? ` ${options.valueUnit}` : '',
             });
 
             if (charts[entry.canvasId]) {
@@ -199,8 +271,8 @@
                         },
                         y: {
                             beginAtZero: false,
-                            suggestedMin: entry.options.range && typeof entry.options.range.min === 'number' ? entry.options.range.min : undefined,
-                            suggestedMax: entry.options.range && typeof entry.options.range.max === 'number' ? entry.options.range.max : undefined,
+                            suggestedMin: options.range && typeof options.range.min === 'number' ? options.range.min : undefined,
+                            suggestedMax: options.range && typeof options.range.max === 'number' ? options.range.max : undefined,
                             ticks: {
                                 callback: value => Number(value).toFixed(decimals),
                             },
@@ -210,33 +282,168 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            callbacks: {
-                                label: context => {
-                                    const dataset = context.dataset || {};
-                                    const prefix = dataset.tooltipLabel || entry.options.tooltipLabel || '';
-                                    const unit = entry.options.valueUnit ? ` ${entry.options.valueUnit}` : '';
-                                    const value = Number(context.parsed.y).toFixed(decimals);
-                                    return prefix ? `${prefix}: ${value}${unit}` : `${value}${unit}`;
-                                },
-                            },
+                            callbacks: buildDefaultTooltipCallbacks(decimals),
                         },
                     },
                 },
             });
 
-            if (metaElement) {
-                const updated = formatDate(toDate(data.generatedAt));
-                const nextUpdate = formatDate(toDate(data.validUntil));
-                const parts = [];
-                if (updated) {
-                    parts.push(formatLabel(entry.options.updatedLabel, updated));
-                }
-                if (nextUpdate) {
-                    parts.push(formatLabel(entry.options.nextLabel, nextUpdate));
-                }
-                metaElement.textContent = parts.filter(Boolean).join(' · ');
-                metaElement.style.display = parts.length ? 'block' : 'none';
+            updateMeta(entry, data, metaElement);
+        }
+
+        function renderMultiSeries(entry, data, canvas, metaElement) {
+            const options = entry.options || {};
+            const seriesList = Array.isArray(data.series) ? data.series : [];
+            if (!seriesList.length) {
+                showEmpty(entry, data);
+                return;
             }
+
+            const timeline = buildTimelineFromSeries(seriesList);
+            if (!timeline.length) {
+                showEmpty(entry, data);
+                return;
+            }
+
+            const labels = timeline.map(point => formatRange(point.from, point.to));
+            const datasets = [];
+            let hasAnySeriesData = false;
+
+            seriesList.forEach(series => {
+                const points = Array.isArray(series.points) ? series.points : [];
+                const lookup = buildPointLookup(points);
+                const values = timeline.map(slot => {
+                    const point = lookup[slot.key];
+                    return point ? parseValue(point.mean) : null;
+                });
+
+                if (!hasNumericValue(values)) {
+                    return;
+                }
+
+                hasAnySeriesData = true;
+                const isHealthAxis = series.axis === 'health';
+                const color = series.color || '#2563eb';
+                const decimals = typeof series.decimals === 'number' ? series.decimals : (isHealthAxis ? 2 : 3);
+
+                datasets.push({
+                    label: series.label || (series.code ? String(series.code).toUpperCase() : ''),
+                    data: values,
+                    borderColor: color,
+                    borderWidth: 2,
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.33,
+                    pointRadius: isHealthAxis ? 4 : 3,
+                    pointHoverRadius: isHealthAxis ? 5 : 4,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    spanGaps: true,
+                    yAxisID: isHealthAxis ? 'yHealth' : 'yIndex',
+                    tooltipLabel: series.label || '',
+                    tooltipDecimals: decimals,
+                    tooltipUnit: series.valueUnit ? ` ${series.valueUnit}` : '',
+                });
+            });
+
+            if (!hasAnySeriesData) {
+                showEmpty(entry, data);
+                return;
+            }
+
+            if (charts[entry.canvasId]) {
+                charts[entry.canvasId].destroy();
+            }
+
+            const leftAxis = options.leftAxis || {};
+            const rightAxis = options.rightAxis || {};
+            const leftAxisDecimals = typeof leftAxis.decimals === 'number' ? leftAxis.decimals : 3;
+            const rightAxisDecimals = typeof rightAxis.decimals === 'number' ? rightAxis.decimals : 2;
+
+            charts[entry.canvasId] = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { maxRotation: 0, autoSkip: true },
+                        },
+                        yIndex: {
+                            position: 'left',
+                            beginAtZero: false,
+                            suggestedMin: typeof leftAxis.min === 'number' ? leftAxis.min : -0.5,
+                            suggestedMax: typeof leftAxis.max === 'number' ? leftAxis.max : 1,
+                            title: {
+                                display: !!leftAxis.title,
+                                text: leftAxis.title || '',
+                            },
+                            ticks: {
+                                callback: value => Number(value).toFixed(leftAxisDecimals),
+                            },
+                            grid: { color: 'rgba(148, 163, 184, 0.2)' },
+                        },
+                        yHealth: {
+                            position: 'right',
+                            beginAtZero: true,
+                            suggestedMin: typeof rightAxis.min === 'number' ? rightAxis.min : 0,
+                            suggestedMax: typeof rightAxis.max === 'number' ? rightAxis.max : 100,
+                            title: {
+                                display: !!rightAxis.title,
+                                text: rightAxis.title || '',
+                            },
+                            ticks: {
+                                callback: value => Number(value).toFixed(rightAxisDecimals),
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: 'rgba(148, 163, 184, 0.2)',
+                            },
+                        },
+                    },
+                    plugins: {
+                        legend: { display: options.showLegend !== false },
+                        tooltip: {
+                            callbacks: buildDefaultTooltipCallbacks(2),
+                        },
+                    },
+                },
+            });
+
+            updateMeta(entry, data, metaElement);
+        }
+
+        function renderEntry(entry) {
+            const canvas = document.getElementById(entry.canvasId);
+            if (!canvas) {
+                return;
+            }
+
+            const data = entry.data || {};
+            const emptyElement = entry.emptyId ? document.getElementById(entry.emptyId) : null;
+            const metaElement = entry.metaId ? document.getElementById(entry.metaId) : null;
+
+            if (emptyElement) {
+                emptyElement.style.display = 'none';
+            }
+            canvas.style.display = 'block';
+
+            if (Array.isArray(data.series) && data.series.length) {
+                renderMultiSeries(entry, data, canvas, metaElement);
+                return;
+            }
+
+            renderSingleSeries(entry, data, canvas, metaElement);
         }
 
         function renderCharts() {

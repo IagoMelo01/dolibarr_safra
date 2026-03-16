@@ -1230,12 +1230,12 @@ class SWIR extends CommonObject
 		}
 
 		if(!$talhao){
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetchAll();
+			$talhaoObj = new Talhao($this->db);
+			$talhao = $talhaoObj->fetchAll();
 		} else {
-			$t_id = $talhao;
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetch($t_id);
+			$singleTalhao = new Talhao($this->db);
+			$fetchSingle = $singleTalhao->fetch((int) $talhao->id);
+			$talhao = ($fetchSingle > 0) ? array($singleTalhao) : array();
 		}
 		global $conf;
 		// print_r($conf);

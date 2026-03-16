@@ -1223,12 +1223,12 @@ class NDMI extends CommonObject
 		}
 
 		if(!$talhao){
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetchAll();
+			$talhaoObj = new Talhao($this->db);
+			$talhao = $talhaoObj->fetchAll();
 		} else {
-			$t_id = $talhao;
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetch($t_id);
+			$singleTalhao = new Talhao($this->db);
+			$fetchSingle = $singleTalhao->fetch((int) $talhao->id);
+			$talhao = ($fetchSingle > 0) ? array($singleTalhao) : array();
 		}
 		global $conf;
 		// print_r($conf);
@@ -1269,7 +1269,7 @@ class NDMI extends CommonObject
 				'TIME' => $time,  // Intervalo de tempo para dados de satélite
 				'GEOMETRY' => $key->wkt,
 				'SHOWLOGO' => 'false',
-				'MAXCC' => '15'
+				'MAXCC' => '100'
 			);
 
                         // Configura a URL com os parâmetros

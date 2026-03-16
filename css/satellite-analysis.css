@@ -128,6 +128,44 @@ body.mod-safra.page-index {
     font-weight: 500;
 }
 
+.satellite-hover-legend {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(15, 23, 42, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+    padding: 10px 12px;
+    max-width: 280px;
+    color: var(--satellite-text);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.satellite-hover-legend__title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 6px;
+}
+
+.satellite-hover-legend__line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--satellite-subtle);
+}
+
+.satellite-hover-legend__line strong {
+    color: #0f172a;
+}
+
+.satellite-hover-legend__chip {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(15, 23, 42, 0.28);
+    flex: 0 0 12px;
+}
+
 .analysis-form {
     display: grid;
     gap: 16px;
@@ -372,6 +410,12 @@ body.mod-safra.page-index {
 
     .analysis-summary {
         grid-template-columns: 1fr;
+    }
+
+    .satellite-hover-legend {
+        max-width: 220px;
+        font-size: 11px;
+        padding: 8px 10px;
     }
 }
 

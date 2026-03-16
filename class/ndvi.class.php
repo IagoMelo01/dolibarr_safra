@@ -1179,23 +1179,66 @@ class NDVI extends CommonObject
 	 */
 	public function doScheduledJob()
 	{
-		//global $conf, $langs;
-
-		//$conf->global->SYSLOG_FILE = 'DOL_DATA_ROOT/dolibarr_mydedicatedlogfile.log';
-
 		$error = 0;
 		$this->output = '';
 		$this->error = '';
 
 		dol_syslog(__METHOD__ . " start", LOG_INFO);
 
-		$now = dol_now();
+		try {
+			$timezoneName = date_default_timezone_get();
+			if (empty($timezoneName)) {
+				$timezoneName = 'UTC';
+			}
 
-		$this->db->begin();
+			$timezone = new DateTimeZone($timezoneName);
+			$now = new DateTimeImmutable('now', $timezone);
 
-		// ...
+			// Run only on Wednesday (1=Monday ... 7=Sunday)
+			if ((int) $now->format('N') !== 3) {
+				$this->output = 'Job skipped: executes only on Wednesday.';
+				dol_syslog(__METHOD__ . ' skipped (not Wednesday)', LOG_INFO);
 
-		$this->db->commit();
+				return 0;
+			}
+
+			$year = (int) $now->format('Y');
+			$janFirst = new DateTimeImmutable($year . '-01-01', $timezone);
+			$firstDayOfYear = (int) $janFirst->format('w'); // 0 (Sun) to 6 (Sat)
+			$pastDays = (int) floor(($now->getTimestamp() - $janFirst->getTimestamp()) / 86400);
+			$currentWeek = (int) ceil(($pastDays + $firstDayOfYear + 1) / 7);
+			$daysOffset = ($currentWeek - 1) * 7 - $firstDayOfYear;
+
+			$weekStartDate = $janFirst->modify(($daysOffset >= 0 ? '+' : '') . $daysOffset . ' days');
+			$weekEndDate = $weekStartDate->modify('+6 days');
+
+			$weekStart = $weekStartDate->format('Y-m-d');
+			$weekEnd = $weekEndDate->format('Y-m-d');
+			$timeRange = $weekStart . '/' . $weekEnd;
+
+			dol_include_once('/safra/class/ndmi.class.php');
+			dol_include_once('/safra/class/swir.class.php');
+			dol_include_once('/safra/class/safra_satellite_health.class.php');
+
+			$this->requestNDVIData(null, $timeRange, null);
+
+			$ndmi = new NDMI($this->db);
+			$ndmi->requestNDMIData(null, $timeRange, null);
+
+			$swir = new SWIR($this->db);
+			$swir->requestSWIRData(null, $timeRange, null);
+
+			$healthResult = SafraSatelliteHealth::generateForRange($this->db, $timeRange, 0);
+			$generated = !empty($healthResult['generated']) ? (int) $healthResult['generated'] : 0;
+			$skipped = !empty($healthResult['skipped']) ? (int) $healthResult['skipped'] : 0;
+
+			$this->output = 'Satellite sync completed for ' . $timeRange . '. Health files generated: ' . $generated . ', skipped: ' . $skipped . '.';
+			dol_syslog(__METHOD__ . ' completed for range ' . $timeRange, LOG_INFO);
+		} catch (Exception $e) {
+			$error++;
+			$this->error = $e->getMessage();
+			dol_syslog(__METHOD__ . ' failed: ' . $this->error, LOG_ERR);
+		}
 
 		dol_syslog(__METHOD__ . " end", LOG_INFO);
 
@@ -1222,12 +1265,12 @@ class NDVI extends CommonObject
 		}
 
 		if(!$talhao){
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetchAll();
+			$talhaoObj = new Talhao($this->db);
+			$talhao = $talhaoObj->fetchAll();
 		} else {
-			$t_id = $talhao;
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetch($t_id);
+			$singleTalhao = new Talhao($this->db);
+			$fetchSingle = $singleTalhao->fetch((int) $talhao->id);
+			$talhao = ($fetchSingle > 0) ? array($singleTalhao) : array();
 		}
 		global $conf;
 		// print_r($conf);

@@ -10,6 +10,7 @@ class SafraSatelliteStatistics
 {
     private const CACHE_BASE = '/custom/safra/json/cache';
     private const TOKEN_FILENAME = 'token.json';
+    private const CACHE_VERSION = 'v2';
 
     private static $indexConfig = array(
         'ndvi' => array(
@@ -45,9 +46,9 @@ class SafraSatelliteStatistics
             'decimals' => 3,
         ),
         'swir' => array(
-            'inputs' => array('B11', 'B12'),
-            'formula' => '(samples.B11 - samples.B12) / (samples.B11 + samples.B12)',
-            'range' => array('min' => -0.4, 'max' => 0.6),
+            'inputs' => array('B8A', 'B12'),
+            'formula' => '(samples.B8A - samples.B12) / (samples.B8A + samples.B12)',
+            'range' => array('min' => -0.5, 'max' => 0.6),
             'color' => '#f97316',
             'gradient' => array('rgba(249, 115, 22, 0.28)', 'rgba(249, 115, 22, 0.05)'),
             'decimals' => 3,
@@ -64,7 +65,7 @@ class SafraSatelliteStatistics
      *
      * @return array
      */
-    public static function getWeeklySeries(DoliDB $db, $talhaoId, $index, $weeks = 8)
+    public static function getWeeklySeries(DoliDB $db, $talhaoId, $index, $weeks = 12)
     {
         $index = strtolower((string) $index);
         if (!isset(self::$indexConfig[$index])) {
@@ -88,7 +89,7 @@ class SafraSatelliteStatistics
             );
         }
 
-        $cacheFile = self::getCacheFilePath($index, (int) $talhaoId);
+        $cacheFile = self::getCacheFilePath($index, (int) $talhaoId, $weeks);
         $cacheData = self::readJson($cacheFile);
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
@@ -134,7 +135,7 @@ class SafraSatelliteStatistics
                                 'from' => $from->format('Y-m-d\T00:00:00\Z'),
                                 'to' => $to->format('Y-m-d\T23:59:59\Z'),
                             ),
-                            'maxCloudCoverage' => 20,
+                            'maxCloudCoverage' => 100,
                         ),
                     ),
                 ),
@@ -162,34 +163,35 @@ class SafraSatelliteStatistics
             );
         }
 
-        $points = array();
+        $rawByInterval = array();
         foreach ($response['data'] as $item) {
+            if (empty($item['interval']['from']) || empty($item['interval']['to'])) {
+                continue;
+            }
+
+            $intervalKey = self::buildIntervalKey($item['interval']['from'], $item['interval']['to']);
+            if ($intervalKey === '') {
+                continue;
+            }
+
             if (empty($item['outputs']['index']['bands']['B0']['stats'])) {
-                continue;
+                $rawByInterval[$intervalKey] = array(
+                    'from' => (string) $item['interval']['from'],
+                    'to' => (string) $item['interval']['to'],
+                    'stats' => null,
+                );
+            } else {
+                $rawByInterval[$intervalKey] = array(
+                    'from' => (string) $item['interval']['from'],
+                    'to' => (string) $item['interval']['to'],
+                    'stats' => $item['outputs']['index']['bands']['B0']['stats'],
+                );
             }
-
-            $stats = $item['outputs']['index']['bands']['B0']['stats'];
-            if (empty($stats['sampleCount'])) {
-                continue;
-            }
-
-            $mean = isset($stats['mean']) ? (float) $stats['mean'] : null;
-            if ($mean === null || !is_finite($mean)) {
-                continue;
-            }
-
-            $points[] = array(
-                'from' => $item['interval']['from'] ?? '',
-                'to' => $item['interval']['to'] ?? '',
-                'mean' => round($mean, $config['decimals']),
-                'min' => isset($stats['min']) && is_finite((float) $stats['min']) ? round((float) $stats['min'], $config['decimals']) : null,
-                'max' => isset($stats['max']) && is_finite((float) $stats['max']) ? round((float) $stats['max'], $config['decimals']) : null,
-                'stDev' => isset($stats['stDev']) && is_finite((float) $stats['stDev']) ? round((float) $stats['stDev'], $config['decimals']) : null,
-                'sampleCount' => (int) $stats['sampleCount'],
-            );
         }
 
-        if (empty($points)) {
+        $points = self::buildContinuousWeeklyPoints($rawByInterval, $from, $weeks, $config['decimals']);
+
+        if (!self::hasNumericWeeklyPoints($points)) {
             return array(
                 'points' => array(),
                 'message' => 'no_data',
@@ -459,12 +461,103 @@ class SafraSatelliteStatistics
      *
      * @return string
      */
-    private static function getCacheFilePath($index, $talhaoId)
+    private static function getCacheFilePath($index, $talhaoId, $weeks)
     {
         $dir = self::buildPath($index);
         self::ensureDirectory($dir);
 
-        return $dir . '/talhao_' . (int) $talhaoId . '.json';
+        return $dir . '/talhao_' . (int) $talhaoId . '_w' . (int) $weeks . '_' . self::CACHE_VERSION . '.json';
+    }
+
+    /**
+     * Build interval map key.
+     *
+     * @param string $from
+     * @param string $to
+     *
+     * @return string
+     */
+    private static function buildIntervalKey($from, $to)
+    {
+        $from = (string) $from;
+        $to = (string) $to;
+        if ($from === '' || $to === '') {
+            return '';
+        }
+
+        return $from . '|' . $to;
+    }
+
+    /**
+     * Build fixed weekly points for the selected window.
+     *
+     * @param array             $rawByInterval
+     * @param DateTimeImmutable $from
+     * @param int               $weeks
+     * @param int               $decimals
+     *
+     * @return array
+     */
+    private static function buildContinuousWeeklyPoints(array $rawByInterval, DateTimeImmutable $from, $weeks, $decimals)
+    {
+        $points = array();
+
+        for ($i = 0; $i < (int) $weeks; $i++) {
+            $start = $from->add(new DateInterval('P' . $i . 'W'))->setTime(0, 0, 0);
+            $end = $start->add(new DateInterval('P1W'));
+            $fromIso = $start->format('Y-m-d\T00:00:00\Z');
+            $toIso = $end->format('Y-m-d\T00:00:00\Z');
+            $key = self::buildIntervalKey($fromIso, $toIso);
+            $entry = isset($rawByInterval[$key]) ? $rawByInterval[$key] : null;
+            $stats = $entry && !empty($entry['stats']) && is_array($entry['stats']) ? $entry['stats'] : null;
+
+            $mean = null;
+            $min = null;
+            $max = null;
+            $stDev = null;
+            $sampleCount = 0;
+
+            if ($stats) {
+                $sampleCount = !empty($stats['sampleCount']) ? (int) $stats['sampleCount'] : 0;
+                $rawMean = isset($stats['mean']) ? (float) $stats['mean'] : null;
+                if ($sampleCount > 0 && $rawMean !== null && is_finite($rawMean)) {
+                    $mean = round($rawMean, (int) $decimals);
+                    $min = isset($stats['min']) && is_finite((float) $stats['min']) ? round((float) $stats['min'], (int) $decimals) : null;
+                    $max = isset($stats['max']) && is_finite((float) $stats['max']) ? round((float) $stats['max'], (int) $decimals) : null;
+                    $stDev = isset($stats['stDev']) && is_finite((float) $stats['stDev']) ? round((float) $stats['stDev'], (int) $decimals) : null;
+                }
+            }
+
+            $points[] = array(
+                'from' => $fromIso,
+                'to' => $toIso,
+                'mean' => $mean,
+                'min' => $min,
+                'max' => $max,
+                'stDev' => $stDev,
+                'sampleCount' => $sampleCount,
+            );
+        }
+
+        return $points;
+    }
+
+    /**
+     * Check if series has at least one numeric weekly mean.
+     *
+     * @param array $points
+     *
+     * @return bool
+     */
+    private static function hasNumericWeeklyPoints(array $points)
+    {
+        foreach ($points as $point) {
+            if (isset($point['mean']) && is_numeric($point['mean'])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
