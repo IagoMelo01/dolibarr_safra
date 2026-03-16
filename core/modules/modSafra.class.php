@@ -2568,8 +2568,8 @@ class modSafra extends DolibarrModules
 			'isModEnabled("safra")'
 		);
 		$extrafields->addExtraField(
-			'fk_aplicacao',
-			'Aplicacao',
+			'FvActivity',
+			'Atividade Agricola',
 			'link',
 			151,
 			'',
@@ -2577,7 +2577,7 @@ class modSafra extends DolibarrModules
 			0,
 			0,
 			'',
-			array('options' => array("Aplicacao:safra/class/aplicacao.class.php:1"=>null)),
+			array('options' => array("FvActivity:safra/class/FvActivity.class.php:1"=>null)),
 			1,
 			'',
 			'isModEnabled("safra")'
