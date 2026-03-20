@@ -41,6 +41,18 @@ class FvActivityLine extends CommonObjectLine
     }
 
     /**
+     * Fetch activity line by id/ref.
+     *
+     * @param int         $id
+     * @param string|null $ref
+     * @return int
+     */
+    public function fetch($id, $ref = null)
+    {
+        return $this->fetchCommon($id, $ref);
+    }
+
+    /**
      * Delete every line linked to an activity.
      *
      * @param DoliDB $db

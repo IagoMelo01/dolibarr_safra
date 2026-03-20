@@ -88,6 +88,42 @@ function safra_load_options($db, $table, $labelField)
     return $options;
 }
 
+function safra_table_has_column($db, $table, $column)
+{
+    static $cache = array();
+
+    $table = trim((string) $table);
+    $column = trim((string) $column);
+    if ($table === '' || $column === '') {
+        return false;
+    }
+
+    $cacheKey = $table . '::' . $column;
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
+
+    $sql = 'SHOW COLUMNS FROM ' . MAIN_DB_PREFIX . $db->escape($table)
+        . " LIKE '" . $db->escape($column) . "'";
+    $resql = $db->query($sql);
+    $exists = ($resql && ((int) $db->num_rows($resql) > 0));
+
+    $cache[$cacheKey] = $exists;
+
+    return $exists;
+}
+
+function safra_pick_label_column($db, $table, $candidates = array(), $fallback = 'rowid')
+{
+    foreach ($candidates as $column) {
+        if (safra_table_has_column($db, $table, $column)) {
+            return $column;
+        }
+    }
+
+    return $fallback;
+}
+
 function safra_load_from_class($db, $className, $labelFields = array())
 {
     $options = array();
@@ -191,7 +227,8 @@ if (empty($areaPercentage)) {
     }
 }
 
-$warehouses = safra_load_options($db, 'entrepot', 'lieu');
+$warehouseLabelColumn = safra_pick_label_column($db, 'entrepot', array('lieu', 'label', 'ref'), 'rowid');
+$warehouses = safra_load_options($db, 'entrepot', $warehouseLabelColumn);
 
 $userOptions = array();
 $sqlUsers = 'SELECT rowid, lastname, firstname FROM ' . MAIN_DB_PREFIX . 'user WHERE statut = 1 AND entity IN (0, ' . ((int) $conf->entity) . ') ORDER BY lastname, firstname';
@@ -204,17 +241,39 @@ if ($resUsers) {
 }
 
 $productOptions = array();
-$sqlProducts = 'SELECT p.rowid, p.ref, p.label'
+$productLabelColumn = safra_pick_label_column($db, 'product', array('label', 'lieu', 'description'), 'ref');
+$productTypeFilter = '';
+if (safra_table_has_column($db, 'product', 'fk_product_type')) {
+    $productTypeFilter = ' AND p.fk_product_type = 0';
+} elseif (safra_table_has_column($db, 'product', 'type')) {
+    $productTypeFilter = ' AND p.type = 0';
+}
+
+$sqlProducts = 'SELECT p.rowid, p.ref, p.' . $db->escape($productLabelColumn) . ' as product_label'
     . ' FROM ' . MAIN_DB_PREFIX . 'product p'
-    . ' INNER JOIN ' . MAIN_DB_PREFIX . "product_stock ps ON ps.fk_product = p.rowid"
     . ' WHERE p.entity IN (0, ' . ((int) $conf->entity) . ')'
-    . ' AND ps.reel > 0'
-    . ' GROUP BY p.rowid, p.ref, p.label'
-    . ' ORDER BY p.label';
+    . $productTypeFilter
+    . ' ORDER BY p.' . $db->escape($productLabelColumn) . ', p.ref';
 $resProducts = $db->query($sqlProducts);
 if ($resProducts) {
     while ($obj = $db->fetch_object($resProducts)) {
-        $productOptions[$obj->rowid] = $obj->ref . ' - ' . $obj->label;
+        $productRef = trim((string) $obj->ref);
+        $productLabel = trim((string) $obj->product_label);
+
+        $labelParts = array();
+        if ($productRef !== '') {
+            $labelParts[] = $productRef;
+        }
+        if ($productLabel !== '' && $productLabel !== $productRef) {
+            $labelParts[] = $productLabel;
+        }
+
+        $displayLabel = implode(' - ', $labelParts);
+        if ($displayLabel === '') {
+            $displayLabel = '#' . ((int) $obj->rowid);
+        }
+
+        $productOptions[$obj->rowid] = $displayLabel;
     }
 }
 
@@ -503,6 +562,33 @@ print <<<'HTML'
     border-color: var(--sf-green-500);
     box-shadow: 0 0 0 0.2rem rgba(62, 169, 125, 0.18);
 }
+.sf-page .select2-container {
+    width: 100% !important;
+    max-width: 100%;
+}
+.sf-page .select2-container .select2-selection--single,
+.sf-page .select2-container .select2-selection--multiple {
+    min-height: 40px;
+    border: 1px solid #c9dfd3;
+    border-radius: 10px;
+}
+.sf-page .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 38px;
+    color: var(--sf-text);
+    padding-left: 10px;
+}
+.sf-page .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 38px;
+    right: 8px;
+}
+.sf-page .select2-container--default .select2-selection--multiple {
+    padding: 4px 6px;
+}
+.sf-page .select2-container--default.select2-container--focus .select2-selection--single,
+.sf-page .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: var(--sf-green-500);
+    box-shadow: 0 0 0 0.2rem rgba(62, 169, 125, 0.18);
+}
 .sf-hint {
     margin-top: 6px;
     font-size: 0.78rem;
@@ -556,6 +642,22 @@ print <<<'HTML'
 .sf-table td {
     border-bottom: 1px solid #e2f0e8;
     padding: 8px;
+    vertical-align: middle;
+}
+.sf-table td:first-child {
+    min-width: 240px;
+}
+.sf-table td:nth-child(7) {
+    min-width: 190px;
+}
+.sf-table td:last-child {
+    width: 48px;
+    text-align: center;
+}
+.sf-table td > .sf-input,
+.sf-table td > select,
+.sf-table td .select2-container {
+    width: 100% !important;
 }
 .sf-actions {
     display: flex;
@@ -765,25 +867,25 @@ if (!empty($activity->lines)) {
             $lineUnitOptions[$line->dose_unit] = $line->dose_unit;
         }
         print '<tr>';
-        print '<td>' . $form->selectarray('product_id[]', $productOptions, $line->fk_product, 1, 0, 0, '', 0, 0, 0, '', 'sf-input minwidth200') . '</td>';
+        print '<td>' . $form->selectarray('product_id[]', $productOptions, $line->fk_product, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-product', 0) . '</td>';
         print '<td><input type="number" name="line_area[]" class="sf-input sf-line-area" value="' . dol_escape_htmltag(price2num($line->area_applied)) . '" step="0.0001" min="0" readonly></td>';
         print '<td><input type="number" name="line_dose[]" class="sf-input sf-line-dose" value="' . dol_escape_htmltag(price2num($line->dose)) . '" step="0.0001" min="0"></td>';
-        print '<td>' . $form->selectarray('line_unit[]', $lineUnitOptions, $line->dose_unit, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit') . '</td>';
+        print '<td>' . $form->selectarray('line_unit[]', $lineUnitOptions, $line->dose_unit, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit', 0) . '</td>';
         print '<td><input type="number" name="line_total[]" class="sf-input sf-line-total" value="' . dol_escape_htmltag(price2num($line->total)) . '" step="0.0001" min="0" readonly></td>';
-        print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1, 0, 0, '', 0, 0, 0, '', 'sf-input') . '</td>';
-        print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, $line->fk_warehouse, 1, 0, 0, '', 0, 0, 0, '', 'sf-input minwidth150') . '</td>';
+        print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1, 0, 0, '', 0, 0, 0, '', 'sf-input', 0) . '</td>';
+        print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, $line->fk_warehouse, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-warehouse', 0) . '</td>';
         print '<td><button type="button" class="sf-remove sf-remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">x</button></td>';
         print '</tr>';
     }
 } else {
     print '<tr>';
-    print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input minwidth200') . '</td>';
+    print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-product', 0) . '</td>';
     print '<td><input type="number" name="line_area[]" class="sf-input sf-line-area" value="' . dol_escape_htmltag($defaultLineArea) . '" step="0.0001" min="0" readonly></td>';
     print '<td><input type="number" name="line_dose[]" class="sf-input sf-line-dose" value="0" step="0.0001" min="0"></td>';
-    print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit') . '</td>';
+    print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit', 0) . '</td>';
     print '<td><input type="number" name="line_total[]" class="sf-input sf-line-total" value="0" step="0.0001" min="0" readonly></td>';
-    print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1, 0, 0, '', 0, 0, 0, '', 'sf-input') . '</td>';
-    print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input minwidth150') . '</td>';
+    print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1, 0, 0, '', 0, 0, 0, '', 'sf-input', 0) . '</td>';
+    print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-warehouse', 0) . '</td>';
     print '<td><button type="button" class="sf-remove sf-remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">x</button></td>';
     print '</tr>';
 }
@@ -791,13 +893,13 @@ if (!empty($activity->lines)) {
 print '</tbody></table>';
 print '<template id="product-line-template">';
 print '<tr>';
-print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input minwidth200') . '</td>';
+print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-product', 0) . '</td>';
 print '<td><input type="number" name="line_area[]" class="sf-input sf-line-area" value="0" step="0.0001" min="0" readonly></td>';
 print '<td><input type="number" name="line_dose[]" class="sf-input sf-line-dose" value="0" step="0.0001" min="0"></td>';
-print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit') . '</td>';
+print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit', 0) . '</td>';
 print '<td><input type="number" name="line_total[]" class="sf-input sf-line-total" value="0" step="0.0001" min="0" readonly></td>';
-print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1, 0, 0, '', 0, 0, 0, '', 'sf-input') . '</td>';
-print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input minwidth150') . '</td>';
+print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1, 0, 0, '', 0, 0, 0, '', 'sf-input', 0) . '</td>';
+print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-warehouse', 0) . '</td>';
 print '<td><button type="button" class="sf-remove sf-remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">x</button></td>';
 print '</tr>';
 print '</template>';
@@ -862,6 +964,7 @@ var talhaoInfoEl = document.getElementById('talhao-area-info');
 var areaBaseInput = document.getElementById('area-base');
 var areaPctInput = document.getElementById('area-percentage');
 var areaTotalInput = document.getElementById('area-total');
+var sfSelectSeq = 0;
 
 function sfToNumber(value) {
     if (value === null || value === undefined) return 0;
@@ -881,8 +984,92 @@ function sfRecalcLine(row) {
     totalInput.value = (area * dose).toFixed(4);
 }
 
+function sfNextSelectId(prefix) {
+    sfSelectSeq += 1;
+    return prefix + '_' + sfSelectSeq;
+}
+
+function sfEnsureUniqueSelectId(select) {
+    if (!select) return;
+
+    var base = (select.name || 'sf_select').replace(/\[\]/g, '').replace(/[^a-zA-Z0-9_]/g, '_');
+    var currentId = select.id || '';
+
+    if (!currentId) {
+        select.id = sfNextSelectId(base);
+        return;
+    }
+
+    var countSameId = 0;
+    document.querySelectorAll('[id]').forEach(function (node) {
+        if (node.id === currentId) {
+            countSameId += 1;
+        }
+    });
+
+    if (countSameId > 1) {
+        select.id = sfNextSelectId(base);
+    }
+}
+
+function sfEnhanceLineSelects(row) {
+    var hasJquery = !!(window.jQuery && window.jQuery.fn);
+    var canSelect2 = hasJquery && typeof window.jQuery.fn.select2 === 'function';
+    var canCombobox = hasJquery && typeof window.jQuery.fn.combobox === 'function';
+
+    if (!row || !hasJquery || (!canSelect2 && !canCombobox)) {
+        return;
+    }
+
+    var $row = window.jQuery(row);
+    var selector = 'select[name="product_id[]"], select[name="line_unit[]"], select[name="line_movement[]"], select[name="line_warehouse[]"]';
+
+    $row.find(selector).each(function () {
+        var $select = window.jQuery(this);
+
+        sfEnsureUniqueSelectId(this);
+
+        if ($select.hasClass('select2-hidden-accessible')) {
+            return;
+        }
+
+        if (canSelect2) {
+            $select.select2({
+                dir: 'ltr',
+                width: 'resolve',
+                minimumResultsForSearch: 0,
+                minimumInputLength: 0,
+                language: (typeof select2arrayoflanguage === 'undefined') ? 'en' : select2arrayoflanguage,
+                containerCssClass: ':all:',
+                selectionCssClass: ':all:',
+                dropdownCssClass: 'ui-dialog',
+                matcher: function (params, data) {
+                    if (!data || typeof data.text === 'undefined') return data;
+                    if (window.jQuery.trim(params.term || '') === '') return data;
+
+                    var term = (params.term || '').toLowerCase();
+                    var text = (data.text || '').toLowerCase();
+                    var keywords = term.split(' ');
+
+                    for (var i = 0; i < keywords.length; i++) {
+                        if (!keywords[i]) continue;
+                        if (text.indexOf(keywords[i]) === -1) return null;
+                    }
+
+                    return data;
+                },
+                escapeMarkup: function (markup) { return markup; }
+            });
+        } else if (canCombobox && $select.next('.ui-combobox').length === 0) {
+            $select.combobox();
+        }
+    });
+}
+
 function sfBindLine(row) {
     if (!row) return;
+
+    sfEnhanceLineSelects(row);
 
     var areaInput = row.querySelector('.sf-line-area');
     var doseInput = row.querySelector('.sf-line-dose');
@@ -1029,6 +1216,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!source) return;
 
             var clone = source.cloneNode(true);
+
+            clone.querySelectorAll('script').forEach(function (node) {
+                node.remove();
+            });
+
             tbody.appendChild(clone);
 
             var currentArea = areaTotalInput ? sfToNumber(areaTotalInput.value) : 0;

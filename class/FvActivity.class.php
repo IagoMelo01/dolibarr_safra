@@ -849,6 +849,59 @@ class FvActivity extends CommonObject
     }
 
     /**
+     * Return URL link to activity card (with optional picto).
+     *
+     * @param int    $withpicto
+     * @param string $option
+     * @param int    $notooltip
+     * @param string $morecss
+     * @param int    $save_lastsearch_value
+     * @return string
+     */
+    public function getNomUrl($withpicto = 0, $option = '', $notooltip = 0, $morecss = '', $save_lastsearch_value = -1)
+    {
+        global $langs;
+
+        $label = trim((string) ($this->ref ?: $this->label ?: $this->id));
+        if ($label === '') {
+            $label = $langs->trans('SafraActivity');
+        }
+
+        $url = dol_buildpath('/safra/activity/activity_card.php', 1) . '?id=' . ((int) $this->id);
+        if ($option !== 'nolink') {
+            $addSaveLastSearch = ($save_lastsearch_value == 1 ? 1 : 0);
+            if ($save_lastsearch_value == -1 && isset($_SERVER['PHP_SELF']) && preg_match('/list\.php/', $_SERVER['PHP_SELF'])) {
+                $addSaveLastSearch = 1;
+            }
+            if ($addSaveLastSearch) {
+                $url .= '&save_lastsearch_values=1';
+            }
+        }
+
+        $content = '';
+        if ((int) $withpicto > 0) {
+            $content .= img_object($langs->trans('SafraActivity'), ($this->picto ?: 'generic'), (($withpicto != 2) ? 'class="paddingright"' : ''), 0, 0, 0);
+        }
+        if ((int) $withpicto != 2) {
+            $content .= dol_escape_htmltag($label);
+        }
+
+        $attrs = '';
+        if ($morecss !== '') {
+            $attrs .= ' class="' . dol_escape_htmltag($morecss) . '"';
+        }
+        if ((int) $notooltip === 0) {
+            $attrs .= ' title="' . dol_escape_htmltag($label) . '"';
+        }
+
+        if ($option === 'nolink' || empty($url)) {
+            return '<span' . $attrs . '>' . $content . '</span>';
+        }
+
+        return '<a href="' . $url . '"' . $attrs . '>' . $content . '</a>';
+    }
+
+    /**
      * Check if activity is completed.
      *
      * @return bool
