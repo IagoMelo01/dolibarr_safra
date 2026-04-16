@@ -1914,54 +1914,6 @@ class modSafra extends DolibarrModules
 		// 	 'user' => 2,
 		// );
 		/* END LEFTMENU NEW EVI */
-		/* LEFTMENU APLICACAO */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra',
-			 'type' => 'left',
-			 'titre' => 'Aplicacao',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'aplicacao',
-             'url' => '/custom/safra/activity/activity_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'aplicacao\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU APLICACAO */
-		/* LEFTMENU LIST APLICACAO */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=aplicacao',
-			 'type' => 'left',
-			 'titre' => 'Lista Aplicacao',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_aplicacao_list',
-             'url' => '/custom/safra/activity/activity_list.php',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'aplicacao\', \'read\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU LIST APLICACAO */
-		/* LEFTMENU NEW APLICACAO */
-		$this->menu[$r++]=array(
-			 'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=aplicacao',
-			 'type' => 'left',
-			 'titre' => 'Novo Aplicacao',
-			 'mainmenu' => 'safra',
-			 'leftmenu' => 'safra_aplicacao_new',
-             'url' => '/custom/safra/activity/activity_card.php?action=create',
-			 'langs' => 'safra@safra',
-			 'position' => 1000 + $r,
-			 'enabled' => 'isModEnabled(\'safra\')',
-			 'perms' => '$user->hasRight(\'safra\', \'aplicacao\', \'write\')',
-			 'target' => '',
-			 'user' => 2,
-		);
-		/* END LEFTMENU NEW APLICACAO */
 		/* LEFTMENU MUNICIPIO */
 		$this->menu[$r++]=array(
 			 'fk_menu' => 'fk_mainmenu=safra',

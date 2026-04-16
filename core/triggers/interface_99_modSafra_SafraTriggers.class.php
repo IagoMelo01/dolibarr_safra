@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /* Copyright (C) 2024 SuperAdmin
  *
  * This program is free software: you can redistribute it and/or modify
@@ -322,10 +322,10 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 				// Credenciais Base64 (formato: client_id:client_secret)
 				$client_credentials = base64_encode($key_embrapa_public . ':' . $key_embrapa_private);
 
-				// Iniciando a sessão cURL
+				// Iniciando a sessÃ£o cURL
 				$ch = curl_init();
 
-				// Configurando a requisição cURL
+				// Configurando a requisiÃ§Ã£o cURL
 				curl_setopt($ch, CURLOPT_URL, $token_url);
 				curl_setopt($ch, CURLOPT_POST, true);
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -333,40 +333,34 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 					'Authorization: Basic ' . $client_credentials,
 					'Content-Type: application/x-www-form-urlencoded'
 				));
+				// Enforce TLS verification for external API calls.
+				curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
 
-				/*			RETIRAR EM PRODUÇÃO 	***********************************************/
-
-				// Ignorando a verificação SSL (apenas para teste, NÃO recomendado em produção)
-				curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-
-				/***********************************/
-
-
-				// Dados para enviar com a requisição (grant_type)
+				// Dados para enviar com a requisiÃ§Ã£o (grant_type)
 				curl_setopt($ch, CURLOPT_POSTFIELDS, 'grant_type=client_credentials');
 
-				// Executando a requisição e recebendo a resposta
+				// Executando a requisiÃ§Ã£o e recebendo a resposta
 				$response = curl_exec($ch);
 
 				// Verificando erros
 				if (curl_errno($ch)) {
-					echo 'Erro na requisição: ' . curl_error($ch);
+					dol_syslog(__METHOD__ . ' request failed: ' . curl_error($ch), LOG_WARNING);
 				} else {
 					// Decodificando a resposta JSON
 					$response_data = json_decode($response, true);
 					if (isset($response_data['access_token'])) {
 						// Exibindo o token de acesso
-						echo 'Access Token: ' . $response_data['access_token'];
+						
 						$access_token = $response_data['access_token'];
 					} else {
-						echo 'Erro ao obter o token de acesso: ' . $response;
+						dol_syslog(__METHOD__ . ' failed to fetch Embrapa token: ' . $response, LOG_WARNING);
 						break;
 					}
 				}
 
-				// Fechando a sessão cURL
+				// Fechando a sessÃ£o cURL
 				curl_close($ch);
 
 				$plano = new Project($object->db);
@@ -380,39 +374,38 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 				$obj_municipio->fetch($extrafields->array_options['options_fk_municipio']);
 
 				$idCultura = $obj_cultura->id; // Exemplo de idCultura
-				$codigoIBGE = $obj_municipio->cod_ibge; // Código IBGE da cidade
+				$codigoIBGE = $obj_municipio->cod_ibge; // CÃ³digo IBGE da cidade
 				$risco = 20; // Exemplo de risco
 
-				// URL do endpoint com os parâmetros de consulta
+				// URL do endpoint com os parÃ¢metros de consulta
 				$url = 'https://api.cnptia.embrapa.br/agritec/v2/zoneamento?idCultura=' . $idCultura . '&codigoIBGE=' . $codigoIBGE . '&risco=' . $risco;
 
-				// Inicializando a sessão cURL
+				// Inicializando a sessÃ£o cURL
 				$ch = curl_init();
 
-				// Definindo as opções do cURL
+				// Definindo as opÃ§Ãµes do cURL
 				curl_setopt($ch, CURLOPT_URL, $url);
 				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 				curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-					'Authorization: Bearer ' . $access_token, // Adicionando o token de acesso no cabeçalho
+					'Authorization: Bearer ' . $access_token, // Adicionando o token de acesso no cabeÃ§alho
 					'Content-Type: application/json'
 				));
 
-				// Executando a requisição
+				// Executando a requisiÃ§Ã£o
 				$response = curl_exec($ch);
 
-				// Verificando se houve erro na requisição
+				// Verificando se houve erro na requisiÃ§Ã£o
 				if (curl_errno($ch)) {
-					echo 'Erro na requisição: ' . curl_error($ch);
+					dol_syslog(__METHOD__ . ' request failed: ' . curl_error($ch), LOG_WARNING);
 				} else {
 					// Decodificando a resposta JSON
 					$response_data = json_decode($response, true);
 
 					// Exibindo a resposta
 					if (isset($response_data['error'])) {
-						echo 'Erro ao obter os dados: ' . $response_data['error'];
+						dol_syslog(__METHOD__ . ' zoneamento API returned error: ' . json_encode($response_data['error']), LOG_WARNING);
 					} else {
-						echo "Dados retornados:\n";
-						print_r($response_data);
+						
 						$count = 0;
 						foreach ($response_data as $key) {
 							$zoneamento_obj = new Zoneamento($object->db);
@@ -434,7 +427,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 					}
 				}
 
-				// Fechando a sessão cURL
+				// Fechando a sessÃ£o cURL
 				curl_close($ch);
 
 
@@ -470,10 +463,10 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 			// case 'TALHAO_CREATE':
 
 
-			// 	// constrói URL absoluta do Dolibarr
+			// 	// constrÃ³i URL absoluta do Dolibarr
 			// 	$url = dol_buildpath('/custom/safra/talhao_card.php', 2) . '?id=' . $object->id;
 
-			// 	// limpa qualquer saída acidental e redireciona com 303 (POST-redirect-GET)
+			// 	// limpa qualquer saÃ­da acidental e redireciona com 303 (POST-redirect-GET)
 			// 	if (function_exists('ob_get_length') && ob_get_length()) {
 			// 		@ob_end_clean();
 			// 	}
@@ -672,30 +665,30 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 $liming = $this->calculateLimingNeed($guide, $analysis);
                 $micronutrients = $this->buildMicronutrientAlerts($analysis, $guide);
 
-                $html = '<h3>Recomendação de adubação para ' . dol_escape_htmltag($guide['display']) . '</h3>';
-                $html .= '<p><strong>Resumo da análise de solo:</strong></p>';
+                $html = '<h3>RecomendaÃ§Ã£o de adubaÃ§Ã£o para ' . dol_escape_htmltag($guide['display']) . '</h3>';
+                $html .= '<p><strong>Resumo da anÃ¡lise de solo:</strong></p>';
                 $html .= '<ul>';
                 $html .= '<li>pH: ' . $this->formatNumber($analysis->ph, 1) . '</li>';
-                $html .= '<li>Matéria orgânica: ' . $this->formatNumber($analysis->materia_organica, 1) . ' %</li>';
+                $html .= '<li>MatÃ©ria orgÃ¢nica: ' . $this->formatNumber($analysis->materia_organica, 1) . ' %</li>';
                 $html .= '<li>N total: ' . $this->formatNumber($analysis->n_total, 1) . ' mg/kg</li>';
-                $html .= '<li>Fósforo disponível: ' . $this->formatNumber($analysis->fosforo, 1) . ' mg/kg</li>';
-                $html .= '<li>Potássio disponível: ' . $this->formatNumber($analysis->potassio, 1) . ' mg/kg</li>';
-                $html .= '<li>Saturação por bases (V%): ' . $this->formatNumber($analysis->saturacao_bases, 1) . '</li>';
+                $html .= '<li>FÃ³sforo disponÃ­vel: ' . $this->formatNumber($analysis->fosforo, 1) . ' mg/kg</li>';
+                $html .= '<li>PotÃ¡ssio disponÃ­vel: ' . $this->formatNumber($analysis->potassio, 1) . ' mg/kg</li>';
+                $html .= '<li>SaturaÃ§Ã£o por bases (V%): ' . $this->formatNumber($analysis->saturacao_bases, 1) . '</li>';
                 $html .= '</ul>';
 
-                $html .= '<p><strong>Recomendação de nutrientes (kg/ha)</strong></p>';
+                $html .= '<p><strong>RecomendaÃ§Ã£o de nutrientes (kg/ha)</strong></p>';
                 $html .= '<ul>';
-                $html .= '<li>Nitrogênio (N): ' . $this->formatNumber($npk['N']['quantity'], 1) . ' &mdash; nível do solo ' . $npk['N']['level'] . '</li>';
-                $html .= '<li>Fósforo (P<sub>2</sub>O<sub>5</sub>): ' . $this->formatNumber($npk['P']['quantity'], 1) . ' &mdash; nível do solo ' . $npk['P']['level'] . '</li>';
-                $html .= '<li>Potássio (K<sub>2</sub>O): ' . $this->formatNumber($npk['K']['quantity'], 1) . ' &mdash; nível do solo ' . $npk['K']['level'] . '</li>';
+                $html .= '<li>NitrogÃªnio (N): ' . $this->formatNumber($npk['N']['quantity'], 1) . ' &mdash; nÃ­vel do solo ' . $npk['N']['level'] . '</li>';
+                $html .= '<li>FÃ³sforo (P<sub>2</sub>O<sub>5</sub>): ' . $this->formatNumber($npk['P']['quantity'], 1) . ' &mdash; nÃ­vel do solo ' . $npk['P']['level'] . '</li>';
+                $html .= '<li>PotÃ¡ssio (K<sub>2</sub>O): ' . $this->formatNumber($npk['K']['quantity'], 1) . ' &mdash; nÃ­vel do solo ' . $npk['K']['level'] . '</li>';
                 $html .= '</ul>';
 
                 if (!empty($formulation)) {
-                        $html .= '<p><strong>Formulação sugerida:</strong> ' . dol_escape_htmltag($formulation['label']) . ' &mdash; aplicar aproximadamente ' . $this->formatNumber($formulation['ton_per_ha'], 2) . ' t/ha.</p>';
+                        $html .= '<p><strong>FormulaÃ§Ã£o sugerida:</strong> ' . dol_escape_htmltag($formulation['label']) . ' &mdash; aplicar aproximadamente ' . $this->formatNumber($formulation['ton_per_ha'], 2) . ' t/ha.</p>';
                 }
 
                 if (!empty($guide['method'])) {
-                        $html .= '<p><strong>Método de aplicação recomendado:</strong> ' . dol_escape_htmltag($guide['method']) . '</p>';
+                        $html .= '<p><strong>MÃ©todo de aplicaÃ§Ã£o recomendado:</strong> ' . dol_escape_htmltag($guide['method']) . '</p>';
                 }
 
                 if (!empty($liming)) {
@@ -711,12 +704,12 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                         $html .= '</ul>';
                 }
 
-                $html .= '<p><strong>Boas práticas adicionais:</strong></p>';
+                $html .= '<p><strong>Boas prÃ¡ticas adicionais:</strong></p>';
                 $html .= '<ul>';
-                $html .= '<li>Realizar a adubação com o solo úmido e, quando possível, incorporar levemente os fertilizantes.</li>';
-                $html .= '<li>Parcelar aplicações de N quando a dose superar 60 kg/ha e monitorar possíveis perdas por volatilização.</li>';
-                $html .= '<li>Revisar o plano de adubação após novas análises ou mudanças expressivas na produtividade esperada.</li>';
-                $html .= '<li>Consultar um profissional habilitado para ajustes finos e inclusão de micronutrientes específicos.</li>';
+                $html .= '<li>Realizar a adubaÃ§Ã£o com o solo Ãºmido e, quando possÃ­vel, incorporar levemente os fertilizantes.</li>';
+                $html .= '<li>Parcelar aplicaÃ§Ãµes de N quando a dose superar 60 kg/ha e monitorar possÃ­veis perdas por volatilizaÃ§Ã£o.</li>';
+                $html .= '<li>Revisar o plano de adubaÃ§Ã£o apÃ³s novas anÃ¡lises ou mudanÃ§as expressivas na produtividade esperada.</li>';
+                $html .= '<li>Consultar um profissional habilitado para ajustes finos e inclusÃ£o de micronutrientes especÃ­ficos.</li>';
                 $html .= '</ul>';
 
                 return $html;
@@ -730,9 +723,9 @@ class InterfaceSafraTriggers extends DolibarrTriggers
          */
         private function renderMissingAnalysisMessage($guide)
         {
-                $html = '<h3>Recomendação de adubação para ' . dol_escape_htmltag($guide['display']) . '</h3>';
-                $html .= '<p>Associe uma análise de solo válida para gerar recomendações automáticas de adubação e calagem.</p>';
-                $html .= '<p>Utilize análises realizadas preferencialmente nos últimos 12 meses para garantir um diagnóstico preciso.</p>';
+                $html = '<h3>RecomendaÃ§Ã£o de adubaÃ§Ã£o para ' . dol_escape_htmltag($guide['display']) . '</h3>';
+                $html .= '<p>Associe uma anÃ¡lise de solo vÃ¡lida para gerar recomendaÃ§Ãµes automÃ¡ticas de adubaÃ§Ã£o e calagem.</p>';
+                $html .= '<p>Utilize anÃ¡lises realizadas preferencialmente nos Ãºltimos 12 meses para garantir um diagnÃ³stico preciso.</p>';
 
                 return $html;
         }
@@ -752,7 +745,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                                 'display' => 'Cultura',
                                 'ideal_ph' => 6.0,
                                 'target_base_saturation' => 55,
-                                'method' => 'Distribuição uniforme no sulco ou a lanço com incorporação leve antes do plantio.',
+                                'method' => 'DistribuiÃ§Ã£o uniforme no sulco ou a lanÃ§o com incorporaÃ§Ã£o leve antes do plantio.',
                                 'npk' => array(
                                         'N' => array(
                                                 'base' => 90,
@@ -768,7 +761,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                         'milho' => array(
                                 'ideal_ph' => 6.0,
                                 'target_base_saturation' => 60,
-                                'method' => 'Aplicar no sulco de plantio e complementar em cobertura no estádio vegetativo.',
+                                'method' => 'Aplicar no sulco de plantio e complementar em cobertura no estÃ¡dio vegetativo.',
                                 'npk' => array(
                                         'N' => array(
                                                 'base' => 140,
@@ -782,7 +775,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                         'soja' => array(
                                 'ideal_ph' => 6.2,
                                 'target_base_saturation' => 60,
-                                'method' => 'Aplicar preferencialmente a lanço antes da semeadura e incorporar levemente.',
+                                'method' => 'Aplicar preferencialmente a lanÃ§o antes da semeadura e incorporar levemente.',
                                 'npk' => array(
                                         'N' => array(
                                                 'base' => 40,
@@ -828,7 +821,7 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                         'girassol' => array(
                                 'ideal_ph' => 6.3,
                                 'target_base_saturation' => 60,
-                                'method' => 'Aplicar a lanço antes do plantio com incorporação rasa.',
+                                'method' => 'Aplicar a lanÃ§o antes do plantio com incorporaÃ§Ã£o rasa.',
                                 'npk' => array(
                                         'N' => array('base' => 100),
                                 ),
@@ -947,10 +940,10 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 $labels = array(
                         'very_low' => 'muito baixo',
                         'low' => 'baixo',
-                        'medium' => 'médio',
+                        'medium' => 'mÃ©dio',
                         'high' => 'alto',
                         'very_high' => 'muito alto',
-                        'unknown' => 'não informado',
+                        'unknown' => 'nÃ£o informado',
                 );
 
                 return isset($labels[$key]) ? $labels[$key] : $key;
@@ -1040,10 +1033,10 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 
                 $thresholds = array(
                         'enxofre' => array('limit' => 12, 'message' => 'Teor baixo de enxofre; considerar fonte contendo S (15 a 30 kg/ha).'),
-                        'zinco' => array('limit' => 1.2, 'message' => 'Zinco abaixo do ideal; avaliar aplicação foliar ou no sulco.'),
+                        'zinco' => array('limit' => 1.2, 'message' => 'Zinco abaixo do ideal; avaliar aplicaÃ§Ã£o foliar ou no sulco.'),
                         'boro' => array('limit' => 0.5, 'message' => 'Boro reduzido; considerar 1-2 kg/ha de B, evitando superdosagens.'),
-                        'manganes' => array('limit' => 5, 'message' => 'Manganês em nível baixo; monitorar sintomas e aplicar fontes específicas se necessário.'),
-                        'cobre' => array('limit' => 0.6, 'message' => 'Cobre limitado; considerar fontes cúpricas se persistirem deficiências.'),
+                        'manganes' => array('limit' => 5, 'message' => 'ManganÃªs em nÃ­vel baixo; monitorar sintomas e aplicar fontes especÃ­ficas se necessÃ¡rio.'),
+                        'cobre' => array('limit' => 0.6, 'message' => 'Cobre limitado; considerar fontes cÃºpricas se persistirem deficiÃªncias.'),
                 );
 
                 foreach ($thresholds as $field => $data) {
@@ -1053,11 +1046,11 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 }
 
                 if ($analysis->materia_organica !== null && $analysis->materia_organica < 2) {
-                        $alerts[] = 'Matéria orgânica muito baixa; avalie incorporar resíduos ou adubos orgânicos.';
+                        $alerts[] = 'MatÃ©ria orgÃ¢nica muito baixa; avalie incorporar resÃ­duos ou adubos orgÃ¢nicos.';
                 }
 
                 if ($analysis->ph !== null && $guide['ideal_ph'] !== null && $analysis->ph < $guide['ideal_ph'] - 0.5) {
-                        $alerts[] = 'pH abaixo do ideal para a cultura; confirme a necessidade de calagem e monitore alumínio trocável.';
+                        $alerts[] = 'pH abaixo do ideal para a cultura; confirme a necessidade de calagem e monitore alumÃ­nio trocÃ¡vel.';
                 }
 
                 return $alerts;
@@ -1065,98 +1058,14 @@ class InterfaceSafraTriggers extends DolibarrTriggers
 
         public function taskModify($action, $task, User $user, Translate $langs, Conf $conf)
         {
-                if (empty($task->id)) {
-                        return 0;
-                }
-
-                $aplicacaoId = $this->getAplicacaoIdFromTask($task);
-                if ($aplicacaoId <= 0) {
-                        return 0;
-                }
-
-                dol_include_once('/safra/class/aplicacao.class.php');
-
-                $aplicacao = new Aplicacao($this->db);
-                if ($aplicacao->fetch($aplicacaoId) <= 0) {
-                        return 0;
-                }
-
-                if ((int) $aplicacao->fk_task !== (int) $task->id) {
-                        $aplicacao->fk_task = (int) $task->id;
-                        if (empty($aplicacao->fk_project) && !empty($task->fk_project)) {
-                                $aplicacao->fk_project = $task->fk_project;
-                        }
-                        $aplicacao->syncTask($user);
-                }
-
-                $progress = isset($task->progress) ? (int) $task->progress : 0;
-
-                if ($progress >= 100 && $aplicacao->status != Aplicacao::STATUS_VALIDATED) {
-                        $res = $aplicacao->markAsCompleted($user);
-                        if ($res < 0) {
-                                $this->errors[] = $aplicacao->error;
-                                return -1;
-                        }
-                } elseif ($progress < 100 && $aplicacao->status == Aplicacao::STATUS_VALIDATED) {
-                        $res = $aplicacao->setDraft($user, 1);
-                        if ($res < 0) {
-                                $this->errors[] = $aplicacao->error;
-                                return -1;
-                        }
-                        $aplicacao->syncTask($user);
-                }
-
+                // Legacy Aplicacao sync removed. Task sync now lives in interface_modSafra_ActivityTrigger.
                 return 0;
         }
 
         public function taskDelete($action, $task, User $user, Translate $langs, Conf $conf)
         {
-                $aplicacaoId = $this->getAplicacaoIdFromTask($task);
-                if ($aplicacaoId <= 0) {
-                        return 0;
-                }
-
-                dol_include_once('/safra/class/aplicacao.class.php');
-
-                $aplicacao = new Aplicacao($this->db);
-                if ($aplicacao->fetch($aplicacaoId) <= 0) {
-                        return 0;
-                }
-
-                $sql = 'UPDATE '.MAIN_DB_PREFIX."safra_aplicacao SET fk_task = NULL WHERE rowid = ".((int) $aplicacaoId);
-                if (!$this->db->query($sql)) {
-                        dol_syslog(__METHOD__.' failed to detach task for application '.$aplicacaoId.': '.$this->db->lasterror(), LOG_WARNING);
-                }
-
+                // Legacy Aplicacao sync removed. Task deletion sync now lives in interface_modSafra_ActivityTrigger.
                 return 0;
-        }
-
-        private function getAplicacaoIdFromTask($task)
-        {
-                $taskId = isset($task->id) ? (int) $task->id : 0;
-                $fkAplicacao = 0;
-
-                if (!empty($task->array_options) && is_array($task->array_options) && !empty($task->array_options['options_fk_aplicacao'])) {
-                        $fkAplicacao = (int) $task->array_options['options_fk_aplicacao'];
-                }
-
-                if (!$fkAplicacao && !empty($task->fk_aplicacao)) {
-                        $fkAplicacao = (int) $task->fk_aplicacao;
-                }
-
-                if (!$fkAplicacao && $taskId > 0) {
-                        dol_include_once('/projet/class/task.class.php');
-                        $tmpTask = new Task($this->db);
-                        if ($tmpTask->fetch($taskId) > 0) {
-                                if (!empty($tmpTask->array_options['options_fk_aplicacao'])) {
-                                        $fkAplicacao = (int) $tmpTask->array_options['options_fk_aplicacao'];
-                                } elseif (!empty($tmpTask->fk_aplicacao)) {
-                                        $fkAplicacao = (int) $tmpTask->fk_aplicacao;
-                                }
-                        }
-                }
-
-                return $fkAplicacao;
         }
 
         private function formatNumber($value, $decimals)
@@ -1168,3 +1077,4 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 return number_format((float) $value, $decimals, ',', '.');
         }
 }
+

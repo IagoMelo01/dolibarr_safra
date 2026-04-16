@@ -1,80 +1,79 @@
--- Safra activity workflow seed data
--- Provides ready-made scenarios covering validation, in-progress, completion and cancellation states.
+-- Safra activity workflow seed data (canonical schema).
 
 INSERT INTO llx_safra_activity (
     rowid,
     entity,
     ref,
     label,
-    activity_type,
-    date_activity,
-    qty,
-    amount,
-    fk_soc,
     fk_project,
     fk_task,
-    description,
+    fk_thirdparty,
+    fk_fieldplot,
+    area_total,
+    type,
+    status,
     note_public,
     note_private,
-    mixture_note,
     date_creation,
     fk_user_creat,
-    status
+    fk_user_modif
 ) VALUES
-    (9001, 1, 'ACT-VALIDATED', 'Aplicação validada', 'aplicacao', DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY), 12.50, 150.00, NULL, NULL, NULL, 'Cenário de validação disponível para testes.', 'Observação pública validação', 'Observação privada validação', 'Mistura fungicida', NOW(), 1, 1),
-    (9002, 1, 'ACT-STARTED', 'Aplicação iniciada', 'aplicacao', DATE_SUB(CURRENT_DATE, INTERVAL 3 DAY), 8.00, 95.00, NULL, NULL, NULL, 'Cenário de atividade em andamento.', 'Observação pública início', 'Observação privada início', 'Mistura herbicida', NOW(), 1, 2),
-    (9003, 1, 'ACT-COMPLETED', 'Aplicação concluída', 'aplicacao', DATE_SUB(CURRENT_DATE, INTERVAL 1 DAY), 15.75, 210.00, NULL, NULL, NULL, 'Cenário de atividade concluída para auditoria.', 'Observação pública concluído', 'Observação privada concluído', 'Mistura inseticida', NOW(), 1, 3),
-    (9004, 1, 'ACT-CANCELED', 'Aplicação cancelada', 'aplicacao', CURRENT_DATE, 5.00, 0.00, NULL, NULL, NULL, 'Cenário de atividade cancelada.', 'Observação pública cancelado', 'Observação privada cancelado', 'Mistura cancelada', NOW(), 1, 9);
+    (9001, 1, 'ACT-DRAFT', 'Atividade em rascunho', NULL, NULL, NULL, NULL, 10.00, 'aplicacao', 0, 'Rascunho para valida��o do fluxo.', 'Nota privada rascunho', NOW(), 1, 1),
+    (9002, 1, 'ACT-INPROGRESS', 'Atividade em andamento', NULL, NULL, NULL, NULL, 8.00, 'fertilizacao', 3, 'Atividade iniciada.', 'Nota privada em andamento', NOW(), 1, 1),
+    (9003, 1, 'ACT-COMPLETED', 'Atividade conclu�da', NULL, NULL, NULL, NULL, 15.75, 'colheita', 1, 'Atividade conclu�da para auditoria.', 'Nota privada conclu�da', NOW(), 1, 1),
+    (9004, 1, 'ACT-CANCELED', 'Atividade cancelada', NULL, NULL, NULL, NULL, 5.00, 'monitoramento', 2, 'Atividade cancelada para testes.', 'Nota privada cancelada', NOW(), 1, 1)
+ON DUPLICATE KEY UPDATE
+    label = VALUES(label),
+    type = VALUES(type),
+    status = VALUES(status),
+    area_total = VALUES(area_total),
+    note_public = VALUES(note_public),
+    note_private = VALUES(note_private),
+    fk_user_modif = VALUES(fk_user_modif);
 
 INSERT INTO llx_safra_activity_line (
     rowid,
     entity,
     fk_activity,
     fk_product,
-    fk_formulated_product,
-    fk_technical_product,
-    fk_warehouse,
-    fk_unit,
-    label,
+    area_applied,
     dose,
     dose_unit,
-    area_ha,
-    total_qty,
-    note,
-    movement,
+    total,
     movement_type,
-    date_creation
+    fk_warehouse,
+    date_creation,
+    fk_user_creat,
+    fk_user_modif
 ) VALUES
-    (9501, 1, 9001, 1, NULL, NULL, 1, NULL, 'Fungicida validado', 0.50, 'L/ha', 10.00, 5.00, 'Linha validada', 1, 'consume', NOW()),
-    (9502, 1, 9002, 1, NULL, NULL, 1, NULL, 'Herbicida em aplicação', 0.30, 'L/ha', 8.00, 2.40, 'Linha em andamento', 1, 'consume', NOW()),
-    (9503, 1, 9002, NULL, NULL, NULL, 1, NULL, 'Ajuste de estoque retorno', 0.00, '', 0.00, 1.00, 'Reabastecimento parcial', 0, 'return', NOW()),
-    (9504, 1, 9003, 1, NULL, NULL, 2, NULL, 'Inseticida concluído', 0.45, 'L/ha', 15.75, 7.09, 'Linha concluída', 1, 'consume', NOW()),
-    (9505, 1, 9004, 1, NULL, NULL, 1, NULL, 'Mistura cancelada', 0.20, 'L/ha', 5.00, 1.00, 'Linha cancelada', 0, 'return', NOW());
+    (9501, 1, 9001, 1, 10.00, 0.50, 'L/ha', 5.00, 'consume', 1, NOW(), 1, 1),
+    (9502, 1, 9002, 1, 8.00, 0.30, 'L/ha', 2.40, 'consume', 1, NOW(), 1, 1),
+    (9503, 1, 9002, 1, 0.00, 0.00, '', 1.00, 'return', 1, NOW(), 1, 1),
+    (9504, 1, 9003, 1, 15.75, 0.45, 'L/ha', 7.09, 'consume', 2, NOW(), 1, 1),
+    (9505, 1, 9004, 1, 5.00, 0.20, 'L/ha', 1.00, 'return', 1, NOW(), 1, 1)
+ON DUPLICATE KEY UPDATE
+    fk_activity = VALUES(fk_activity),
+    fk_product = VALUES(fk_product),
+    area_applied = VALUES(area_applied),
+    dose = VALUES(dose),
+    dose_unit = VALUES(dose_unit),
+    total = VALUES(total),
+    movement_type = VALUES(movement_type),
+    fk_warehouse = VALUES(fk_warehouse),
+    fk_user_modif = VALUES(fk_user_modif);
 
-INSERT INTO llx_safra_activity_fleet (
-    rowid,
-    entity,
-    fk_activity,
-    resource_type,
-    fk_fleet_equipment,
-    fk_user_responsible,
-    planned_hours,
-    note,
-    date_creation
-) VALUES
-    (9801, 1, 9001, 'vehicle', 101, 1, 4.0, 'Trator principal para aplicação', NOW()),
-    (9802, 1, 9002, 'implement', 202, NULL, 3.5, 'Pulverizador acoplado', NOW());
+INSERT IGNORE INTO llx_safra_activity_machine (entity, fk_activity, fk_machine, date_creation)
+VALUES
+    (1, 9001, 101, NOW()),
+    (1, 9002, 102, NOW());
 
-INSERT INTO llx_safra_activity_team (
-    rowid,
-    entity,
-    fk_activity,
-    fk_user,
-    planned_hours,
-    is_responsible,
-    note,
-    date_creation
-) VALUES
-    (9901, 1, 9001, 2, 6.0, 1, 'Supervisor da aplicação', NOW()),
-    (9902, 1, 9001, 3, 6.0, 0, 'Auxiliar operacional', NOW()),
-    (9903, 1, 9002, 4, 5.0, 1, 'Responsável pela calibração', NOW());
+INSERT IGNORE INTO llx_safra_activity_implement (entity, fk_activity, fk_implement, date_creation)
+VALUES
+    (1, 9001, 201, NOW()),
+    (1, 9002, 202, NOW());
+
+INSERT IGNORE INTO llx_safra_activity_user (entity, fk_activity, fk_user, date_creation)
+VALUES
+    (1, 9001, 2, NOW()),
+    (1, 9001, 3, NOW()),
+    (1, 9002, 4, NOW());

@@ -221,7 +221,7 @@ foreach ($talhaoList as $talhao) {
 $countTalhoes = count($talhaoData);
 $averageArea = $countTalhoes > 0 ? ($totalArea / $countTalhoes) : 0;
 $countCulturas = safra_count_table($db, 'safra_cultura');
-$countAplicacoes = safra_count_table($db, 'safra_aplicacao');
+$countAplicacoes = safra_count_table($db, 'safra_activity');
 $countEventos = safra_count_table($db, 'safra_evento');
 $countColheitas = safra_count_table($db, 'safra_colheita');
 $countMunicipios = count($areaByMunicipio);

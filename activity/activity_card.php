@@ -68,6 +68,34 @@ if ($id > 0) {
     $activity->fetch($id);
 }
 
+$permissiontoread = $user->rights->safra->SafraActivity->read ?? 0;
+$permissiontowrite = $user->rights->safra->SafraActivity->write ?? 0;
+$permissiontodelete = $user->rights->safra->SafraActivity->delete ?? 0;
+
+if (!$permissiontoread) {
+    accessforbidden();
+}
+
+$mutatingActions = array('save', 'start', 'complete', 'cancel', 'delete');
+if (in_array($action, $mutatingActions, true)) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        accessforbidden();
+    }
+
+    $token = GETPOST('token', 'alphanohtml');
+    if (function_exists('checkToken') && !checkToken($token)) {
+        accessforbidden('Invalid security token.');
+    }
+}
+
+if (in_array($action, array('save', 'start', 'complete', 'cancel'), true) && !$permissiontowrite) {
+    accessforbidden();
+}
+
+if ($action === 'delete' && !$permissiontodelete) {
+    accessforbidden();
+}
+
 $areaPercentage = price2num(GETPOST('area_percentage', 'alpha'), 'MT');
 
 // Helpers

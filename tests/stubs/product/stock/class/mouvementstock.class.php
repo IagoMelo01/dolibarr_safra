@@ -4,6 +4,9 @@ class MouvementStock
     public $db;
     public $id = 0;
     public $error = '';
+    public $origin;
+    public $origin_id = 0;
+    public $origintype = '';
     public static $movements = array();
     public static $autoIncrement = 1;
 

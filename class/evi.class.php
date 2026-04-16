@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 /* Copyright (C) 2017  Laurent Destailleur      <eldy@users.sourceforge.net>
- * Copyright (C) 2023  Frédéric France          <frederic.france@netlogic.fr>
+ * Copyright (C) 2023  FrÃ©dÃ©ric France          <frederic.france@netlogic.fr>
  * Copyright (C) 2024 SuperAdmin
  *
  * This program is free software; you can redistribute it and/or modify
@@ -132,7 +132,7 @@ class EVI extends CommonObject
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
 		"data" => array("type"=>"date", "label"=>"Data", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
-		"talhao" => array("type"=>"integer:talhao:safra/class/talhao.class.php", "label"=>"Talhão", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
+		"talhao" => array("type"=>"integer:talhao:safra/class/talhao.class.php", "label"=>"TalhÃ£o", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"1",),
 		"caminho_json" => array("type"=>"text", "label"=>"caminho json", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
 	);
 	public $rowid;
@@ -1238,9 +1238,8 @@ class EVI extends CommonObject
 			$talhao = $talhao->fetch($t_id);
 		}
 		global $conf;
-		// print_r($conf);
-		// URL para o serviço WMS do Sentinel Hub
-		$url = 'https://services.sentinel-hub.com/ogc/wms/' . $conf->global->SAFRA_API_SENTINELHUB; // Substitua {INSTANCE_ID} pelo ID da sua instância
+		// URL para o serviÃ§o WMS do Sentinel Hub
+		$url = 'https://services.sentinel-hub.com/ogc/wms/' . $conf->global->SAFRA_API_SENTINELHUB; // Substitua {INSTANCE_ID} pelo ID da sua instÃ¢ncia
 
 		if(!$time){
 			$t1 = date('Y-m-d', strtotime('-5 day'));
@@ -1251,19 +1250,20 @@ class EVI extends CommonObject
 		$cont = 0;
 
 		foreach($talhao as $key){
-			// Configuração inicial do cURL
+			// ConfiguraÃ§Ã£o inicial do cURL
 			$ch = curl_init($url);
 	
-			// Define as opções do cURL
+			// Define as opÃ§Ãµes do cURL
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
 
 			// curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			// 	'Content-Type: application/json',
 			// 	'Authorization: Bearer YOUR_ACCESS_TOKEN'  // Substitua YOUR_ACCESS_TOKEN pelo seu token de acesso
 			// ));
 	
-			// Parâmetros da requisição WMS
+			// ParÃ¢metros da requisiÃ§Ã£o WMS
 			$params = array(
 				'SERVICE' => 'WMS',
 				'REQUEST' => 'GetMap',
@@ -1272,19 +1272,19 @@ class EVI extends CommonObject
 				'FORMAT' => 'application/json',  // Formato da resposta
 				'RESX' => '10m',         // Altura da imagem
 				'RESY' => '10m',          // Largura da imagem
-				'CRS' => 'CRS:84',      // Sistema de referência coordenado
-				'TIME' => $time,  // Intervalo de tempo para dados de satélite
+				'CRS' => 'CRS:84',      // Sistema de referÃªncia coordenado
+				'TIME' => $time,  // Intervalo de tempo para dados de satÃ©lite
 				'GEOMETRY' => $key->wkt,
 				'SHOWLOGO' => 'false',
 				'MAXCC' => '100'
 			);
 	
-                        // Configura a URL com os parâmetros
+                        // Configura a URL com os parÃ¢metros
                         $requestUrl = $url . '?' . http_build_query($params);
                         // echo $requestUrl;
                         curl_setopt($ch, CURLOPT_URL, $requestUrl);
 	
-			// Executa a sessão cURL
+			// Executa a sessÃ£o cURL
 			$response = curl_exec($ch);
 	
                         // Verifica erros
@@ -1294,16 +1294,15 @@ class EVI extends CommonObject
                                 setEventMessages('Erro ao consultar dados remotos', null, 'errors');
                         }
 	
-			// Fecha a sessão cURL
+			// Fecha a sessÃ£o cURL
 			curl_close($ch);
 
 			$file_name = str_replace('/', '_', $time).'_'.$key->id;
 			// echo '<pre>';
-			// print_r($key);
 			// echo '</pre>';
 	
 			// Define o caminho do arquivo para salvar a resposta
-			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/evi/'. $file_name .'.json'; // Altere para o diretório desejado
+			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/evi/'. $file_name .'.json'; // Altere para o diretÃ³rio desejado
 
 			
 			// Salva a resposta em um arquivo
@@ -1355,3 +1354,4 @@ class EVILine extends CommonObjectLine
 		$this->db = $db;
 	}
 }
+

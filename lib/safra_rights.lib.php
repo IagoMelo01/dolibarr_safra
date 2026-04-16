@@ -6,7 +6,7 @@
  */
 
 /**
- * Normalize rights array/object and fetch specific Safra application privilege.
+ * Normalize rights array/object and fetch specific Safra Activity privilege.
  *
  * @param object $user    Dolibarr user object
  * @param string $type    Right key to read (e.g. 'read', 'write', 'delete')
@@ -30,12 +30,12 @@ function getSafraRightValue($user, $type, $default = 1)
     if (!is_array($module)) {
         return $default;
     }
-    $app = $module['aplicacao'] ?? null;
-    if (is_object($app)) {
-        $app = (array) $app;
+    $activity = $module['SafraActivity'] ?? null;
+    if (is_object($activity)) {
+        $activity = (array) $activity;
     }
-    if (!is_array($app)) {
+    if (!is_array($activity)) {
         return $default;
     }
-    return $app[$type] ?? $default;
+    return $activity[$type] ?? $default;
 }

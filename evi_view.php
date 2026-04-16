@@ -326,7 +326,6 @@ $weeklyChartSubtitle = $langs->trans('SafraSatelliteWeeklySubtitle');
 
 <?php
 // echo '<pre>';
-// print_r($_POST);
 // echo '</pre>';
 // $ndvi = new NDVI($db);
 // $ndvi->requestEVIData();

@@ -6,9 +6,6 @@
 if (!defined('NOTOKENRENEWAL')) {
     define('NOTOKENRENEWAL', 1);
 }
-if (!defined('NOCSRFCHECK')) {
-    define('NOCSRFCHECK', 1);
-}
 
 $mainInc = __DIR__ . '/../../main.inc.php';
 if (!file_exists($mainInc)) {
@@ -29,7 +26,7 @@ $token = GETPOST('token', 'alphanohtml');
 $messages = array();
 $errors = array();
 
-$targetVersion = '1.1.0';
+$targetVersion = '1.2.0';
 $currentVersion = '1.0.0';
 if (!empty($conf->global->SAFRA_VERSION)) {
     $currentVersion = $conf->global->SAFRA_VERSION;
@@ -42,27 +39,25 @@ if (!empty($conf->global->SAFRA_VERSION)) {
 
 $upgradeSteps = array(
     array(
-        'title' => 'Safra Activity data model migration',
-        'description' => 'Creates the Activity tables, migrates legacy Aplicacao records, and sets up compatibility views.',
+        'title' => 'Safra Activity canonical schema',
+        'description' => 'Ensures canonical safra_activity* tables exist before migration.',
         'sql' => array(
-            '/safra/sql/migrations/20241005_add_activity_tables.sql',
-            '/safra/sql/migrations/20241007_migrate_application_to_activity.sql',
+            '/safra/sql/migrations/20260409_migrate_aplicacao_to_activity.sql',
         ),
         'checks' => array(
-            'Confirm `SELECT COUNT(*) FROM llx_safra_activity` matches the legacy Aplicacao volume.',
-            'Ensure stock movements now reference `safra_activity` as `origintype`.',
-            'Verify the legacy views `llx_safra_aplicacao` and `llx_safra_aplicacao_line` exist for backwards compatibility.',
+            'Confirm `SELECT COUNT(*) FROM llx_safra_activity` returns records after migration.',
+            'Confirm `SELECT COUNT(*) FROM llx_safra_activity_line` returns records after migration.',
+            'Confirm no query relies on `llx_safra_aplicacao*` anymore.',
         ),
         'rollback' => array(
-            'Restore the database backup taken before executing this upgrade.',
-            'Revert the `SAFRA_VERSION` constant to the previous value if it was updated.',
-            'Drop the compatibility views and re-create the legacy tables only if you need to resume the previous schema.',
+            'Restore the database backup taken before this upgrade.',
+            'Revert SAFRA_VERSION to its previous value if needed.',
         ),
     ),
 );
 
 if ($action === 'run') {
-    if (!empty($token) && function_exists('checkToken') && !checkToken($token)) {
+    if (function_exists('checkToken') && !checkToken($token)) {
         accessforbidden('Invalid security token.');
     }
 
@@ -74,6 +69,13 @@ if ($action === 'run') {
                 break 2;
             }
             $messages[] = $execution['message'];
+        }
+    }
+
+    if (empty($errors)) {
+        $migrationOk = safraMigrateLegacyAplicacao($db, $messages, $errors);
+        if (!$migrationOk) {
+            $errors[] = 'Legacy migration failed. No destructive cleanup was applied.';
         }
     }
 
@@ -107,15 +109,15 @@ print '<div class="fiche">';
 print '<div class="fichecenter">';
 print '<div class="fichehalfleft">';
 print '<h3>Upgrade overview</h3>';
-print '<p>This assistant executes the SQL migrations required to rename Safra “Aplicação” into the neutral “Activity” terminology while keeping integrations online.</p>';
+print '<p>This assistant migrates legacy `safra_aplicacao*` data into canonical `safra_activity*` tables and removes the legacy model.</p>';
 print '<p><strong>Current version:</strong> ' . dol_escape_htmltag($currentVersion) . '<br />';
 print '<strong>Target version:</strong> ' . dol_escape_htmltag($targetVersion) . '</p>';
 
 print '<h3>Pre-deployment checklist</h3>';
 print '<ol>';
-print '<li>Place Dolibarr in maintenance mode and notify integrators about a brief downtime.</li>';
-print '<li>Take a full database backup (schema and data) plus a snapshot of the document directories.</li>';
-print '<li>Ensure no background jobs are creating Aplicação records during the migration.</li>';
+print '<li>Place Dolibarr in maintenance mode and notify users about a brief downtime.</li>';
+print '<li>Take a full database backup (schema and data).</li>';
+print '<li>Pause background jobs during migration.</li>';
 print '</ol>';
 
 foreach ($upgradeSteps as $index => $step) {
@@ -135,40 +137,17 @@ foreach ($upgradeSteps as $index => $step) {
         }
         print '</ul>';
     }
-    if (!empty($step['rollback'])) {
-        print '<p><strong>Rollback guidance</strong></p>';
-        print '<ul>';
-        foreach ($step['rollback'] as $rollback) {
-            print '<li>' . dol_escape_htmltag($rollback) . '</li>';
-        }
-        print '</ul>';
-    }
 }
 
 print '<h3>Post-deployment actions</h3>';
 print '<ol>';
 print '<li>Flush Dolibarr caches and restart queue workers or cron jobs.</li>';
-print '<li>Run a smoke test through the REST API: <code>GET /api/index.php/sfactivities?limit=5</code>.</li>';
-print '<li>Monitor the logs for trigger warnings (<code>SAFRA_ACTIVITY_*</code>) during the first hour after go-live.</li>';
-print '</ol>';
-
-print '<h3>Rollback procedure</h3>';
-print '<ol>';
-print '<li>Restore the database backup created before the upgrade.</li>';
-print '<li>Re-deploy the previous Safra module package if files changed.</li>';
-print '<li>Reopen access only after verifying Aplicação listings and API endpoints are operating normally.</li>';
+print '<li>Run smoke tests in UI: list, card, save, start, complete, cancel, delete.</li>';
+print '<li>Run API smoke tests: <code>GET /api/index.php/sfactivities?limit=5</code>.</li>';
 print '</ol>';
 
 print '</div>';
 print '<div class="fichehalfright">';
-print '<h3>Integrator communication</h3>';
-print '<ul>';
-print '<li>New REST resource preferred path: <code>/sfactivities</code> (legacy alias <code>/aplicacoes</code> retained).</li>';
-print '<li>Workflow triggers now emit <code>SAFRA_ACTIVITY_CREATE</code>, <code>SAFRA_ACTIVITY_VALIDATE</code>, <code>SAFRA_ACTIVITY_START</code>, <code>SAFRA_ACTIVITY_DONE</code>, <code>SAFRA_ACTIVITY_CANCEL</code>, and <code>SAFRA_ACTIVITY_DELETE</code>.</li>';
-print '<li>Payload fields `activity_type`, `date_activity`, and `mixture_note` mirror the old keys `operation_type`, `date_application`, and `calda_observacao`.</li>';
-print '<li>Compatibility views (`llx_safra_aplicacao*`) remain available for one release to shield custom SQL integrations.</li>';
-print '</ul>';
-
 print '<h3>Execute upgrade</h3>';
 print '<form method="POST" action="' . dol_escape_htmltag($_SERVER['PHP_SELF']) . '">';
 print '<input type="hidden" name="action" value="run" />';
@@ -176,10 +155,9 @@ if (function_exists('newToken')) {
     print '<input type="hidden" name="token" value="' . newToken() . '" />';
 }
 print '<div class="center">';
-print '<input class="button" type="submit" value="Run migrations" />';
+print '<input class="button" type="submit" value="Run migration" />';
 print '</div>';
 print '</form>';
-
 print '</div>';
 print '</div>';
 print '</div>';
@@ -188,11 +166,10 @@ llxFooter();
 $db->close();
 
 /**
- * Execute the SQL statements contained in a migration file.
+ * Execute SQL file content.
  *
- * @param DoliDB  $db           Database handler
- * @param string  $relativePath Path relative to Dolibarr root
- *
+ * @param DoliDB $db
+ * @param string $relativePath
  * @return array{status:string,message:string}
  */
 function safraExecuteSqlFile($db, $relativePath)
@@ -226,17 +203,291 @@ function safraExecuteSqlFile($db, $relativePath)
         $executed++;
     }
 
-    return array(
-        'status' => 'success',
-        'message' => $executed . ' statements executed from ' . basename($relativePath),
-    );
+    return array('status' => 'success', 'message' => $executed . ' statements executed from ' . basename($relativePath));
 }
 
 /**
- * Split SQL content into executable statements while keeping quoted semicolons intact.
+ * Migrate legacy safra_aplicacao data into canonical activity tables.
  *
- * @param string $sqlContent SQL file content
+ * @param DoliDB $db
+ * @param array  $messages
+ * @param array  $errors
+ * @return bool
+ */
+function safraMigrateLegacyAplicacao($db, &$messages, &$errors)
+{
+    $legacyHeader = MAIN_DB_PREFIX . 'safra_aplicacao';
+    $legacyLine = MAIN_DB_PREFIX . 'safra_aplicacao_line';
+
+    if (!safraTableExists($db, $legacyHeader)) {
+        $messages[] = 'No legacy table `' . $legacyHeader . '` found. Skipping legacy data migration.';
+        return true;
+    }
+
+    $headerColumns = safraGetTableColumns($db, $legacyHeader);
+    $lineColumns = safraTableExists($db, $legacyLine) ? safraGetTableColumns($db, $legacyLine) : array();
+
+    $db->begin();
+
+    $entityCol = safraPickColumn($headerColumns, array('entity'));
+    $refCol = safraPickColumn($headerColumns, array('ref'));
+    $labelCol = safraPickColumn($headerColumns, array('label'));
+    $projectCol = safraPickColumn($headerColumns, array('fk_project'));
+    $taskCol = safraPickColumn($headerColumns, array('fk_task'));
+    $thirdpartyCol = safraPickColumn($headerColumns, array('fk_thirdparty', 'fk_soc'));
+    $fieldplotCol = safraPickColumn($headerColumns, array('fk_fieldplot', 'fk_talhao'));
+    $areaCol = safraPickColumn($headerColumns, array('area_total', 'area_ha', 'qty'));
+    $typeCol = safraPickColumn($headerColumns, array('type', 'activity_type', 'operation_type'));
+    $statusCol = safraPickColumn($headerColumns, array('status', 'fk_statut'));
+    $notePublicCol = safraPickColumn($headerColumns, array('note_public'));
+    $notePrivateCol = safraPickColumn($headerColumns, array('note_private', 'description'));
+    $dateCreationCol = safraPickColumn($headerColumns, array('date_creation', 'datec'));
+    $userCreatCol = safraPickColumn($headerColumns, array('fk_user_creat', 'fk_user_author'));
+    $userModifCol = safraPickColumn($headerColumns, array('fk_user_modif'));
+
+    $sqlHeader = 'SELECT rowid'
+        . ($entityCol ? ', ' . $entityCol . ' AS legacy_entity' : '')
+        . ($refCol ? ', ' . $refCol . ' AS legacy_ref' : '')
+        . ($labelCol ? ', ' . $labelCol . ' AS legacy_label' : '')
+        . ($projectCol ? ', ' . $projectCol . ' AS legacy_fk_project' : '')
+        . ($taskCol ? ', ' . $taskCol . ' AS legacy_fk_task' : '')
+        . ($thirdpartyCol ? ', ' . $thirdpartyCol . ' AS legacy_fk_thirdparty' : '')
+        . ($fieldplotCol ? ', ' . $fieldplotCol . ' AS legacy_fk_fieldplot' : '')
+        . ($areaCol ? ', ' . $areaCol . ' AS legacy_area_total' : '')
+        . ($typeCol ? ', ' . $typeCol . ' AS legacy_type' : '')
+        . ($statusCol ? ', ' . $statusCol . ' AS legacy_status' : '')
+        . ($notePublicCol ? ', ' . $notePublicCol . ' AS legacy_note_public' : '')
+        . ($notePrivateCol ? ', ' . $notePrivateCol . ' AS legacy_note_private' : '')
+        . ($dateCreationCol ? ', ' . $dateCreationCol . ' AS legacy_date_creation' : '')
+        . ($userCreatCol ? ', ' . $userCreatCol . ' AS legacy_fk_user_creat' : '')
+        . ($userModifCol ? ', ' . $userModifCol . ' AS legacy_fk_user_modif' : '')
+        . ' FROM ' . $legacyHeader;
+
+    $resHeader = $db->query($sqlHeader);
+    if (!$resHeader) {
+        $db->rollback();
+        $errors[] = 'Unable to read legacy activity headers: ' . $db->lasterror();
+        return false;
+    }
+
+    $migratedHeaders = 0;
+    while ($row = $db->fetch_object($resHeader)) {
+        $activityId = (int) $row->rowid;
+        $entity = isset($row->legacy_entity) ? (int) $row->legacy_entity : (int) $GLOBALS['conf']->entity;
+        if ($entity <= 0) {
+            $entity = (int) $GLOBALS['conf']->entity;
+        }
+
+        $ref = isset($row->legacy_ref) ? trim((string) $row->legacy_ref) : '';
+        if ($ref === '') {
+            $ref = 'ACT-' . $activityId;
+        }
+
+        $label = isset($row->legacy_label) ? trim((string) $row->legacy_label) : '';
+        if ($label === '') {
+            $label = $ref;
+        }
+
+        $type = safraNormalizeLegacyType(isset($row->legacy_type) ? $row->legacy_type : null);
+        $status = safraNormalizeLegacyStatus(isset($row->legacy_status) ? $row->legacy_status : null);
+        $dateCreation = !empty($row->legacy_date_creation) ? $row->legacy_date_creation : dol_print_date(dol_now(), '%Y-%m-%d %H:%M:%S');
+
+        $sqlInsert = 'INSERT INTO ' . MAIN_DB_PREFIX . 'safra_activity ('
+            . 'rowid, entity, ref, label, fk_project, fk_task, fk_thirdparty, fk_fieldplot, area_total, type, status, note_public, note_private, date_creation, fk_user_creat, fk_user_modif'
+            . ') VALUES ('
+            . $activityId . ', '
+            . $entity . ', '
+            . safraSqlString($db, $ref) . ', '
+            . safraSqlString($db, $label) . ', '
+            . safraSqlNullableInt(isset($row->legacy_fk_project) ? $row->legacy_fk_project : null) . ', '
+            . safraSqlNullableInt(isset($row->legacy_fk_task) ? $row->legacy_fk_task : null) . ', '
+            . safraSqlNullableInt(isset($row->legacy_fk_thirdparty) ? $row->legacy_fk_thirdparty : null) . ', '
+            . safraSqlNullableInt(isset($row->legacy_fk_fieldplot) ? $row->legacy_fk_fieldplot : null) . ', '
+            . safraSqlNumeric(isset($row->legacy_area_total) ? $row->legacy_area_total : 0) . ', '
+            . safraSqlString($db, $type) . ', '
+            . ((int) $status) . ', '
+            . safraSqlNullableString($db, isset($row->legacy_note_public) ? $row->legacy_note_public : null) . ', '
+            . safraSqlNullableString($db, isset($row->legacy_note_private) ? $row->legacy_note_private : null) . ', '
+            . safraSqlString($db, $dateCreation) . ', '
+            . ((int) (isset($row->legacy_fk_user_creat) && (int) $row->legacy_fk_user_creat > 0 ? $row->legacy_fk_user_creat : 1)) . ', '
+            . safraSqlNullableInt(isset($row->legacy_fk_user_modif) ? $row->legacy_fk_user_modif : null)
+            . ') ON DUPLICATE KEY UPDATE '
+            . 'entity = VALUES(entity), ref = VALUES(ref), label = VALUES(label), fk_project = VALUES(fk_project), fk_task = VALUES(fk_task), '
+            . 'fk_thirdparty = VALUES(fk_thirdparty), fk_fieldplot = VALUES(fk_fieldplot), area_total = VALUES(area_total), '
+            . 'type = VALUES(type), status = VALUES(status), note_public = VALUES(note_public), note_private = VALUES(note_private), '
+            . 'fk_user_modif = VALUES(fk_user_modif)';
+
+        if (!$db->query($sqlInsert)) {
+            $db->rollback();
+            $errors[] = 'Failed to migrate legacy activity row #' . $activityId . ': ' . $db->lasterror();
+            return false;
+        }
+
+        $migratedHeaders++;
+    }
+
+    $migratedLines = 0;
+    $lineMigrationExecuted = false;
+    if (!empty($lineColumns)) {
+        $lineEntityCol = safraPickColumn($lineColumns, array('entity'));
+        $lineActivityCol = safraPickColumn($lineColumns, array('fk_activity', 'fk_aplicacao'));
+        $lineProductCol = safraPickColumn($lineColumns, array('fk_product'));
+        $lineAreaCol = safraPickColumn($lineColumns, array('area_applied', 'area_ha'));
+        $lineDoseCol = safraPickColumn($lineColumns, array('dose'));
+        $lineDoseUnitCol = safraPickColumn($lineColumns, array('dose_unit'));
+        $lineTotalCol = safraPickColumn($lineColumns, array('total', 'total_qty', 'qty'));
+        $lineMovementTypeCol = safraPickColumn($lineColumns, array('movement_type'));
+        $lineWarehouseCol = safraPickColumn($lineColumns, array('fk_warehouse', 'fk_entrepot'));
+        $lineDateCreationCol = safraPickColumn($lineColumns, array('date_creation', 'datec'));
+        $lineUserCreatCol = safraPickColumn($lineColumns, array('fk_user_creat', 'fk_user_author'));
+        $lineUserModifCol = safraPickColumn($lineColumns, array('fk_user_modif'));
+
+        if ($lineActivityCol) {
+            $lineMigrationExecuted = true;
+            $sqlLine = 'SELECT rowid'
+                . ($lineEntityCol ? ', ' . $lineEntityCol . ' AS legacy_entity' : '')
+                . ', ' . $lineActivityCol . ' AS legacy_fk_activity'
+                . ($lineProductCol ? ', ' . $lineProductCol . ' AS legacy_fk_product' : '')
+                . ($lineAreaCol ? ', ' . $lineAreaCol . ' AS legacy_area_applied' : '')
+                . ($lineDoseCol ? ', ' . $lineDoseCol . ' AS legacy_dose' : '')
+                . ($lineDoseUnitCol ? ', ' . $lineDoseUnitCol . ' AS legacy_dose_unit' : '')
+                . ($lineTotalCol ? ', ' . $lineTotalCol . ' AS legacy_total' : '')
+                . ($lineMovementTypeCol ? ', ' . $lineMovementTypeCol . ' AS legacy_movement_type' : '')
+                . ($lineWarehouseCol ? ', ' . $lineWarehouseCol . ' AS legacy_fk_warehouse' : '')
+                . ($lineDateCreationCol ? ', ' . $lineDateCreationCol . ' AS legacy_date_creation' : '')
+                . ($lineUserCreatCol ? ', ' . $lineUserCreatCol . ' AS legacy_fk_user_creat' : '')
+                . ($lineUserModifCol ? ', ' . $lineUserModifCol . ' AS legacy_fk_user_modif' : '')
+                . ' FROM ' . $legacyLine;
+
+            $resLine = $db->query($sqlLine);
+            if (!$resLine) {
+                $db->rollback();
+                $errors[] = 'Unable to read legacy activity lines: ' . $db->lasterror();
+                return false;
+            }
+
+            while ($line = $db->fetch_object($resLine)) {
+                $lineId = (int) $line->rowid;
+                $movementType = isset($line->legacy_movement_type) ? trim((string) $line->legacy_movement_type) : '';
+                if ($movementType === '' || !in_array($movementType, array('consume', 'return', 'transfer'), true)) {
+                    $movementType = 'consume';
+                }
+
+                $lineDateCreation = !empty($line->legacy_date_creation) ? $line->legacy_date_creation : dol_print_date(dol_now(), '%Y-%m-%d %H:%M:%S');
+
+                $sqlInsertLine = 'INSERT INTO ' . MAIN_DB_PREFIX . 'safra_activity_line ('
+                    . 'rowid, entity, fk_activity, fk_product, area_applied, dose, dose_unit, total, movement_type, fk_warehouse, date_creation, fk_user_creat, fk_user_modif'
+                    . ') VALUES ('
+                    . $lineId . ', '
+                    . ((int) (isset($line->legacy_entity) ? $line->legacy_entity : $GLOBALS['conf']->entity)) . ', '
+                    . ((int) $line->legacy_fk_activity) . ', '
+                    . safraSqlNullableInt(isset($line->legacy_fk_product) ? $line->legacy_fk_product : null) . ', '
+                    . safraSqlNumeric(isset($line->legacy_area_applied) ? $line->legacy_area_applied : 0) . ', '
+                    . safraSqlNumeric(isset($line->legacy_dose) ? $line->legacy_dose : 0) . ', '
+                    . safraSqlNullableString($db, isset($line->legacy_dose_unit) ? $line->legacy_dose_unit : null) . ', '
+                    . safraSqlNumeric(isset($line->legacy_total) ? $line->legacy_total : 0) . ', '
+                    . safraSqlString($db, $movementType) . ', '
+                    . safraSqlNullableInt(isset($line->legacy_fk_warehouse) ? $line->legacy_fk_warehouse : null) . ', '
+                    . safraSqlString($db, $lineDateCreation) . ', '
+                    . safraSqlNullableInt(isset($line->legacy_fk_user_creat) ? $line->legacy_fk_user_creat : null) . ', '
+                    . safraSqlNullableInt(isset($line->legacy_fk_user_modif) ? $line->legacy_fk_user_modif : null)
+                    . ') ON DUPLICATE KEY UPDATE '
+                    . 'entity = VALUES(entity), fk_activity = VALUES(fk_activity), fk_product = VALUES(fk_product), area_applied = VALUES(area_applied), '
+                    . 'dose = VALUES(dose), dose_unit = VALUES(dose_unit), total = VALUES(total), movement_type = VALUES(movement_type), '
+                    . 'fk_warehouse = VALUES(fk_warehouse), fk_user_modif = VALUES(fk_user_modif)';
+
+                if (!$db->query($sqlInsertLine)) {
+                    $db->rollback();
+                    $errors[] = 'Failed to migrate legacy activity line #' . $lineId . ': ' . $db->lasterror();
+                    return false;
+                }
+
+                $migratedLines++;
+            }
+        }
+    }
+
+    // Integrity validation before destructive cleanup.
+    $sqlMissingHeaders = 'SELECT COUNT(*) as nb'
+        . ' FROM ' . $legacyHeader . ' as legacy_h'
+        . ' LEFT JOIN ' . MAIN_DB_PREFIX . 'safra_activity as act ON act.rowid = legacy_h.rowid'
+        . ' WHERE act.rowid IS NULL';
+    $resMissingHeaders = $db->query($sqlMissingHeaders);
+    if (!$resMissingHeaders) {
+        $db->rollback();
+        $errors[] = 'Unable to validate migrated activity headers: ' . $db->lasterror();
+        return false;
+    }
+    $objMissingHeaders = $db->fetch_object($resMissingHeaders);
+    $missingHeaders = $objMissingHeaders ? (int) $objMissingHeaders->nb : 0;
+    if ($missingHeaders > 0) {
+        $db->rollback();
+        $errors[] = 'Integrity validation failed: ' . $missingHeaders . ' legacy activity headers were not migrated.';
+        return false;
+    }
+
+    if ($lineMigrationExecuted) {
+        $sqlMissingLines = 'SELECT COUNT(*) as nb'
+            . ' FROM ' . $legacyLine . ' as legacy_l'
+            . ' LEFT JOIN ' . MAIN_DB_PREFIX . 'safra_activity_line as act_l ON act_l.rowid = legacy_l.rowid'
+            . ' WHERE act_l.rowid IS NULL';
+        $resMissingLines = $db->query($sqlMissingLines);
+        if (!$resMissingLines) {
+            $db->rollback();
+            $errors[] = 'Unable to validate migrated activity lines: ' . $db->lasterror();
+            return false;
+        }
+        $objMissingLines = $db->fetch_object($resMissingLines);
+        $missingLines = $objMissingLines ? (int) $objMissingLines->nb : 0;
+        if ($missingLines > 0) {
+            $db->rollback();
+            $errors[] = 'Integrity validation failed: ' . $missingLines . ' legacy activity lines were not migrated.';
+            return false;
+        }
+    }
+
+    // Remove legacy schema and extrafield columns now that migration is complete.
+    $legacyCleanup = array(
+        'DROP VIEW IF EXISTS ' . MAIN_DB_PREFIX . 'safra_aplicacao',
+        'DROP VIEW IF EXISTS ' . MAIN_DB_PREFIX . 'safra_aplicacao_line',
+        'DROP TABLE IF EXISTS ' . MAIN_DB_PREFIX . 'safra_aplicacao_line',
+        'DROP TABLE IF EXISTS ' . MAIN_DB_PREFIX . 'safra_aplicacao_resource',
+        'DROP TABLE IF EXISTS ' . MAIN_DB_PREFIX . 'safra_aplicacao',
+    );
+
+    foreach ($legacyCleanup as $sqlDrop) {
+        if (!$db->query($sqlDrop)) {
+            $db->rollback();
+            $errors[] = 'Legacy cleanup failed: ' . $db->lasterror();
+            return false;
+        }
+    }
+
+    if (safraTableExists($db, MAIN_DB_PREFIX . 'projet_task_extrafields')) {
+        foreach (array('fk_aplicacao', 'options_fk_aplicacao') as $legacyColumn) {
+            if (safraTableHasColumn($db, MAIN_DB_PREFIX . 'projet_task_extrafields', $legacyColumn)) {
+                $sqlDropColumn = 'ALTER TABLE ' . MAIN_DB_PREFIX . 'projet_task_extrafields DROP COLUMN ' . $legacyColumn;
+                if (!$db->query($sqlDropColumn)) {
+                    $db->rollback();
+                    $errors[] = 'Failed to drop legacy extrafield column `' . $legacyColumn . '`: ' . $db->lasterror();
+                    return false;
+                }
+            }
+        }
+    }
+
+    $db->commit();
+
+    $messages[] = 'Legacy migration completed: ' . $migratedHeaders . ' activities and ' . $migratedLines . ' lines migrated.';
+    $messages[] = 'Legacy schema `safra_aplicacao*` removed successfully.';
+
+    return true;
+}
+
+/**
+ * Split SQL content into executable statements.
  *
+ * @param string $sqlContent
  * @return string[]
  */
 function safraSplitSqlStatements($sqlContent)
@@ -274,7 +525,7 @@ function safraSplitSqlStatements($sqlContent)
                 $i++;
                 continue;
             }
-            if ($char === '#' ) {
+            if ($char === '#') {
                 $inLineComment = true;
                 continue;
             }
@@ -315,4 +566,124 @@ function safraSplitSqlStatements($sqlContent)
     }
 
     return $statements;
+}
+
+function safraTableExists($db, $tableName)
+{
+    $sql = "SHOW TABLES LIKE '" . $db->escape($tableName) . "'";
+    $res = $db->query($sql);
+    return $res && ((int) $db->num_rows($res) > 0);
+}
+
+function safraTableHasColumn($db, $tableName, $column)
+{
+    $sql = 'SHOW COLUMNS FROM ' . $tableName . " LIKE '" . $db->escape($column) . "'";
+    $res = $db->query($sql);
+    return $res && ((int) $db->num_rows($res) > 0);
+}
+
+function safraGetTableColumns($db, $tableName)
+{
+    $columns = array();
+    $sql = 'SHOW COLUMNS FROM ' . $tableName;
+    $res = $db->query($sql);
+    if (!$res) {
+        return $columns;
+    }
+
+    while ($obj = $db->fetch_object($res)) {
+        if (!empty($obj->Field)) {
+            $columns[] = (string) $obj->Field;
+        }
+    }
+
+    return $columns;
+}
+
+function safraPickColumn(array $columns, array $candidates)
+{
+    foreach ($candidates as $candidate) {
+        if (in_array($candidate, $columns, true)) {
+            return $candidate;
+        }
+    }
+
+    return null;
+}
+
+function safraSqlString($db, $value)
+{
+    return "'" . $db->escape((string) $value) . "'";
+}
+
+function safraSqlNullableString($db, $value)
+{
+    if ($value === null || $value === '') {
+        return 'NULL';
+    }
+
+    return safraSqlString($db, $value);
+}
+
+function safraSqlNullableInt($value)
+{
+    if ($value === null || $value === '' || !is_numeric($value)) {
+        return 'NULL';
+    }
+
+    return (string) ((int) $value);
+}
+
+function safraSqlNumeric($value)
+{
+    if ($value === null || $value === '' || !is_numeric($value)) {
+        return '0';
+    }
+
+    return (string) (0 + $value);
+}
+
+function safraNormalizeLegacyType($value)
+{
+    $raw = strtolower(trim((string) $value));
+    if ($raw === '') {
+        return 'outro';
+    }
+
+    $map = array(
+        'application' => 'aplicacao',
+        'aplicacao' => 'aplicacao',
+        'fertilization' => 'fertilizacao',
+        'fertilizacao' => 'fertilizacao',
+        'plantio' => 'plantio',
+        'planting' => 'plantio',
+        'harvest' => 'colheita',
+        'colheita' => 'colheita',
+        'monitoring' => 'monitoramento',
+        'monitoramento' => 'monitoramento',
+        'preparo_solo' => 'preparo_solo',
+        'soil_preparation' => 'preparo_solo',
+        'preparo_semente' => 'preparo_semente',
+        'seed_preparation' => 'preparo_semente',
+    );
+
+    return isset($map[$raw]) ? $map[$raw] : 'outro';
+}
+
+function safraNormalizeLegacyStatus($value)
+{
+    $status = (int) $value;
+
+    // Legacy map to canonical status: 0 draft, 3 in progress, 1 completed, 2 canceled.
+    if ($status === 9) {
+        return 2;
+    }
+    if ($status === 3) {
+        return 1;
+    }
+    if ($status === 2 || $status === 1) {
+        return 3;
+    }
+
+    return 0;
 }

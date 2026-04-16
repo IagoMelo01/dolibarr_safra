@@ -1,116 +1,50 @@
-# Safra Activity migration and compatibility guide
+# Safra Activity migration guide (legacy cutover)
 
 ## Summary
-This document validates the database structures for the new `llx_safra_activity` and `llx_safra_activity_line` tables, captures the alias/deprecation strategy for the migration from the legacy "Aplicação" implementation, and lists the compatibility steps required for downstream integrations.
+This migration moves legacy `llx_safra_aplicacao*` data into canonical `llx_safra_activity*` tables and removes the legacy model in the same release.
 
-## Table structure validation
+## Canonical schema
+The official Activity schema is defined by:
 
-The Activity entities must keep parity with the existing Application data model so that records can be migrated without loss and new features can evolve with consistent naming. The following tables describe the required columns, data types, and rationale. They mirror the DDL committed in `sql/llx_safra_activity.sql` and `sql/llx_safra_activity_line.sql`.
+- `sql/llx_safra_activity.sql`
+- `sql/llx_safra_activity_line.sql`
+- `sql/llx_safra_activity_machine.sql`
+- `sql/llx_safra_activity_implement.sql`
+- `sql/llx_safra_activity_user.sql`
+- `sql/mysql/activity.sql`
 
-### `llx_safra_activity`
+Legacy structures (`llx_safra_aplicacao`, `llx_safra_aplicacao_line`, resource tables/views) are no longer supported after migration.
 
-| Column | Type | Requirement | Notes |
-| --- | --- | --- | --- |
-| `rowid` | `integer AUTO_INCREMENT` | Primary key | Same semantics as `llx_safra_aplicacao.rowid` |
-| `ref` | `varchar(128)` | Unique business reference | Migrates legacy `ref` values |
-| `label` | `varchar(255)` | Optional descriptive title | Mirrors legacy `label` |
-| `amount` | `double` | Financial amount (nullable) | Keeps compatibility for cost estimations |
-| `qty` | `real` | Default quantity | Used by dashboards just like in the Application table |
-| `fk_soc` | `integer` | Third-party linkage | References `llx_societe.rowid` |
-| `fk_project` | `integer` | Project linkage | Allows timeline aggregation |
-| `fk_task` | `integer` | Task linkage | Keeps task sync features |
-| `activity_type` | `varchar(32)` | Type discriminator | Renamed from `operation_type`; default `application` ensures backwards compatibility |
-| `date_activity` | `date` | Execution date | Renamed from `date_application` |
-| `description` | `text` | Internal description | Same meaning |
-| `note_public` | `text` | Public notes | Same meaning |
-| `note_private` | `text` | Private notes | Same meaning |
-| `mixture_note` | `text` | Observations about mixture | Renamed from `calda_observacao` to remove regionalism |
-| `date_creation` | `datetime` | Creation timestamp | Required |
-| `tms` | `timestamp` | Last modification | Uses MySQL auto update |
-| `fk_user_creat` | `integer` | Creator user | FK to `llx_user` |
-| `fk_user_modif` | `integer` | Last modifier | Nullable |
-| `last_main_doc` | `varchar(255)` | Generated document path | Same behaviour |
-| `import_key` | `varchar(14)` | Import guard | Supports dedupe |
-| `model_pdf` | `varchar(255)` | Preferred PDF model | Same behaviour |
-| `status` | `integer` | Workflow status | Keeps existing workflow expectations |
+## Upgrade execution
+1. Put Dolibarr in maintenance mode.
+2. Back up database and documents.
+3. Run `custom/safra/upgrade.php` as administrator.
+4. The assistant will:
+   - ensure canonical `safra_activity*` tables exist,
+   - migrate legacy header/line data to canonical tables,
+   - drop legacy `safra_aplicacao*` objects.
+5. Validate totals and reopen access.
 
-Supporting indexes and foreign keys are defined in `sql/llx_safra_activity.key.sql` to reproduce the performance profile that exists for Applications.
+## Post-upgrade checks
+1. Compare migrated volumes:
+   - `SELECT COUNT(*) FROM llx_safra_activity;`
+   - `SELECT COUNT(*) FROM llx_safra_activity_line;`
+2. Validate workflow in UI:
+   - create/save/start/complete/cancel/delete.
+3. Validate REST API:
+   - `GET /api/index.php/sfactivities?limit=5`
+   - `GET /api/index.php/sfactivities/{id}?include_lines=1`
+   - `POST /api/index.php/sfactivities/{id}/start`
+   - `POST /api/index.php/sfactivities/{id}/complete`
+   - `POST /api/index.php/sfactivities/{id}/cancel`
+4. Validate stock synchronization (`origintype = 'safra_activity'`).
 
-### `llx_safra_activity_line`
+## Rollback
+1. Restore database backup.
+2. Re-deploy previous Safra package.
+3. Clear Dolibarr cache and retry only after root-cause analysis.
 
-| Column | Type | Requirement | Notes |
-| --- | --- | --- | --- |
-| `rowid` | `integer AUTO_INCREMENT` | Primary key | Mirrors legacy `llx_safra_aplicacao_line.rowid` |
-| `fk_activity` | `integer` | Mandatory parent | Renamed from `fk_aplicacao` |
-| `fk_product` | `integer` | Linked product | Same behaviour |
-| `fk_formulated_product` | `integer` | Optional formulated product | Renamed from `fk_produto_formulado` |
-| `fk_technical_product` | `integer` | Optional technical product | Renamed from `fk_produtotecnico` |
-| `fk_warehouse` | `integer` | Stock location | Renamed from `fk_entrepot` |
-| `label` | `varchar(255)` | Line label | Same |
-| `dose` | `double` | Applied dose | Same |
-| `dose_unit` | `varchar(10)` | Unit of measure | Same |
-| `area_ha` | `double` | Area covered | Same |
-| `total_qty` | `double` | Calculated quantity | Same |
-| `note` | `text` | Line note | Same |
-| `movement` | `integer` | Stock movement flag | Same default (`1`) |
-| `date_creation` | `datetime` | Creation timestamp | Auto timestamp |
-
-Constraints and indexes are enforced through `sql/llx_safra_activity_line.key.sql` to guarantee referential integrity with the parent Activity table.
-
-## Alias and deprecation strategy
-
-| Legacy element | New alias | Deprecation notes |
-| --- | --- | --- |
-| `llx_safra_aplicacao` table | `llx_safra_activity` | Provide SQL migration (rename + column rename) and create backward-compatible view `llx_safra_aplicacao` pointing to the new table for one release cycle |
-| `llx_safra_aplicacao_line` table | `llx_safra_activity_line` | Same migration approach as the header table |
-| PHP class `Aplicacao` (`class/aplicacao.class.php`) | `SfActivity` (new class) | Introduce new class extending the legacy one, mark `Aplicacao` as deprecated via DocBlock, and add factory returning `SfActivity` |
-| Service locator `FvApplication` | Alias to `SfActivity` service | Maintain old service identifier as alias until Q4/2025 |
-| Language keys `SafraAplicacao*` | `SafraActivity*` | Add new keys while keeping legacy entries mapping to the same strings for compatibility |
-| Hooks and triggers expecting `aplicacao` | Accept both identifiers | Add translation layer in hook dispatcher so modules can register either term |
-
-Timeline:
-
-1. **Release N (current)** – Add aliases and documentation. Keep legacy entry points fully operational.
-2. **Release N+1** – Emit deprecation warnings when legacy classes/functions are used. Update documentation and examples.
-3. **Release N+2** – Remove compatibility view and legacy service names after communicating in release notes.
-
-## Migration and compatibility checklist
-
-### Pre-deployment preparation
-
-1. **Freeze changes** – Enable Dolibarr maintenance mode and coordinate a quiet window so no Aplicação records are created during the upgrade.
-2. **Back up assets** – Capture a full database dump and archive the `documents/` directory to preserve generated PDFs.
-3. **Validate prerequisites** – Confirm the Safra module package contains the SQL migrations `20241005_add_activity_tables.sql` and `20241007_migrate_application_to_activity.sql`.
-
-### Deployment execution
-
-1. Upload the refreshed Safra package and open `custom/safra/upgrade.php` as an administrator.
-2. Review the pre-checks, then trigger the assistant to execute the Activity migration scripts sequentially.
-3. Monitor the on-screen log; resolve any SQL error before leaving maintenance mode.
-
-### Post-deployment validation
-
-1. Compare row counts between `llx_safra_activity` and the legacy Aplicação views to verify parity.
-2. Check that `llx_stock_mouvement.origintype` values now reference `safra_activity`, confirming downstream stock synchronisation.
-3. Call the REST endpoint `GET /api/index.php/sfactivities?limit=5` and ensure payloads include both modern (`activity_type`) and legacy (`operation_type`) keys.
-
-### Compatibility watchlist
-
-1. Audit Dolibarr logs for trigger emissions (`SAFRA_ACTIVITY_*`) during the first usage hours; integrators should not observe duplicate events.
-2. Notify partners that the compatibility views `llx_safra_aplicacao` and `llx_safra_aplicacao_line` are read-only shims slated for removal after two releases.
-3. Track custom SQL reports still bound to the legacy views and plan their refactoring before the deprecation window closes.
-
-### Rollback drill
-
-1. If parity checks fail, restore the database backup captured pre-upgrade.
-2. Re-deploy the previous Safra package and clear Dolibarr caches.
-3. Reopen access only after listing Aplicação records and invoking the legacy REST alias (`GET /api/index.php/aplicacoes`) to confirm normal behaviour.
-
-Following this expanded checklist keeps migration, compatibility and rollback actions in sync across operations, QA and integration partners.
-
-## Integrator communication pack
-
-- **REST endpoints** – The canonical resource is `/sfactivities` while `/aplicacoes` remains an alias; the API automatically mirrors key fields so payloads expose both legacy and modern attribute names (`activity_type`, `date_activity`, `mixture_note`).
-- **Workflow triggers** – Activity lifecycle events emit `SAFRA_ACTIVITY_CREATE`, `SAFRA_ACTIVITY_VALIDATE`, `SAFRA_ACTIVITY_START`, `SAFRA_ACTIVITY_DONE`, `SAFRA_ACTIVITY_CANCEL` and `SAFRA_ACTIVITY_DELETE`, replacing the former `MYOBJECT_*` hook usage.
-- **Compatibility views** – `llx_safra_aplicacao` and `llx_safra_aplicacao_line` now wrap the Activity tables, allowing SQL consumers to transition gradually while new development targets the renamed schema directly.
-- **Rollback expectations** – Restoring from backup reverts tables and constants; after rollback, purge the compatibility views introduced by the migration scripts to avoid stale aliases lingering in older deployments.
+## Integrator notes
+- Official REST resource: `/sfactivities`.
+- Legacy `/aplicacoes` alias is removed.
+- Legacy SQL/report dependencies on `safra_aplicacao*` must be updated to `safra_activity*`.

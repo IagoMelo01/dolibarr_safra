@@ -29,7 +29,6 @@ class FvActivity extends CommonObject
     private const TASK_STATUS_CANCELED = 9;
 
     private const TASK_LINK_FIELD = 'fk_activity';
-    private const TASK_LINK_FIELD_LEGACY = 'fk_aplicacao';
 
     /** @var array<string, string[]> */
     protected static $taskLinkColumnsCache = array();
@@ -650,7 +649,7 @@ class FvActivity extends CommonObject
         }
 
         $columns = array();
-        foreach (array(self::TASK_LINK_FIELD, self::TASK_LINK_FIELD_LEGACY) as $column) {
+        foreach (array(self::TASK_LINK_FIELD) as $column) {
             if ($this->hasTaskExtrafieldColumn($column)) {
                 $columns[] = $column;
             }
@@ -1087,7 +1086,7 @@ class FvActivity extends CommonObject
     protected static function findActivityIdByTaskExtrafield($db, $taskId)
     {
         $taskId = (int) $taskId;
-        foreach (array(self::TASK_LINK_FIELD, self::TASK_LINK_FIELD_LEGACY) as $column) {
+        foreach (array(self::TASK_LINK_FIELD) as $column) {
             $sql = 'SELECT a.rowid'
                 . ' FROM ' . MAIN_DB_PREFIX . 'safra_activity as a'
                 . ' INNER JOIN ' . MAIN_DB_PREFIX . 'projet_task_extrafields as tef ON tef.' . $column . ' = a.rowid'

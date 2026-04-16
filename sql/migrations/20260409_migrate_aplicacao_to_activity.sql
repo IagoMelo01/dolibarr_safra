@@ -1,6 +1,6 @@
--- Canonical Safra Activity schema for MySQL/MariaDB.
+-- Ensure canonical Safra Activity tables exist before legacy migration.
 
-CREATE TABLE __MAIN_DB_PREFIX__safra_activity (
+CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
     entity INTEGER NOT NULL DEFAULT 1,
     ref VARCHAR(128) NOT NULL,
@@ -25,16 +25,10 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity (
     INDEX idx_safra_activity_fk_thirdparty (fk_thirdparty),
     INDEX idx_safra_activity_fk_fieldplot (fk_fieldplot),
     INDEX idx_safra_activity_status (status),
-    INDEX idx_safra_activity_type (type),
-    CONSTRAINT llx_safra_activity_fk_project FOREIGN KEY (fk_project) REFERENCES __MAIN_DB_PREFIX__projet(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_fk_task FOREIGN KEY (fk_task) REFERENCES __MAIN_DB_PREFIX__projet_task(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_fk_thirdparty FOREIGN KEY (fk_thirdparty) REFERENCES __MAIN_DB_PREFIX__societe(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_fk_fieldplot FOREIGN KEY (fk_fieldplot) REFERENCES __MAIN_DB_PREFIX__safra_talhao(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES __MAIN_DB_PREFIX__user(rowid),
-    CONSTRAINT llx_safra_activity_fk_user_modif FOREIGN KEY (fk_user_modif) REFERENCES __MAIN_DB_PREFIX__user(rowid) ON DELETE SET NULL
+    INDEX idx_safra_activity_type (type)
 ) ENGINE=innodb;
 
-CREATE TABLE __MAIN_DB_PREFIX__safra_activity_line (
+CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_line (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
     entity INTEGER NOT NULL DEFAULT 1,
     fk_activity INTEGER NOT NULL,
@@ -52,15 +46,10 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_line (
     INDEX idx_safra_activity_line_entity (entity),
     INDEX idx_safra_activity_line_fk_activity (fk_activity),
     INDEX idx_safra_activity_line_fk_product (fk_product),
-    INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse),
-    CONSTRAINT llx_safra_activity_line_fk_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity(rowid) ON DELETE CASCADE,
-    CONSTRAINT llx_safra_activity_line_fk_product FOREIGN KEY (fk_product) REFERENCES __MAIN_DB_PREFIX__product(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_line_fk_warehouse FOREIGN KEY (fk_warehouse) REFERENCES __MAIN_DB_PREFIX__entrepot(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_line_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES __MAIN_DB_PREFIX__user(rowid) ON DELETE SET NULL,
-    CONSTRAINT llx_safra_activity_line_fk_user_modif FOREIGN KEY (fk_user_modif) REFERENCES __MAIN_DB_PREFIX__user(rowid) ON DELETE SET NULL
+    INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse)
 ) ENGINE=innodb;
 
-CREATE TABLE __MAIN_DB_PREFIX__safra_activity_machine (
+CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_machine (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
     entity INTEGER NOT NULL DEFAULT 1,
     fk_activity INTEGER NOT NULL,
@@ -70,11 +59,10 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_machine (
     INDEX idx_safra_activity_machine_entity (entity),
     INDEX idx_safra_activity_machine_fk_activity (fk_activity),
     INDEX idx_safra_activity_machine_fk_machine (fk_machine),
-    UNIQUE INDEX uk_safra_activity_machine_unique (entity, fk_activity, fk_machine),
-    CONSTRAINT llx_safra_activity_machine_fk_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity(rowid) ON DELETE CASCADE
+    UNIQUE INDEX uk_safra_activity_machine_unique (entity, fk_activity, fk_machine)
 ) ENGINE=innodb;
 
-CREATE TABLE __MAIN_DB_PREFIX__safra_activity_implement (
+CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_implement (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
     entity INTEGER NOT NULL DEFAULT 1,
     fk_activity INTEGER NOT NULL,
@@ -84,11 +72,10 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_implement (
     INDEX idx_safra_activity_implement_entity (entity),
     INDEX idx_safra_activity_implement_fk_activity (fk_activity),
     INDEX idx_safra_activity_implement_fk_implement (fk_implement),
-    UNIQUE INDEX uk_safra_activity_implement_unique (entity, fk_activity, fk_implement),
-    CONSTRAINT llx_safra_activity_implement_fk_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity(rowid) ON DELETE CASCADE
+    UNIQUE INDEX uk_safra_activity_implement_unique (entity, fk_activity, fk_implement)
 ) ENGINE=innodb;
 
-CREATE TABLE __MAIN_DB_PREFIX__safra_activity_user (
+CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_user (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
     entity INTEGER NOT NULL DEFAULT 1,
     fk_activity INTEGER NOT NULL,
@@ -98,7 +85,5 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_user (
     INDEX idx_safra_activity_user_entity (entity),
     INDEX idx_safra_activity_user_fk_activity (fk_activity),
     INDEX idx_safra_activity_user_fk_user (fk_user),
-    UNIQUE INDEX uk_safra_activity_user_unique (entity, fk_activity, fk_user),
-    CONSTRAINT llx_safra_activity_user_fk_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity(rowid) ON DELETE CASCADE,
-    CONSTRAINT llx_safra_activity_user_fk_user FOREIGN KEY (fk_user) REFERENCES __MAIN_DB_PREFIX__user(rowid) ON DELETE CASCADE
+    UNIQUE INDEX uk_safra_activity_user_unique (entity, fk_activity, fk_user)
 ) ENGINE=innodb;

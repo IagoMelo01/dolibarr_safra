@@ -131,7 +131,6 @@ foreach ($list_municipios as $municipio) {
 }
 
 // Verificar o conteúdo do array para depuração
-// print_r($array_municipios); // Deve exibir todos os municípios corretamente
 
 $item = $formSetup->newItem('SAFRA_MUNICIPIO');
 $item->setAsSelect($array_municipios);
