@@ -1,13 +1,12 @@
 <?php
-/* Return talhão linked to a project (via extrafields) as JSON */
+/* Return Safra context linked to a project/task as JSON. */
 
 $res = 0;
 if (!$res && !empty($_SERVER['CONTEXT_DOCUMENT_ROOT'])) {
-    $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'].'/main.inc.php';
+    $res = @include $_SERVER['CONTEXT_DOCUMENT_ROOT'] . '/main.inc.php';
 }
-// From htdocs/custom/safra/ajax -> htdocs/main.inc.php
-if (!$res && file_exists(__DIR__.'/../../../main.inc.php')) {
-    $res = @include __DIR__.'/../../../main.inc.php';
+if (!$res && file_exists(__DIR__ . '/../../../main.inc.php')) {
+    $res = @include __DIR__ . '/../../../main.inc.php';
 }
 if (!$res) {
     http_response_code(500);
@@ -22,87 +21,160 @@ if (!isModEnabled('safra')) {
 
 header('Content-Type: application/json; charset=utf-8');
 
+function safraAjaxColumnExists(DoliDB $db, $tablename, $columnname)
+{
+    static $cache = array();
+
+    $key = $tablename . ':' . $columnname;
+    if (isset($cache[$key])) {
+        return $cache[$key];
+    }
+
+    $sql = 'SHOW COLUMNS FROM ' . $db->prefix() . $db->escape($tablename) . " LIKE '" . $db->escape($columnname) . "'";
+    $res = $db->query($sql);
+    $cache[$key] = false;
+    if ($res) {
+        $cache[$key] = ((int) $db->num_rows($res) > 0);
+        $db->free($res);
+    }
+
+    return $cache[$key];
+}
+
+function safraAjaxTaskProjectId(DoliDB $db, $taskId)
+{
+    $taskId = (int) $taskId;
+    if ($taskId <= 0) {
+        return 0;
+    }
+
+    $projectColumn = safraAjaxColumnExists($db, 'projet_task', 'fk_projet') ? 'fk_projet' : (safraAjaxColumnExists($db, 'projet_task', 'fk_project') ? 'fk_project' : '');
+    if ($projectColumn === '') {
+        return 0;
+    }
+
+    $sql = 'SELECT ' . $projectColumn . ' as project_id FROM ' . $db->prefix() . 'projet_task WHERE rowid = ' . $taskId . ' LIMIT 1';
+    $res = $db->query($sql);
+    if (!$res) {
+        return 0;
+    }
+
+    $obj = $db->fetch_object($res);
+    $db->free($res);
+
+    return $obj ? (int) $obj->project_id : 0;
+}
+
+function safraAjaxExtraValue(DoliDB $db, $table, $objectId, $columns)
+{
+    $objectId = (int) $objectId;
+    if ($objectId <= 0) {
+        return 0;
+    }
+
+    foreach ((array) $columns as $column) {
+        if (!safraAjaxColumnExists($db, $table, $column)) {
+            continue;
+        }
+
+        $sql = 'SELECT ' . $column . ' as value FROM ' . $db->prefix() . $table . ' WHERE fk_object = ' . $objectId . ' LIMIT 1';
+        $res = $db->query($sql);
+        if (!$res) {
+            continue;
+        }
+
+        $obj = $db->fetch_object($res);
+        $db->free($res);
+        if ($obj && (int) $obj->value > 0) {
+            return (int) $obj->value;
+        }
+    }
+
+    return 0;
+}
+
+function safraAjaxReference(DoliDB $db, $table, $id, $extraColumns = array())
+{
+    $id = (int) $id;
+    if ($id <= 0 || !safraAjaxColumnExists($db, $table, 'rowid')) {
+        return null;
+    }
+
+    $columns = array('rowid');
+    foreach (array('ref', 'label') as $column) {
+        if (safraAjaxColumnExists($db, $table, $column)) {
+            $columns[] = $column;
+        }
+    }
+    foreach ((array) $extraColumns as $column) {
+        if (safraAjaxColumnExists($db, $table, $column)) {
+            $columns[] = $column;
+        }
+    }
+
+    $sql = 'SELECT ' . implode(', ', array_unique($columns)) . ' FROM ' . $db->prefix() . $table . ' WHERE rowid = ' . $id . ' LIMIT 1';
+    $res = $db->query($sql);
+    if (!$res) {
+        return null;
+    }
+
+    $obj = $db->fetch_object($res);
+    $db->free($res);
+    if (!$obj) {
+        return null;
+    }
+
+    $ref = isset($obj->ref) ? trim((string) $obj->ref) : '';
+    $label = isset($obj->label) ? trim((string) $obj->label) : '';
+    $display = trim(($ref !== '' ? $ref . ' - ' : '') . $label);
+    if ($display === '') {
+        $display = '#' . $id;
+    }
+
+    $data = array(
+        'id' => $id,
+        'ref' => $ref,
+        'label' => $label,
+        'display' => $display,
+    );
+    foreach ((array) $extraColumns as $column) {
+        $data[$column] = isset($obj->{$column}) ? $obj->{$column} : null;
+    }
+
+    return $data;
+}
+
 $projectId = (int) GETPOST('id', 'int');
+$taskId = (int) GETPOST('task_id', 'int');
+if ($projectId <= 0 && $taskId > 0) {
+    $projectId = safraAjaxTaskProjectId($db, $taskId);
+}
 if ($projectId <= 0) {
     echo json_encode(array('success' => false, 'error' => 'bad_id'));
     exit;
 }
 
-dol_include_once('/projet/class/project.class.php');
+$talhaoId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_talhao', 'options_fk_talhao'));
+$culturaId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_cultura', 'options_fk_cultura'));
+$cultivarId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_cultivar', 'options_fk_cultivar'));
 
-$project = new Project($db);
-$project->fetch($projectId);
-if (method_exists($project, 'fetch_optionals')) {
-    $project->fetch_optionals($project->id, $project->table_element);
+$talhao = $talhaoId > 0 ? safraAjaxReference($db, 'safra_talhao', $talhaoId, array('area')) : null;
+$cultura = $culturaId > 0 ? safraAjaxReference($db, 'safra_cultura', $culturaId) : null;
+$cultivar = $cultivarId > 0 ? safraAjaxReference($db, 'safra_cultivar', $cultivarId, array('cultivar')) : null;
+if ($cultivar && empty($cultivar['label']) && !empty($cultivar['cultivar'])) {
+    $cultivar['label'] = $cultivar['cultivar'];
+    $cultivar['display'] = trim(($cultivar['ref'] !== '' ? $cultivar['ref'] . ' - ' : '') . $cultivar['label']);
 }
 
-$talhaoId = 0;
-$extrafieldKeys = array('options_fk_talhao', 'fk_talhao');
-foreach ($extrafieldKeys as $key) {
-    if (!empty($project->array_options[$key])) {
-        $talhaoId = (int) $project->array_options[$key];
-        break;
-    }
-}
-
-// Fallback to direct column check for older data
-if ($talhaoId === 0) {
-    // Detect column name in extrafields
-    function safraAjaxColumnExists(DoliDB $db, $tablename, $columnname)
-    {
-        $sql = "SHOW COLUMNS FROM " . $db->prefix() . $tablename . " LIKE '" . $db->escape($columnname) . "'";
-        $res = $db->query($sql);
-        if ($res) {
-            $ok = ($db->num_rows($res) > 0);
-            $db->free($res);
-            return $ok;
-        }
-        return false;
-    }
-
-    $col = '';
-    if (safraAjaxColumnExists($db, 'projet_extrafields', 'fk_talhao')) {
-        $col = 'fk_talhao';
-    } elseif (safraAjaxColumnExists($db, 'projet_extrafields', 'options_fk_talhao')) {
-        $col = 'options_fk_talhao';
-    }
-
-    if ($col !== '') {
-        $sql = 'SELECT ' . $col . ' as talhao_id FROM ' . $db->prefix() . 'projet_extrafields WHERE fk_object=' . (int) $projectId . ' LIMIT 1';
-        $resql = $db->query($sql);
-        if ($resql) {
-            $obj = $db->fetch_object($resql);
-            if ($obj) {
-                $talhaoId = (int) $obj->talhao_id;
-            }
-            $db->free($resql);
-        }
-    }
-}
-
-$talhao = null;
-if ($talhaoId > 0) {
-    $sqlTalhao = 'SELECT t.rowid, t.ref, t.label, t.area, t.municipio, m.label as municipio_label'
-        .' FROM '.$db->prefix().'safra_talhao as t'
-        .' LEFT JOIN '.$db->prefix().'safra_municipio as m ON m.rowid=t.municipio'
-        .' WHERE t.rowid='.(int) $talhaoId.' LIMIT 1';
-    $rst = $db->query($sqlTalhao);
-    if ($rst) {
-        $o = $db->fetch_object($rst);
-        if ($o) {
-            $talhao = array(
-                'id' => (int) $o->rowid,
-                'ref' => $o->ref,
-                'label' => $o->label,
-                'area' => (float) $o->area,
-                'municipio' => $o->municipio_label,
-                'url' => dol_buildpath('/safra/talhao_card.php', 1).'?id='.(int) $o->rowid,
-            );
-        }
-        $db->free($rst);
-    }
-}
-
-$success = ($talhaoId > 0 && !empty($talhao));
-echo json_encode(array('success' => $success, 'talhao_id' => $talhaoId, 'talhao' => $talhao));
+echo json_encode(array(
+    'success' => !empty($talhao) || !empty($cultura) || !empty($cultivar),
+    'project_id' => $projectId,
+    'task_id' => $taskId,
+    'talhao_id' => $talhaoId,
+    'cultura_id' => $culturaId,
+    'cultivar_id' => $cultivarId,
+    'talhao' => $talhao,
+    'cultura' => $cultura,
+    'cultivar' => $cultivar,
+));
 exit;

@@ -1,6 +1,6 @@
 ﻿# AGENTS Guide for Safra Module
 
-Last updated: 2026-04-09
+Last updated: 2026-05-04
 Repository path: `C:\wamp64\www\dolibarr_23\htdocs\custom\safra`
 Default branch: `main`
 Current snapshot size (excluding `.git`): `54` directories and `479` files.
@@ -64,7 +64,7 @@ Managed in `admin/setup.php`:
   - Helper libs in `lib/`
   - SQL tables and extrafields in `sql/`
 
-### 2) Activity workflow (active strategic core)
+### 2) Activity workflow (active strategic core, rebuilt 2026-05-04)
 - Main classes:
   - `class/FvActivity.class.php`
   - `class/FvActivityLine.class.php`
@@ -73,13 +73,18 @@ Managed in `admin/setup.php`:
   - `activity/activity_list.php`
   - `activity/activity_card.php`
 - Status methods in `FvActivity`:
-  - `start()`, `complete()`, `cancel()`
+  - `start()`, `complete()`, `cancel()`, `reopen()`
 - Trigger events emitted by `FvActivity` include:
   - `SAFRA_ACTIVITY_CREATE`, `SAFRA_ACTIVITY_START`, `SAFRA_ACTIVITY_DONE`, `SAFRA_ACTIVITY_CLOSE`, `SAFRA_ACTIVITY_CANCEL`, `SAFRA_ACTIVITY_DELETE`
 - Project task synchronization:
   - `core/triggers/interface_modSafra_ActivityTrigger.class.php`
 - Stock movement integration:
-  - Consumption/reversal in `ActivityStockService` using Dolibarr `MouvementStock`.
+  - Completion posts consumption/return movements from activity input lines through `ActivityStockService` using Dolibarr `MouvementStock`.
+  - Cancellation reverses posted movements.
+- Resource links:
+  - employees/users in `safra_activity_user`
+  - vehicles in `safra_activity_vehicle` linked by id/class name `Veiculo`
+  - implements in `safra_activity_implement` linked by id/class name `Implemento`
 
 ### 3) Satellite monitoring
 - Unified page: `satellite_view.php` with per-index behavior and weekly period filters.
@@ -150,16 +155,15 @@ Managed in `admin/setup.php`:
   - Unified satellite view + overall crop health map and charting updates.
 - 2026-03-20:
   - latest visible commit updates activity card/domain internals.
+- 2026-05-04:
+  - Activity workflow rebuilt from scratch for grain operations:
+    - planning vs execution fields, input stock consumption, employee hours, vehicle and implement links.
+    - destructive rebuild migration `sql/migrations/20260504_rebuild_activity_schema.sql`.
 
 ## Known Gaps, Risks, and Technical Debt
 - Naming transition not complete:
   - legacy `Aplicacao` naming still appears in menu labels/permissions/dashboard counts.
-- Documentation vs implementation mismatch:
-  - docs mention `/sfactivities` REST resource; no active API class implementing it was found in this module tree.
-- Upgrade script drift:
-  - `upgrade.php` references migration files `20241005_*` and `20241007_*` that are not present in `sql/migrations/` (only `20241106_reset_activity_schema.sql` exists).
-- Dashboard legacy dependency:
-  - `safraindex.php` still counts `safra_aplicacao` table.
+- Historical migration files from older Activity attempts remain under `sql/migrations/`; current rebuild uses `20260504_rebuild_activity_schema.sql`.
 - Sensitive/runtime artifacts tracked in repo snapshot:
   - `json/cache/token.json` exists and contains a bearer token payload.
 - Tests/doc drift:
@@ -467,6 +471,8 @@ Managed in `admin/setup.php`:
 |   |   +-- produtos.json
 |   +-- migrations/
 |   |   +-- 20241106_reset_activity_schema.sql
+|   |   +-- 20260409_migrate_aplicacao_to_activity.sql
+|   |   +-- 20260504_rebuild_activity_schema.sql
 |   +-- mysql/
 |   |   +-- activity.sql
 |   +-- data_1.sql
@@ -477,8 +483,8 @@ Managed in `admin/setup.php`:
 |   +-- llx_safra_activity_extrafields.sql
 |   +-- llx_safra_activity_implement.sql
 |   +-- llx_safra_activity_line.sql
-|   +-- llx_safra_activity_machine.sql
 |   +-- llx_safra_activity_user.sql
+|   +-- llx_safra_activity_vehicle.sql
 |   +-- llx_safra_analisesolo.key.sql
 |   +-- llx_safra_analisesolo.sql
 |   +-- llx_safra_analisesolo_extrafields.key.sql

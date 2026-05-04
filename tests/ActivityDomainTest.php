@@ -16,13 +16,16 @@ $assert(FvActivity::normalizeType('Fertilization') === FvActivity::TYPE_FERTILIZ
 $assert(FvActivity::normalizeStatus(9) === FvActivity::STATUS_CANCELED, 'normalizeStatus(9) must map to canceled');
 $assert(FvActivity::mapTaskToActivityStatus(3, 100) === FvActivity::STATUS_COMPLETED, 'Closed task must map to completed');
 $assert(FvActivity::mapTaskToActivityStatus(2, 40) === FvActivity::STATUS_IN_PROGRESS, 'Ongoing task must map to in-progress');
+$assert(FvActivity::normalizeStatus('planned') === FvActivity::STATUS_PLANNED, 'normalizeStatus(planned) failed');
 
 $statusOptions = FvActivity::getStatusOptions();
 $assert(isset($statusOptions[FvActivity::STATUS_DRAFT]), 'Draft status option missing');
+$assert(isset($statusOptions[FvActivity::STATUS_PLANNED]), 'Planned status option missing');
 $assert(isset($statusOptions[FvActivity::STATUS_IN_PROGRESS]), 'In progress status option missing');
 
 $line = new FvActivityLine($db);
 $assert(isset($line->fields['fk_activity']), 'Activity line field fk_activity missing');
+$assert(isset($line->fields['qty_done']), 'Activity line field qty_done missing');
 $assert(isset($line->fields['total']), 'Activity line field total missing');
 $assert(isset($line->fields['movement_type']), 'Activity line field movement_type missing');
 

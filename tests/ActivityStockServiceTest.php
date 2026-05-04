@@ -50,11 +50,14 @@ $user = new User(1);
 
 $createResult = $service->createConsumptionMovements($activity, $user);
 $assert($createResult === 1, 'createConsumptionMovements should return success');
-$assert(count(MouvementStock::$movements) === 1, 'Only consume lines must generate stock movement');
+$assert(count(MouvementStock::$movements) === 2, 'Consume and return lines must generate stock movements');
 
 $firstMovement = array_values(MouvementStock::$movements)[0];
 $assert((int) $firstMovement['fk_product'] === 21, 'Movement product mismatch');
 $assert((int) $firstMovement['fk_warehouse'] === 2, 'Movement warehouse mismatch');
+$assert($firstMovement['movement'] === 'consume', 'Consume line must create delivery movement');
+$secondMovement = array_values(MouvementStock::$movements)[1];
+$assert($secondMovement['movement'] === 'return', 'Return line must create reception movement');
 
 $activity->setHasMovements(true);
 $duplicateResult = $service->createConsumptionMovements($activity, $user, false);
@@ -69,9 +72,9 @@ $db->addMockQuery(
 
 $revertResult = $service->revertConsumptionMovements($activity, $user);
 $assert($revertResult === 1, 'revertConsumptionMovements should return success');
-$assert(count(MouvementStock::$movements) === 2, 'Revert should create one reception movement');
+$assert(count(MouvementStock::$movements) === 3, 'Revert should create one reception movement');
 
-$lastMovement = array_values(MouvementStock::$movements)[1];
+$lastMovement = array_values(MouvementStock::$movements)[2];
 $assert($lastMovement['movement'] === 'return', 'Revert must create reception movement');
 
 return true;

@@ -1,4 +1,16 @@
--- Canonical Safra agricultural activity schema for MySQL/MariaDB.
+-- Rebuild Safra agricultural activity schema from scratch.
+-- This migration intentionally discards previous safra_activity data.
+
+SET FOREIGN_KEY_CHECKS=0;
+
+DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity_implement;
+DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity_vehicle;
+DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity_machine;
+DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity_user;
+DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity_line;
+DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity;
+
+SET FOREIGN_KEY_CHECKS=1;
 
 CREATE TABLE __MAIN_DB_PREFIX__safra_activity (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,

@@ -1,9 +1,13 @@
--- N:N relation between activities and users/employees.
+-- Links between agricultural activities and employees/users.
 CREATE TABLE llx_safra_activity_user (
     rowid INTEGER AUTO_INCREMENT PRIMARY KEY NOT NULL,
     entity INTEGER NOT NULL DEFAULT 1,
     fk_activity INTEGER NOT NULL,
     fk_user INTEGER NOT NULL,
+    role VARCHAR(64),
+    planned_hours DOUBLE(24,8) DEFAULT 0,
+    done_hours DOUBLE(24,8) DEFAULT 0,
+    note TEXT,
     date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_safra_activity_user_entity (entity),

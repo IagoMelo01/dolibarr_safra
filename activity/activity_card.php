@@ -1,6 +1,6 @@
 <?php
 /*
- * Activity card for Safra module.
+ * Agricultural activity card for Safra.
  */
 
 $res = 0;
@@ -32,40 +32,29 @@ if (!$res) {
 }
 
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
-require_once DOL_DOCUMENT_ROOT . '/core/class/html.formprojet.class.php';
-require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
-require_once DOL_DOCUMENT_ROOT . '/product/class/html.formproduct.class.php';
-require_once DOL_DOCUMENT_ROOT . '/user/class/user.class.php';
-
-$veiculoClassFile = DOL_DOCUMENT_ROOT . '/custom/frota/class/veiculo.class.php';
-if (file_exists($veiculoClassFile)) {
-    require_once $veiculoClassFile;
-}
-
-$implementoClassFile = DOL_DOCUMENT_ROOT . '/custom/frota/class/implemento.class.php';
-if (file_exists($implementoClassFile)) {
-    require_once $implementoClassFile;
-}
 dol_include_once('/safra/class/FvActivity.class.php');
 dol_include_once('/safra/class/FvActivityLine.class.php');
-dol_include_once('/safra/class/talhao.class.php');
-dol_include_once('/projet/class/task.class.php');
 
 global $db, $langs, $user, $conf;
 
-$langs->loadLangs(array('safra@safra', 'projects', 'stocks', 'companies', 'users'));
+$langs->loadLangs(array('safra@safra', 'projects', 'stocks', 'users', 'products'));
 
 $action = GETPOST('action', 'aZ09');
 $id = GETPOSTINT('id');
 
 $form = new Form($db);
-$formproject = new FormProjets($db);
-$formproduct = new FormProduct($db);
-$activityTypes = FvActivity::getTypeOptions($langs);
-
 $activity = new FvActivity($db);
 if ($id > 0) {
     $activity->fetch($id);
+}
+
+if ($action === 'create') {
+    $activity->fk_project = GETPOSTINT('fk_project');
+    $activity->fk_task = GETPOSTINT('fk_task');
+    $activity->fk_fieldplot = GETPOSTINT('fk_talhao') ?: GETPOSTINT('fk_fieldplot');
+    $activity->status = FvActivity::STATUS_PLANNED;
+    $activity->priority = FvActivity::PRIORITY_NORMAL;
+    $activity->type = FvActivity::TYPE_PLANTING;
 }
 
 $permissiontoread = $user->rights->safra->SafraActivity->read ?? 0;
@@ -76,248 +65,383 @@ if (!$permissiontoread) {
     accessforbidden();
 }
 
-$mutatingActions = array('save', 'start', 'complete', 'cancel', 'delete');
+$mutatingActions = array('save', 'save_complete', 'start', 'complete', 'cancel', 'reopen', 'delete');
 if (in_array($action, $mutatingActions, true)) {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         accessforbidden();
     }
-
     $token = GETPOST('token', 'alphanohtml');
     if (function_exists('checkToken') && !checkToken($token)) {
         accessforbidden('Invalid security token.');
     }
 }
-
-if (in_array($action, array('save', 'start', 'complete', 'cancel'), true) && !$permissiontowrite) {
+if (in_array($action, array('save', 'save_complete', 'start', 'complete', 'cancel', 'reopen'), true) && !$permissiontowrite) {
     accessforbidden();
 }
-
 if ($action === 'delete' && !$permissiontodelete) {
     accessforbidden();
 }
 
-$areaPercentage = price2num(GETPOST('area_percentage', 'alpha'), 'MT');
-
-// Helpers
-function safra_load_options($db, $table, $labelField)
+/**
+ * Load id => label options from a table.
+ *
+ * @param DoliDB $db
+ * @param string $table
+ * @param string $labelSql
+ * @param string $where
+ * @return array
+ */
+function safra_activity_load_options($db, $table, $labelSql, $where = '')
 {
     global $conf;
 
     $options = array();
-    $sql = 'SELECT rowid, ' . $labelField . ' as label FROM ' . MAIN_DB_PREFIX . $db->escape($table)
-        . ' WHERE entity IN (0, ' . ((int) $conf->entity) . ') ORDER BY label';
+    $sql = 'SELECT rowid, ' . $labelSql . ' as label FROM ' . MAIN_DB_PREFIX . $table;
+    if ($where !== '') {
+        $sql .= ' WHERE ' . $where;
+    } else {
+        $sql .= ' WHERE entity IN (0, ' . ((int) $conf->entity) . ')';
+    }
+    $sql .= ' ORDER BY label';
+
     $resql = $db->query($sql);
     if ($resql) {
         while ($obj = $db->fetch_object($resql)) {
-            $options[$obj->rowid] = $obj->label;
+            $label = trim((string) $obj->label);
+            $options[(int) $obj->rowid] = $label !== '' ? $label : '#' . ((int) $obj->rowid);
         }
     }
 
     return $options;
 }
 
-function safra_table_has_column($db, $table, $column)
+function safra_activity_field_label($label, $required = false)
+{
+    global $langs;
+
+    $kind = $required ? 'safra-required' : 'safra-optional';
+    $text = is_object($langs) ? $langs->trans($required ? 'SafraFieldRequired' : 'SafraFieldOptional') : ($required ? 'Required' : 'Optional');
+
+    return '<label>' . dol_escape_htmltag($label) . ' <span class="' . $kind . '">' . $text . '</span></label>';
+}
+
+function safra_activity_table_has_column($db, $table, $column)
 {
     static $cache = array();
 
-    $table = trim((string) $table);
-    $column = trim((string) $column);
-    if ($table === '' || $column === '') {
-        return false;
+    $key = $table . ':' . $column;
+    if (isset($cache[$key])) {
+        return $cache[$key];
     }
 
-    $cacheKey = $table . '::' . $column;
-    if (isset($cache[$cacheKey])) {
-        return $cache[$cacheKey];
-    }
-
-    $sql = 'SHOW COLUMNS FROM ' . MAIN_DB_PREFIX . $db->escape($table)
-        . " LIKE '" . $db->escape($column) . "'";
+    $sql = 'SHOW COLUMNS FROM ' . MAIN_DB_PREFIX . $db->escape($table) . " LIKE '" . $db->escape($column) . "'";
     $resql = $db->query($sql);
-    $exists = ($resql && ((int) $db->num_rows($resql) > 0));
+    $cache[$key] = ($resql && $db->fetch_object($resql));
 
-    $cache[$cacheKey] = $exists;
-
-    return $exists;
+    return $cache[$key];
 }
 
-function safra_pick_label_column($db, $table, $candidates = array(), $fallback = 'rowid')
+function safra_activity_get_task_project_id($db, $taskId)
 {
-    foreach ($candidates as $column) {
-        if (safra_table_has_column($db, $table, $column)) {
-            return $column;
+    $taskId = (int) $taskId;
+    if ($taskId <= 0) {
+        return 0;
+    }
+
+    $projectColumn = safra_activity_table_has_column($db, 'projet_task', 'fk_projet') ? 'fk_projet' : (safra_activity_table_has_column($db, 'projet_task', 'fk_project') ? 'fk_project' : '');
+    if ($projectColumn === '') {
+        return 0;
+    }
+
+    $sql = 'SELECT ' . $projectColumn . ' as project_id FROM ' . MAIN_DB_PREFIX . 'projet_task WHERE rowid = ' . $taskId . ' LIMIT 1';
+    $resql = $db->query($sql);
+    if (!$resql) {
+        return 0;
+    }
+
+    $obj = $db->fetch_object($resql);
+
+    return $obj ? (int) $obj->project_id : 0;
+}
+
+function safra_activity_get_extrafield_value($db, $table, $objectId, $keys)
+{
+    $objectId = (int) $objectId;
+    if ($objectId <= 0) {
+        return 0;
+    }
+
+    foreach ((array) $keys as $key) {
+        if (!safra_activity_table_has_column($db, $table, $key)) {
+            continue;
+        }
+
+        $sql = 'SELECT ' . $key . ' as value FROM ' . MAIN_DB_PREFIX . $table . ' WHERE fk_object = ' . $objectId . ' LIMIT 1';
+        $resql = $db->query($sql);
+        if (!$resql) {
+            continue;
+        }
+
+        $obj = $db->fetch_object($resql);
+        if ($obj && (int) $obj->value > 0) {
+            return (int) $obj->value;
         }
     }
 
-    return $fallback;
+    return 0;
 }
 
-function safra_load_from_class($db, $className, $labelFields = array())
+function safra_activity_fetch_reference($db, $table, $id, $extraFields = array())
 {
-    $options = array();
-
-    if (!class_exists($className)) {
-        return $options;
-    }
-
-    $object = new $className($db);
-    if (method_exists($object, 'fetchAll')) {
-        $records = $object->fetchAll('', '', 0, 0, array('customsql' => '1=1'));
-        if (is_array($records)) {
-            foreach ($records as $record) {
-                $pieces = array();
-                foreach ($labelFields as $field) {
-                    if (!empty($record->$field)) {
-                        $pieces[] = $record->$field;
-                    }
-                }
-                $label = implode(' - ', $pieces);
-                if (!empty($label)) {
-                    $options[$record->id] = $label;
-                }
-            }
-        }
-    }
-
-    return $options;
-}
-
-function safra_project_talhao_option($db, $projectId)
-{
-    if (empty($projectId)) {
+    $id = (int) $id;
+    if ($id <= 0 || !safra_activity_table_has_column($db, $table, 'rowid')) {
         return null;
     }
 
-    $sql = 'SELECT fk_talhao as talhao_id FROM ' . MAIN_DB_PREFIX . 'projet_extrafields WHERE fk_object = ' . ((int) $projectId) . ' LIMIT 1';
+    $columns = array('rowid');
+    foreach (array('ref', 'label') as $column) {
+        if (safra_activity_table_has_column($db, $table, $column)) {
+            $columns[] = $column;
+        }
+    }
+    foreach ((array) $extraFields as $column) {
+        if (safra_activity_table_has_column($db, $table, $column)) {
+            $columns[] = $column;
+        }
+    }
+
+    $sql = 'SELECT ' . implode(', ', array_unique($columns)) . ' FROM ' . MAIN_DB_PREFIX . $table . ' WHERE rowid = ' . $id . ' LIMIT 1';
     $resql = $db->query($sql);
-    if ($resql) {
-        $obj = $db->fetch_object($resql);
-        if (!empty($obj->talhao_id)) {
-            $talhao = new Talhao($db);
-            if ($talhao->fetch((int) $obj->talhao_id) > 0) {
-                $label = trim(($talhao->ref ? $talhao->ref . ' - ' : '') . $talhao->label);
-                return array($talhao->id => $label ?: $talhao->id);
+    if (!$resql) {
+        return null;
+    }
+
+    $obj = $db->fetch_object($resql);
+    if (!$obj) {
+        return null;
+    }
+
+    $ref = isset($obj->ref) ? trim((string) $obj->ref) : '';
+    $label = isset($obj->label) ? trim((string) $obj->label) : '';
+    $display = trim(($ref !== '' ? $ref . ' - ' : '') . $label);
+    if ($display === '') {
+        $display = '#' . $id;
+    }
+
+    $data = array(
+        'id' => $id,
+        'ref' => $ref,
+        'label' => $label,
+        'display' => $display,
+    );
+    foreach ((array) $extraFields as $column) {
+        $data[$column] = isset($obj->{$column}) ? $obj->{$column} : null;
+    }
+
+    return $data;
+}
+
+function safra_activity_fetch_project_context($db, $projectId, $taskId = 0)
+{
+    $projectId = (int) $projectId;
+    $taskId = (int) $taskId;
+    if ($projectId <= 0 && $taskId > 0) {
+        $projectId = safra_activity_get_task_project_id($db, $taskId);
+    }
+
+    $context = array(
+        'project_id' => $projectId,
+        'task_id' => $taskId,
+        'talhao' => null,
+        'cultura' => null,
+        'cultivar' => null,
+    );
+    if ($projectId <= 0) {
+        return $context;
+    }
+
+    $talhaoId = safra_activity_get_extrafield_value($db, 'projet_extrafields', $projectId, array('fk_talhao', 'options_fk_talhao'));
+    $culturaId = safra_activity_get_extrafield_value($db, 'projet_extrafields', $projectId, array('fk_cultura', 'options_fk_cultura'));
+    $cultivarId = safra_activity_get_extrafield_value($db, 'projet_extrafields', $projectId, array('fk_cultivar', 'options_fk_cultivar'));
+
+    if ($talhaoId > 0) {
+        $context['talhao'] = safra_activity_fetch_reference($db, 'safra_talhao', $talhaoId, array('area'));
+    }
+    if ($culturaId > 0) {
+        $context['cultura'] = safra_activity_fetch_reference($db, 'safra_cultura', $culturaId);
+    }
+    if ($cultivarId > 0) {
+        $context['cultivar'] = safra_activity_fetch_reference($db, 'safra_cultivar', $cultivarId, array('cultivar'));
+        if ($context['cultivar'] && empty($context['cultivar']['label']) && !empty($context['cultivar']['cultivar'])) {
+            $context['cultivar']['label'] = $context['cultivar']['cultivar'];
+            $context['cultivar']['display'] = trim(($context['cultivar']['ref'] !== '' ? $context['cultivar']['ref'] . ' - ' : '') . $context['cultivar']['label']);
+        }
+    }
+
+    return $context;
+}
+
+function safra_activity_apply_project_context(FvActivity $activity, $context)
+{
+    if (!empty($context['project_id']) && empty($activity->fk_project)) {
+        $activity->fk_project = (int) $context['project_id'];
+    }
+    if (!empty($context['task_id']) && empty($activity->fk_task)) {
+        $activity->fk_task = (int) $context['task_id'];
+    }
+    if (!empty($context['talhao']['id']) && empty($activity->fk_fieldplot)) {
+        $activity->fk_fieldplot = (int) $context['talhao']['id'];
+    }
+    if (!empty($context['talhao']['area']) && price2num($activity->area_planned, 'MT') <= 0) {
+        $activity->area_planned = price2num($context['talhao']['area'], 'MT');
+        if (price2num($activity->area_total, 'MT') <= 0) {
+            $activity->area_total = $activity->area_planned;
+        }
+    }
+    if (!empty($context['cultura']['label']) && trim((string) $activity->crop_name) === '') {
+        $activity->crop_name = $context['cultura']['label'];
+    }
+    if (!empty($context['cultivar']['label']) && trim((string) $activity->cultivar_name) === '') {
+        $activity->cultivar_name = $context['cultivar']['label'];
+    }
+}
+
+function safra_activity_datetime_from_post($name)
+{
+    $value = trim((string) GETPOST($name, 'alphanohtml'));
+    if ($value === '') {
+        return null;
+    }
+
+    $timestamp = strtotime(str_replace('T', ' ', $value));
+
+    return $timestamp ? $timestamp : null;
+}
+
+function safra_activity_datetime_input($value)
+{
+    if (empty($value)) {
+        return '';
+    }
+
+    $timestamp = is_numeric($value) ? (int) $value : strtotime((string) $value);
+    if (!$timestamp) {
+        return '';
+    }
+
+    return date('Y-m-d\TH:i', $timestamp);
+}
+
+function safra_activity_pick($array, $key, $default = '')
+{
+    return isset($array[$key]) ? $array[$key] : $default;
+}
+
+function safra_activity_build_link_rows($idField, $ids, $roles, $plannedHours, $doneHours, $notes)
+{
+    $rows = array();
+    foreach ((array) $ids as $idx => $id) {
+        $id = (int) $id;
+        if ($id <= 0) {
+            continue;
+        }
+        $rows[] = array(
+            $idField => $id,
+            'role' => safra_activity_pick($roles, $idx, ''),
+            'planned_hours' => price2num(safra_activity_pick($plannedHours, $idx, 0), 'MT'),
+            'done_hours' => price2num(safra_activity_pick($doneHours, $idx, 0), 'MT'),
+            'note' => safra_activity_pick($notes, $idx, ''),
+        );
+    }
+
+    return $rows;
+}
+
+function safra_activity_build_asset_rows($idField, $classField, $defaultClass, $ids, $plannedHours, $doneHours, $notes)
+{
+    $rows = array();
+    foreach ((array) $ids as $idx => $id) {
+        $id = (int) $id;
+        if ($id <= 0) {
+            continue;
+        }
+        $rows[] = array(
+            $idField => $id,
+            $classField => $defaultClass,
+            'planned_hours' => price2num(safra_activity_pick($plannedHours, $idx, 0), 'MT'),
+            'done_hours' => price2num(safra_activity_pick($doneHours, $idx, 0), 'MT'),
+            'note' => safra_activity_pick($notes, $idx, ''),
+        );
+    }
+
+    return $rows;
+}
+
+function safra_activity_load_fleet_options($db, $className, $table, $labelColumns)
+{
+    $classFile = DOL_DOCUMENT_ROOT . '/custom/frota/class/' . strtolower($className) . '.class.php';
+    if (file_exists($classFile)) {
+        require_once $classFile;
+    }
+
+    $options = array();
+    if (class_exists($className)) {
+        $object = new $className($db);
+        if (method_exists($object, 'fetchAll')) {
+            $records = $object->fetchAll('', '', 0, 0, array('customsql' => '1=1'));
+            if (is_array($records)) {
+                foreach ($records as $record) {
+                    $parts = array();
+                    foreach ($labelColumns as $field) {
+                        if (!empty($record->{$field})) {
+                            $parts[] = $record->{$field};
+                        }
+                    }
+                    $label = implode(' - ', $parts);
+                    $options[(int) $record->id] = $label !== '' ? $label : '#' . (int) $record->id;
+                }
             }
         }
     }
 
-    return null;
-}
-
-$machines = safra_load_options($db, 'vehicule', 'CONCAT(immatriculation, " - ", label)');
-$implements = $machines;
-
-$machinesFromModule = safra_load_from_class($db, 'Veiculo', array('placa', 'label', 'ref'));
-if (!empty($machinesFromModule)) {
-    $machines = $machinesFromModule;
-}
-
-$implementsFromModule = safra_load_from_class($db, 'Implemento', array('label', 'ref'));
-if (!empty($implementsFromModule)) {
-    $implements = $implementsFromModule;
-}
-
-
-$projectIdForTalhao = $activity->fk_project ?: GETPOSTINT('fk_project');
-$talhaoFromProject = safra_project_talhao_option($db, $projectIdForTalhao);
-$talhaoPlaceholder = $langs->trans('SelectAProjectFirst');
-
-$talhaoDetails = array();
-$sqlTalhaoDetails = 'SELECT t.rowid, t.ref, t.label, t.area, m.label as municipio_label'
-    . ' FROM ' . MAIN_DB_PREFIX . 'safra_talhao as t'
-    . ' LEFT JOIN ' . MAIN_DB_PREFIX . 'safra_municipio as m ON m.rowid = t.municipio';
-$resTalhao = $db->query($sqlTalhaoDetails);
-if ($resTalhao) {
-    while ($obj = $db->fetch_object($resTalhao)) {
-        $talhaoDetails[$obj->rowid] = array(
-            'ref' => $obj->ref,
-            'label' => $obj->label,
-            'area' => price2num($obj->area),
-            'municipio' => $obj->municipio_label,
-        );
+    if (!empty($options)) {
+        return $options;
     }
-}
 
-if ($talhaoFromProject && empty($activity->fk_fieldplot) && $activity->id > 0) {
-    $activity->fk_fieldplot = key($talhaoFromProject);
-}
+    if ($table !== '' && safra_activity_table_has_column($db, $table, 'rowid')) {
+        $firstColumn = safra_activity_table_has_column($db, $table, 'ref') ? 'ref' : 'rowid';
+        $secondColumn = safra_activity_table_has_column($db, $table, 'label') ? 'label' : $firstColumn;
 
-if (!empty($talhaoDetails[$activity->fk_fieldplot]) && empty($activity->area_total)) {
-    $activity->area_total = $talhaoDetails[$activity->fk_fieldplot]['area'];
-}
-
-if (empty($areaPercentage)) {
-    $baseAreaForPercent = (!empty($talhaoDetails[$activity->fk_fieldplot]['area'])) ? price2num($talhaoDetails[$activity->fk_fieldplot]['area'], 'MT') : 0;
-    if ($activity->area_total > 0 && $baseAreaForPercent > 0) {
-        $areaPercentage = min(100, max(0, round(($activity->area_total / $baseAreaForPercent) * 100, 2)));
-    } else {
-        $areaPercentage = 100;
+        return safra_activity_load_options($db, $table, 'CONCAT(' . $firstColumn . ', " - ", ' . $secondColumn . ')', '1=1');
     }
+
+    return array();
 }
 
-$warehouseLabelColumn = safra_pick_label_column($db, 'entrepot', array('lieu', 'label', 'ref'), 'rowid');
-$warehouses = safra_load_options($db, 'entrepot', $warehouseLabelColumn);
+$projectOptions = safra_activity_load_options($db, 'projet', 'CONCAT(ref, " - ", title)', 'entity IN (0, ' . ((int) $conf->entity) . ')');
+$talhaoOptions = safra_activity_load_options($db, 'safra_talhao', 'CONCAT(ref, " - ", label)');
+$warehouseLabel = safra_activity_table_has_column($db, 'entrepot', 'lieu') ? 'lieu' : (safra_activity_table_has_column($db, 'entrepot', 'label') ? 'label' : 'ref');
+$warehouseOptions = safra_activity_load_options($db, 'entrepot', $warehouseLabel);
+$productOptions = safra_activity_load_options($db, 'product', 'CONCAT(ref, " - ", label)', 'entity IN (0, ' . ((int) $conf->entity) . ')');
+$userOptions = safra_activity_load_options($db, 'user', 'CONCAT(firstname, " ", lastname)', 'statut = 1 AND entity IN (0, ' . ((int) $conf->entity) . ')');
+$vehicleOptions = safra_activity_load_fleet_options($db, 'Veiculo', 'frota_veiculo', array('ref', 'placa', 'label'));
+$implementOptions = safra_activity_load_fleet_options($db, 'Implemento', 'frota_implemento', array('ref', 'label'));
 
-$userOptions = array();
-$sqlUsers = 'SELECT rowid, lastname, firstname FROM ' . MAIN_DB_PREFIX . 'user WHERE statut = 1 AND entity IN (0, ' . ((int) $conf->entity) . ') ORDER BY lastname, firstname';
-$resUsers = $db->query($sqlUsers);
-if ($resUsers) {
-    while ($obj = $db->fetch_object($resUsers)) {
-        $fullname = trim(($obj->firstname ? $obj->firstname . ' ' : '') . $obj->lastname);
-        $userOptions[$obj->rowid] = $fullname ?: $obj->rowid;
-    }
-}
-
-$productOptions = array();
-$productLabelColumn = safra_pick_label_column($db, 'product', array('label', 'lieu', 'description'), 'ref');
-$productTypeFilter = '';
-if (safra_table_has_column($db, 'product', 'fk_product_type')) {
-    $productTypeFilter = ' AND p.fk_product_type = 0';
-} elseif (safra_table_has_column($db, 'product', 'type')) {
-    $productTypeFilter = ' AND p.type = 0';
-}
-
-$sqlProducts = 'SELECT p.rowid, p.ref, p.' . $db->escape($productLabelColumn) . ' as product_label'
-    . ' FROM ' . MAIN_DB_PREFIX . 'product p'
-    . ' WHERE p.entity IN (0, ' . ((int) $conf->entity) . ')'
-    . $productTypeFilter
-    . ' ORDER BY p.' . $db->escape($productLabelColumn) . ', p.ref';
-$resProducts = $db->query($sqlProducts);
-if ($resProducts) {
-    while ($obj = $db->fetch_object($resProducts)) {
-        $productRef = trim((string) $obj->ref);
-        $productLabel = trim((string) $obj->product_label);
-
-        $labelParts = array();
-        if ($productRef !== '') {
-            $labelParts[] = $productRef;
-        }
-        if ($productLabel !== '' && $productLabel !== $productRef) {
-            $labelParts[] = $productLabel;
-        }
-
-        $displayLabel = implode(' - ', $labelParts);
-        if ($displayLabel === '') {
-            $displayLabel = '#' . ((int) $obj->rowid);
-        }
-
-        $productOptions[$obj->rowid] = $displayLabel;
-    }
-}
-
+$typeOptions = FvActivity::getTypeOptions($langs);
+$statusOptions = FvActivity::getStatusOptions($langs);
+$priorityOptions = FvActivity::getPriorityOptions($langs);
+$movementOptions = FvActivityLine::getMovementOptions($langs);
 $unitOptions = array(
-    'L/ha' => 'L/ha',
     'kg/ha' => 'kg/ha',
     'g/ha' => 'g/ha',
+    'L/ha' => 'L/ha',
     'mL/ha' => 'mL/ha',
+    'sc/ha' => 'sc/ha',
     'un/ha' => 'un/ha',
 );
 
-$movementTypes = array(
-    'consume' => $langs->trans('SafraLineMovementConsume'),
-    'return' => $langs->trans('SafraLineMovementReturn'),
-    'transfer' => $langs->trans('SafraLineMovementTransfer'),
-);
+$projectContext = safra_activity_fetch_project_context($db, $activity->fk_project, $activity->fk_task);
+safra_activity_apply_project_context($activity, $projectContext);
 
 $errors = array();
 
@@ -327,9 +451,8 @@ if ($action === 'start' && $activity->id) {
         setEventMessages($langs->trans('SafraActivityStart'), null, 'mesgs');
         header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
         exit;
-    } else {
-        $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
     }
+    $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
 }
 
 if ($action === 'complete' && $activity->id) {
@@ -338,9 +461,8 @@ if ($action === 'complete' && $activity->id) {
         setEventMessages($langs->trans('SafraActivityComplete'), null, 'mesgs');
         header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
         exit;
-    } else {
-        $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
     }
+    $errors[] = $langs->trans($activity->error ?: 'ErrorRecordNotSaved');
 }
 
 if ($action === 'cancel' && $activity->id) {
@@ -350,946 +472,448 @@ if ($action === 'cancel' && $activity->id) {
         header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
         exit;
     }
+    $errors[] = $langs->trans($activity->error ?: 'ErrorRecordNotSaved');
+}
 
-    $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+if ($action === 'reopen' && $activity->id) {
+    $result = $activity->reopen($user);
+    if ($result > 0) {
+        setEventMessages($langs->trans('SafraActivityReopened'), null, 'mesgs');
+        header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+        exit;
+    }
+    $errors[] = $langs->trans($activity->error ?: 'ErrorRecordNotSaved');
 }
 
 if ($action === 'delete' && $activity->id) {
     $result = $activity->delete($user);
     if ($result > 0) {
         setEventMessages($langs->trans('SafraActivityDeleted'), null, 'mesgs');
-        header('Location: ' . dol_buildpath('/safra/safraindex.php', 1));
+        header('Location: ' . dol_buildpath('/safra/activity/activity_list.php', 1));
         exit;
     }
-
-    $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+    $errors[] = $langs->trans($activity->error ?: 'ErrorRecordNotSaved');
 }
 
-if ($action === 'save') {
+if ($action === 'save' || $action === 'save_complete') {
     $isNew = empty($activity->id);
-    $activity->label = GETPOST('label', 'alphanohtml');
-    $activity->type = GETPOST('type', 'alphanohtml');
-    $activity->fk_project = GETPOSTINT('fk_project');
+    $activity->ref = isset($_POST['ref']) ? GETPOST('ref', 'alphanohtml') : $activity->ref;
+    $activity->label = GETPOST('label', 'restricthtml');
+    $activity->type = GETPOST('type', 'alphanohtml') ?: ($activity->type ?: FvActivity::TYPE_PLANTING);
+    $activity->status = isset($_POST['status']) ? GETPOSTINT('status') : ($isNew ? FvActivity::STATUS_PLANNED : $activity->status);
+    $activity->priority = isset($_POST['priority']) ? GETPOSTINT('priority') : ((string) $activity->priority !== '' ? $activity->priority : FvActivity::PRIORITY_NORMAL);
+    $activity->progress = isset($_POST['progress']) ? price2num(GETPOST('progress', 'alphanohtml'), 'MT') : ($isNew ? 0 : $activity->progress);
+    $activity->season = GETPOST('season', 'alphanohtml');
+    $activity->crop_name = GETPOST('crop_name', 'alphanohtml');
+    $activity->cultivar_name = isset($_POST['cultivar_name']) ? GETPOST('cultivar_name', 'alphanohtml') : $activity->cultivar_name;
+    $activity->fk_project = isset($_POST['fk_project']) ? GETPOSTINT('fk_project') : $activity->fk_project;
+    $activity->fk_task = isset($_POST['fk_task']) ? GETPOSTINT('fk_task') : $activity->fk_task;
     $activity->fk_fieldplot = GETPOSTINT('fk_fieldplot');
-    $activity->area_total = price2num(GETPOST('area_total', 'alphanohtml'), 'MT');
+    $activity->area_planned = price2num(GETPOST('area_planned', 'alphanohtml'), 'MT');
+    $activity->area_done = isset($_POST['area_done']) ? price2num(GETPOST('area_done', 'alphanohtml'), 'MT') : $activity->area_done;
+    $activity->date_planned_start = safra_activity_datetime_from_post('date_planned_start');
+    $activity->date_planned_end = isset($_POST['date_planned_end']) ? safra_activity_datetime_from_post('date_planned_end') : $activity->date_planned_end;
+    $activity->date_start = isset($_POST['date_start']) ? safra_activity_datetime_from_post('date_start') : $activity->date_start;
+    $activity->date_end = isset($_POST['date_end']) ? safra_activity_datetime_from_post('date_end') : $activity->date_end;
+    $activity->weather = isset($_POST['weather']) ? GETPOST('weather', 'restricthtml') : $activity->weather;
     $activity->note_public = GETPOST('note_public', 'restricthtml');
 
-    if (empty($activity->label)) {
-        $errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('Label'));
+    $postedProjectContext = safra_activity_fetch_project_context($db, $activity->fk_project, $activity->fk_task);
+    safra_activity_apply_project_context($activity, $postedProjectContext);
+
+    if (trim((string) $activity->label) === '') {
+        $errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('SafraActivityName'));
+    }
+    if (trim((string) $activity->type) === '') {
+        $errors[] = $langs->trans('ErrorFieldRequired', $langs->trans('SafraActivityType'));
+    }
+    if ((int) $activity->fk_fieldplot <= 0) {
+        $errors[] = $langs->trans('SafraAplicacaoErrorTalhaoRequired');
     }
 
     if (!$errors) {
         $db->begin();
 
         $result = $isNew ? $activity->create($user) : $activity->update($user);
+        if ($result <= 0) {
+            $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
+        }
 
-        if (!$errors && $result > 0) {
-            // Replace relations
-            $machinesSelected = GETPOST('machine_ids', 'array');
-            $implementsSelected = GETPOST('implement_ids', 'array');
-            $usersSelected = GETPOST('user_ids', 'array');
-            $relMachine = $activity->setMachines($machinesSelected ?: array());
-            $relImplement = $activity->setImplements($implementsSelected ?: array());
-            $relUsers = $activity->setUsers($usersSelected ?: array());
-
-            // Replace lines
-            $deleteRes = FvActivityLine::deleteForActivity($db, $activity->id);
-            if ($deleteRes < 0) {
+        if (!$errors) {
+            if (FvActivityLine::deleteForActivity($db, $activity->id) < 0) {
                 $errors[] = $langs->trans('ErrorRecordNotSaved');
             }
-            $lineProducts = GETPOST('product_id', 'array');
-            $lineAreas = GETPOST('line_area', 'array');
-            $lineDoses = GETPOST('line_dose', 'array');
-            $lineUnits = GETPOST('line_unit', 'array');
-            $lineTotals = GETPOST('line_total', 'array');
-            $lineMovements = GETPOST('line_movement', 'array');
-            $lineWarehouses = GETPOST('line_warehouse', 'array');
-            if (!$errors) {
-                $activity->lines = array();
-                foreach ($lineProducts as $idx => $productId) {
-                    $productId = (int) $productId;
-                    if ($productId <= 0) {
-                        continue;
-                    }
-                    $line = new FvActivityLine($db);
-                    $line->fk_activity = $activity->id;
-                    $line->fk_product = $productId;
-                    $line->area_applied = price2num($lineAreas[$idx] ?? 0, 'MT');
-                    $line->dose = price2num($lineDoses[$idx] ?? 0, 'MT');
-                    $line->dose_unit = $lineUnits[$idx] ?? '';
-                    $line->total = price2num(($lineTotals[$idx] ?? 0) ?: $line->dose * $line->area_applied, 'MT');
-                    $line->movement_type = $lineMovements[$idx] ?? 'consume';
-                    $line->fk_warehouse = (int) ($lineWarehouses[$idx] ?? 0);
-                    $lineResult = $line->create($user);
-                    if ($lineResult < 0) {
-                        $errors[] = $line->error ?: $langs->trans('ErrorRecordNotSaved');
-                        break;
-                    }
+        }
 
-                    $activity->lines[] = $line;
+        if (!$errors) {
+            $products = GETPOST('line_product_id', 'array');
+            $warehouses = GETPOST('line_warehouse_id', 'array');
+            $movements = GETPOST('line_movement_type', 'array');
+            $areaPlanned = GETPOST('line_area_planned', 'array');
+            $areaDone = GETPOST('line_area_done', 'array');
+            $dosePlanned = GETPOST('line_dose_planned', 'array');
+            $doseDone = GETPOST('line_dose_done', 'array');
+            $units = GETPOST('line_dose_unit', 'array');
+            $qtyPlanned = GETPOST('line_qty_planned', 'array');
+            $qtyDone = GETPOST('line_qty_done', 'array');
+            $unitCosts = GETPOST('line_unit_cost', 'array');
+            $lineNotes = GETPOST('line_note', 'array');
+
+            foreach ((array) $products as $idx => $productId) {
+                $productId = (int) $productId;
+                if ($productId <= 0) {
+                    continue;
+                }
+
+                $line = new FvActivityLine($db);
+                $line->fk_activity = (int) $activity->id;
+                $line->position = $idx + 1;
+                $line->fk_product = $productId;
+                $line->fk_warehouse = (int) safra_activity_pick($warehouses, $idx, 0);
+                $line->movement_type = safra_activity_pick($movements, $idx, FvActivityLine::MOVEMENT_CONSUME);
+                $line->area_planned = price2num(safra_activity_pick($areaPlanned, $idx, 0), 'MT');
+                $line->area_done = price2num(safra_activity_pick($areaDone, $idx, 0), 'MT');
+                $line->dose_planned = price2num(safra_activity_pick($dosePlanned, $idx, 0), 'MT');
+                $line->dose_done = price2num(safra_activity_pick($doseDone, $idx, 0), 'MT');
+                $line->dose_unit = safra_activity_pick($units, $idx, '');
+                $line->qty_planned = price2num(safra_activity_pick($qtyPlanned, $idx, 0), 'MT');
+                $line->qty_done = price2num(safra_activity_pick($qtyDone, $idx, 0), 'MT');
+                $line->unit_cost = price2num(safra_activity_pick($unitCosts, $idx, 0), 'MT');
+                $line->note = safra_activity_pick($lineNotes, $idx, '');
+
+                if ($line->create($user) < 0) {
+                    $errors[] = $line->error ?: $langs->trans('ErrorRecordNotSaved');
+                    break;
                 }
             }
+        }
 
-            if ($relMachine < 0 || $relImplement < 0 || $relUsers < 0) {
+        if (!$errors) {
+            $teamRows = safra_activity_build_link_rows(
+                'fk_user',
+                GETPOST('team_user_id', 'array'),
+                GETPOST('team_role', 'array'),
+                GETPOST('team_planned_hours', 'array'),
+                GETPOST('team_done_hours', 'array'),
+                GETPOST('team_note', 'array')
+            );
+            $vehicleRows = safra_activity_build_asset_rows(
+                'fk_vehicle',
+                'vehicle_class',
+                'Veiculo',
+                GETPOST('vehicle_id', 'array'),
+                GETPOST('vehicle_planned_hours', 'array'),
+                GETPOST('vehicle_done_hours', 'array'),
+                GETPOST('vehicle_note', 'array')
+            );
+            $implementRows = safra_activity_build_asset_rows(
+                'fk_implement',
+                'implement_class',
+                'Implemento',
+                GETPOST('implement_id', 'array'),
+                GETPOST('implement_planned_hours', 'array'),
+                GETPOST('implement_done_hours', 'array'),
+                GETPOST('implement_note', 'array')
+            );
+
+            if ($activity->setUsers($teamRows) < 0 || $activity->setVehicles($vehicleRows) < 0 || $activity->setImplements($implementRows) < 0) {
                 $errors[] = $activity->error ?: $langs->trans('ErrorRecordNotSaved');
             }
+        }
 
-            if (!$errors) {
-                $db->commit();
-                setEventMessages($langs->trans('SafraActivitySaved'), null, 'mesgs');
-                header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
-                exit;
-            } else {
-                $db->rollback();
+        if (!$errors && $action === 'save_complete') {
+            $activity->fetch($activity->id);
+            $activity->fetchLines();
+            $result = $activity->complete($user);
+            if ($result <= 0) {
+                $errors[] = $langs->trans($activity->error ?: 'ErrorRecordNotSaved');
             }
-        } else {
+        }
+
+        if ($errors) {
             $db->rollback();
-            if (!$errors) {
-                $errors[] = $activity->error ?: $langs->trans('ErrorUnknown');
-            }
+        } else {
+            $db->commit();
+            setEventMessages($langs->trans($action === 'save_complete' ? 'SafraActivityComplete' : 'SafraActivitySaved'), null, 'mesgs');
+            header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $activity->id);
+            exit;
         }
     }
 }
 
-$selectedMachines = $activity->id ? $activity->fetchMachines() : array();
-$selectedImplements = $activity->id ? $activity->fetchImplements() : array();
-$selectedUsers = $activity->id ? $activity->fetchUsers() : array();
+if ($activity->id) {
+    $activity->fetch($activity->id);
+    $projectContext = safra_activity_fetch_project_context($db, $activity->fk_project, $activity->fk_task);
+    safra_activity_apply_project_context($activity, $projectContext);
+}
+
+$teamLinks = $activity->id ? $activity->fetchUserLinks() : array();
+$vehicleLinks = $activity->id ? $activity->fetchVehicleLinks() : array();
+$implementLinks = $activity->id ? $activity->fetchImplementLinks() : array();
 
 llxHeader('', $langs->trans('SafraActivity'), '', '', '', array(), array('/safra/css/safra.css.php'));
-
-print load_fiche_titre($langs->trans('SafraActivity'));
 
 if ($errors) {
     setEventMessages(null, $errors, 'errors');
 }
 
-$statusCode = FvActivity::normalizeStatus((int) $activity->status);
-$statusLabel = FvActivity::getStatusLabel($statusCode, $langs);
-$statusClassMap = array(
-    FvActivity::STATUS_DRAFT => 'sf-status-draft',
-    FvActivity::STATUS_IN_PROGRESS => 'sf-status-progress',
-    FvActivity::STATUS_COMPLETED => 'sf-status-completed',
-    FvActivity::STATUS_CANCELED => 'sf-status-canceled',
-);
-$statusCss = isset($statusClassMap[$statusCode]) ? $statusClassMap[$statusCode] : 'sf-status-draft';
-$selectedType = FvActivity::normalizeType($activity->type);
-$defaultLineArea = ($activity->area_total > 0) ? price2num($activity->area_total) : 0;
+$title = $activity->id ? $langs->trans('SafraActivityCardTitle', $activity->ref ?: $activity->id) : $langs->trans('New');
+$linkback = '<a href="' . dol_buildpath('/safra/activity/activity_list.php', 1) . '">' . $langs->trans('BackToList') . '</a>';
+$isCreateMode = empty($activity->id);
+$canFinishFromCard = $activity->id && !$activity->isCompleted() && !$activity->isCanceled();
+print load_fiche_titre($title, $linkback, 'fa-tractor');
 
-print <<<'HTML'
-<style>
-.sf-page {
-    --sf-green-950: #0b2f24;
-    --sf-green-900: #114235;
-    --sf-green-700: #1f7a5a;
-    --sf-green-600: #2e8f6d;
-    --sf-green-500: #3ea97d;
-    --sf-green-100: #e8f6ef;
-    --sf-green-050: #f4fbf7;
-    --sf-text: #183329;
-    --sf-muted: #4f6f62;
-    color: var(--sf-text);
-}
-.sf-shell {
-    display: grid;
-    gap: 16px;
-}
-.sf-card {
-    background: #fff;
-    border: 1px solid #d5eadf;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 14px 34px rgba(17, 66, 53, 0.08);
-}
-.sf-card-header {
-    padding: 18px 20px;
-    background: linear-gradient(140deg, var(--sf-green-950), var(--sf-green-900), var(--sf-green-700));
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.sf-card-title {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-}
-.sf-card-subtitle {
-    margin: 2px 0 0;
-    font-size: 0.92rem;
-    opacity: 0.88;
-}
-.sf-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 0.85rem;
-    font-weight: 700;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    color: #fff;
-}
-.sf-status:before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
-}
-.sf-status-draft { color: #f3f4f6; background: rgba(17, 24, 39, 0.32); }
-.sf-status-progress { color: #d1fae5; background: rgba(20, 184, 166, 0.28); }
-.sf-status-completed { color: #dcfce7; background: rgba(34, 197, 94, 0.28); }
-.sf-status-canceled { color: #fee2e2; background: rgba(239, 68, 68, 0.28); }
-.sf-card-body {
-    padding: 18px;
-    background: linear-gradient(180deg, #ffffff, var(--sf-green-050));
-}
-.sf-grid {
-    display: grid;
-    gap: 14px;
-}
-.sf-grid-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.sf-grid-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.sf-box {
-    background: #fff;
-    border: 1px solid #d8ece1;
-    border-radius: 12px;
-    padding: 14px;
-}
-.sf-box-title {
-    margin: 0 0 12px;
-    font-size: 0.96rem;
-    color: var(--sf-green-900);
-    font-weight: 700;
-}
-.sf-field label {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 0.85rem;
-    color: var(--sf-muted);
-    font-weight: 600;
-}
-.sf-input,
-.sf-page .form-control,
-.sf-page .form-select,
-.sf-page select {
-    width: 100%;
-    border: 1px solid #c9dfd3;
-    border-radius: 10px;
-    padding: 9px 10px;
-    background: #fff;
-}
-.sf-page .form-control:focus,
-.sf-page select:focus {
-    border-color: var(--sf-green-500);
-    box-shadow: 0 0 0 0.2rem rgba(62, 169, 125, 0.18);
-}
-.sf-page .select2-container {
-    width: 100% !important;
-    max-width: 100%;
-}
-.sf-page .select2-container .select2-selection--single,
-.sf-page .select2-container .select2-selection--multiple {
-    min-height: 40px;
-    border: 1px solid #c9dfd3;
-    border-radius: 10px;
-}
-.sf-page .select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 38px;
-    color: var(--sf-text);
-    padding-left: 10px;
-}
-.sf-page .select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 38px;
-    right: 8px;
-}
-.sf-page .select2-container--default .select2-selection--multiple {
-    padding: 4px 6px;
-}
-.sf-page .select2-container--default.select2-container--focus .select2-selection--single,
-.sf-page .select2-container--default.select2-container--focus .select2-selection--multiple {
-    border-color: var(--sf-green-500);
-    box-shadow: 0 0 0 0.2rem rgba(62, 169, 125, 0.18);
-}
-.sf-hint {
-    margin-top: 6px;
-    font-size: 0.78rem;
-    color: #5a7c6e;
-}
-.sf-info {
-    min-height: 42px;
-    border-radius: 10px;
-    border: 1px dashed #b9d8c8;
-    background: var(--sf-green-100);
-    color: var(--sf-green-900);
-    display: flex;
-    align-items: center;
-    padding: 8px 10px;
-    font-size: 0.87rem;
-    font-weight: 600;
-}
-.sf-products-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-}
-.sf-products-head p {
-    margin: 0;
-    color: var(--sf-muted);
-    font-size: 0.85rem;
-}
-.sf-table-wrap {
-    border: 1px solid #d8ece1;
-    border-radius: 12px;
-    overflow: auto;
-    background: #fff;
-}
-.sf-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 980px;
-}
-.sf-table thead th {
-    background: var(--sf-green-900);
-    color: #f0fdf4;
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    padding: 10px;
-    border-bottom: 1px solid #0f3a2d;
-}
-.sf-table td {
-    border-bottom: 1px solid #e2f0e8;
-    padding: 8px;
-    vertical-align: middle;
-}
-.sf-table td:first-child {
-    min-width: 240px;
-}
-.sf-table td:nth-child(7) {
-    min-width: 190px;
-}
-.sf-table td:last-child {
-    width: 48px;
-    text-align: center;
-}
-.sf-table td > .sf-input,
-.sf-table td > select,
-.sf-table td .select2-container {
-    width: 100% !important;
-}
-.sf-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-top: 12px;
-    flex-wrap: wrap;
-}
-.sf-btn {
-    border: 1px solid transparent;
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-weight: 700;
-    cursor: pointer;
-    text-decoration: none;
-}
-.sf-btn-save {
-    background: linear-gradient(140deg, var(--sf-green-700), var(--sf-green-500));
-    color: #fff;
-}
-.sf-btn-add {
-    background: #ecfdf5;
-    border-color: #b7dcc9;
-    color: var(--sf-green-900);
-}
-.sf-btn-inline {
-    border: 1px solid #c6dece;
-    background: #fff;
-    color: var(--sf-green-900);
-    border-radius: 10px;
-    padding: 7px 12px;
-    font-weight: 700;
-}
-.sf-btn-danger {
-    border-color: #f5b8b8;
-    color: #7f1d1d;
-    background: #fff1f2;
-}
-.sf-remove {
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    border: 1px solid #f0c1c1;
-    background: #fff4f4;
-    color: #9f1239;
-    cursor: pointer;
-}
-.sf-toolbar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-}
-.sf-task-link {
-    color: #d1fae5;
-    text-decoration: none;
-    border-bottom: 1px dashed rgba(209, 250, 229, 0.7);
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-@media (max-width: 1100px) {
-    .sf-grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 760px) {
-    .sf-grid-3,
-    .sf-grid-2 { grid-template-columns: 1fr; }
-    .sf-card-header,
-    .sf-actions { align-items: flex-start; }
-}
-</style>
-HTML;
+print '<style>
+.safra-activity-page{display:grid;gap:12px;max-width:1180px}
+.safra-section{border:1px solid #d7dde2;background:#fff;border-radius:6px;padding:14px}
+.safra-section h3{margin:0 0 12px;font-size:15px}
+.safra-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.safra-grid-main{grid-template-columns:2fr 1.2fr 1.2fr}
+.safra-field label{display:block;font-weight:600;margin-bottom:4px;color:#263442}
+.safra-field input,.safra-field select,.safra-field textarea,.safra-table input,.safra-table select{box-sizing:border-box;width:100%;max-width:100%;min-height:32px}
+.safra-field-required input,.safra-field-required select{border-left:4px solid #146c43}
+.safra-required,.safra-optional{display:inline-block;margin-left:6px;padding:1px 5px;border-radius:4px;font-size:10px;line-height:15px;font-weight:700;vertical-align:middle}
+.safra-required{color:#fff;background:#146c43}
+.safra-optional{color:#59636e;background:#eef1f4}
+.safra-statusbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.safra-status-info{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.safra-table-wrap{overflow:auto}
+.safra-table{width:100%;border-collapse:collapse}
+.safra-table th,.safra-table td{border-bottom:1px solid #e5e8eb;padding:6px;vertical-align:top}
+.safra-table th{font-weight:600;text-align:left;background:#f7f8f9}
+.safra-table-compact th,.safra-table-compact td{padding:5px}
+.safra-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.safra-primary-actions{justify-content:flex-end}
+.safra-status{display:inline-block;padding:4px 8px;border-radius:4px;background:#edf2f7;font-weight:600}
+.safra-finish-button{background:#146c43!important;color:#fff!important;border-color:#146c43!important}
+.safra-danger{color:#b42318}
+.safra-optional-section{padding:0}
+.safra-optional-section summary{cursor:pointer;font-weight:700;padding:12px 14px}
+.safra-optional-section .safra-optional-body{padding:0 14px 14px}
+@media (max-width:1000px){.safra-grid,.safra-grid-main{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.safra-grid,.safra-grid-main{grid-template-columns:1fr}.safra-actions,.safra-statusbar{display:grid}.safra-primary-actions{justify-content:stretch}}
+</style>';
 
-print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" class="sf-page">';
+print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" id="safra-activity-form">';
 print '<input type="hidden" name="token" value="' . newToken() . '">';
-print '<input type="hidden" name="action" value="save">';
+print '<input type="hidden" name="action" id="safra-form-action" value="save">';
 if ($activity->id) {
-    print '<input type="hidden" name="id" value="' . $activity->id . '">';
+    print '<input type="hidden" name="id" value="' . ((int) $activity->id) . '">';
+}
+print '<input type="hidden" name="fk_task" value="' . ((int) $activity->fk_task) . '">';
+
+print '<div class="safra-activity-page">';
+
+print '<div class="safra-section">';
+print '<div class="safra-statusbar">';
+print '<div class="safra-status-info">';
+print '<span class="safra-status">' . dol_escape_htmltag(FvActivity::getStatusLabel($activity->status, $langs)) . '</span>';
+if ($activity->id) {
+    print '<span>' . dol_escape_htmltag($langs->trans('Ref')) . ': ' . dol_escape_htmltag($activity->ref ?: $activity->id) . '</span>';
+}
+print '<span>' . dol_escape_htmltag($langs->trans('SafraActivityProgress')) . ': ' . price($activity->progress ?: 0, 0, '', 1, 0) . '%</span>';
+print '</div>';
+print '<div class="safra-actions safra-primary-actions">';
+print '<button class="button button-save" type="submit" onclick="document.getElementById(\'safra-form-action\').value=\'save\';">' . $langs->trans('Save') . '</button>';
+if ($canFinishFromCard) {
+    print '<button class="button safra-finish-button" type="submit" onclick="document.getElementById(\'safra-form-action\').value=\'save_complete\';return confirm(\'' . dol_escape_js($langs->transnoentities('SafraActivityFinishConfirm')) . '\');">' . $langs->trans('SafraActivityFinishNow') . '</button>';
+}
+print '</div>';
+print '</div>';
+print '<div class="safra-grid safra-grid-main">';
+print '<div class="safra-field safra-field-required">' . safra_activity_field_label($langs->trans('SafraActivityName'), true) . '<input class="flat" type="text" name="label" required value="' . dol_escape_htmltag($activity->label) . '" autocomplete="off"></div>';
+print '<div class="safra-field safra-field-required">' . safra_activity_field_label($langs->trans('SafraActivityType'), true) . $form->selectarray('type', $typeOptions, FvActivity::normalizeType($activity->type), 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '</div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('Project')) . $form->selectarray('fk_project', array(0 => '') + $projectOptions, $activity->fk_project, 0, 0, 0, 'id="safra-project-select" data-context-url="' . dol_escape_htmltag(dol_buildpath('/safra/ajax/project_talhao.php', 1)) . '"', 0, 0, 0, '', 'flat', 1) . '</div>';
+print '<div class="safra-field safra-field-required">' . safra_activity_field_label($langs->trans('FieldPlot'), true) . $form->selectarray('fk_fieldplot', array(0 => '') + $talhaoOptions, $activity->fk_fieldplot, 0, 0, 0, 'id="safra-fieldplot-select"', 0, 0, 0, '', 'flat', 1) . '</div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivityDatePlannedStart')) . '<input class="flat" type="datetime-local" name="date_planned_start" value="' . dol_escape_htmltag(safra_activity_datetime_input($activity->date_planned_start)) . '"></div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivityAreaPlanned')) . '<input class="flat js-area-planned" id="safra-area-planned" type="number" step="0.0001" min="0" name="area_planned" value="' . dol_escape_htmltag(price2num($activity->area_planned ?: $activity->area_total)) . '"></div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivitySeason')) . '<input class="flat" type="text" name="season" value="' . dol_escape_htmltag($activity->season) . '" placeholder="2026/2027"></div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivityCrop')) . '<input class="flat" id="safra-crop-name" type="text" name="crop_name" value="' . dol_escape_htmltag($activity->crop_name) . '"></div>';
+print '</div>';
+print '<div id="safra-project-context" class="opacitymedium" style="margin-top:8px"></div>';
+print '</div>';
+
+print '<details class="safra-section safra-optional-section">';
+print '<summary>' . $langs->trans('SafraActivityOptionalDetails') . '</summary>';
+print '<div class="safra-optional-body">';
+print '<div class="safra-grid">';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('Cultivar')) . '<input class="flat" id="safra-cultivar-name" type="text" name="cultivar_name" value="' . dol_escape_htmltag($activity->cultivar_name) . '"></div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivityDatePlannedEnd')) . '<input class="flat" type="datetime-local" name="date_planned_end" value="' . dol_escape_htmltag(safra_activity_datetime_input($activity->date_planned_end)) . '"></div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('Priority')) . $form->selectarray('priority', $priorityOptions, FvActivity::normalizePriority($activity->priority), 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '</div>';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivityWeather')) . '<input class="flat" type="text" name="weather" value="' . dol_escape_htmltag($activity->weather) . '"></div>';
+print '</div>';
+print '</div>';
+print '</details>';
+
+if (!$isCreateMode) {
+print '<div class="safra-section">';
+print '<h3>' . $langs->trans('SafraActivityExecution') . '</h3>';
+print '<div class="safra-grid">';
+print '<div class="safra-field">' . safra_activity_field_label($langs->trans('SafraActivityAreaDone')) . '<input class="flat js-area-done" type="number" step="0.0001" min="0" name="area_done" value="' . dol_escape_htmltag(price2num($activity->area_done)) . '"></div>';
+print '</div>';
+print '</div>';
 }
 
-print '<div class="sf-shell">';
-print '<div class="sf-card">';
-print '<div class="sf-card-header">';
-print '<div>';
-print '<h2 class="sf-card-title">' . dol_escape_htmltag($activity->label ?: $langs->trans('SafraActivity')) . '</h2>';
-print '<p class="sf-card-subtitle">' . $langs->trans('SafraActivity') . '</p>';
-if ($activity->fk_task > 0) {
-    $taskUrl = dol_buildpath('/projet/tasks/task.php?id=' . (int) $activity->fk_task, 1);
-    print '<a class="sf-task-link" href="' . $taskUrl . '">' . $langs->trans('Task') . ' #' . ((int) $activity->fk_task) . '</a>';
+print '<div class="safra-section">';
+print '<h3>' . $langs->trans('SafraActivityInputs') . '</h3>';
+print '<div class="safra-table-wrap"><table class="safra-table safra-table-compact" id="activity-lines"><thead><tr>';
+print '<th>' . $langs->trans('Product') . '</th><th>' . $langs->trans('Warehouse') . '</th>';
+if ($isCreateMode) {
+    print '<th>' . $langs->trans('SafraActivityAreaPlanned') . '</th><th>' . $langs->trans('SafraActivityDosePlanned') . '</th><th>' . $langs->trans('SafraActivityQtyPlanned') . '</th>';
+} else {
+    print '<th>' . $langs->trans('SafraActivityAreaDone') . '</th><th>' . $langs->trans('SafraActivityDoseDone') . '</th><th>' . $langs->trans('SafraActivityQtyDone') . '</th>';
 }
-print '</div>';
-print '<span class="sf-status ' . $statusCss . '">' . dol_escape_htmltag($statusLabel) . '</span>';
-print '</div>';
-
-print '<div class="sf-card-body">';
-
-print '<div class="sf-grid sf-grid-3">';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('Label') . '</label>';
-print '<input class="sf-input" type="text" name="label" value="' . dol_escape_htmltag($activity->label) . '" required>';
-print '</div>';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('Type') . '</label>';
-print $form->selectarray('type', $activityTypes, $selectedType, 1, 0, 0, '', 0, 0, 0, '', 'sf-input');
-print '</div>';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('Project') . '</label>';
-print $formproject->select_projects(-1, $activity->fk_project, 'fk_project', 0, 0, 1, 0, 0, 0, '', '', 1, 0, 1);
-print '<div class="sf-hint">' . $langs->trans('SelectProjectToAutoFillFieldPlot') . '</div>';
-print '</div>';
-print '</div>';
-
-print '<div class="sf-grid sf-grid-2" style="margin-top:14px;">';
-print '<div class="sf-box">';
-print '<h3 class="sf-box-title">' . $langs->trans('FieldPlot') . '</h3>';
-print '<input type="hidden" name="fk_fieldplot" value="' . ((int) $activity->fk_fieldplot) . '">';
-$talhaoLabel = $talhaoPlaceholder;
-if (!empty($activity->fk_fieldplot) && !empty($talhaoDetails[$activity->fk_fieldplot])) {
-    $talhaoDataItem = $talhaoDetails[$activity->fk_fieldplot];
-    $labelBits = array();
-    if (!empty($talhaoDataItem['ref'])) {
-        $labelBits[] = $talhaoDataItem['ref'];
-    }
-    if (!empty($talhaoDataItem['label'])) {
-        $labelBits[] = $talhaoDataItem['label'];
-    }
-    if (!empty($talhaoDataItem['area'])) {
-        $labelBits[] = price2num($talhaoDataItem['area']) . ' ha';
-    }
-    if (!empty($talhaoDataItem['municipio'])) {
-        $labelBits[] = $talhaoDataItem['municipio'];
-    }
-    if (!empty($labelBits)) {
-        $talhaoLabel = implode(' | ', $labelBits);
-    }
-}
-print '<div id="talhao-area-info" class="sf-info">' . dol_escape_htmltag($talhaoLabel) . '</div>';
-print '<div class="sf-hint">' . $langs->trans('AutoFilledFromFieldPlot') . '</div>';
-print '</div>';
-
-print '<div class="sf-box">';
-print '<h3 class="sf-box-title">' . $langs->trans('Area') . '</h3>';
-print '<input type="hidden" id="area-base" value="' . dol_escape_htmltag(price2num($talhaoDetails[$activity->fk_fieldplot]['area'] ?? 0)) . '">';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('Area') . ' (%)</label>';
-print '<input class="sf-input" type="number" min="0" max="100" step="0.01" id="area-percentage" name="area_percentage" value="' . dol_escape_htmltag(price2num($areaPercentage)) . '">';
-print '</div>';
-print '<div class="sf-field" style="margin-top:8px;">';
-print '<label>' . $langs->trans('Area') . ' (ha)</label>';
-print '<input class="sf-input" type="number" min="0" step="0.0001" id="area-total" name="area_total" value="' . dol_escape_htmltag(price2num($activity->area_total)) . '" readonly>';
-print '</div>';
-print '</div>';
-print '</div>';
-
-print '<div class="sf-box" style="margin-top:14px;">';
-print '<h3 class="sf-box-title">' . $langs->trans('SafraAplicacaoResources') . '</h3>';
-print '<div class="sf-grid sf-grid-3">';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('SafraMachineLabel') . '</label>';
-print $form->multiselectarray('machine_ids', $machines, $selectedMachines, '', 0, '', 1);
-print '</div>';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('SafraImplementsLabel') . '</label>';
-print $form->multiselectarray('implement_ids', $implements, $selectedImplements, '', 0, '', 1);
-print '</div>';
-print '<div class="sf-field">';
-print '<label>' . $langs->trans('SafraEmployeesLabel') . '</label>';
-print $form->multiselectarray('user_ids', $userOptions, $selectedUsers, '', 0, '', 1);
-print '</div>';
-print '</div>';
-print '</div>';
-
-print '<div class="sf-box" style="margin-top:14px;">';
-print '<h3 class="sf-box-title">' . $langs->trans('Note') . '</h3>';
-print '<textarea class="sf-input" name="note_public" id="note_public" rows="4" placeholder="' . dol_escape_htmltag($langs->trans('Note')) . '">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
-print '</div>';
-
-print '</div>'; // sf-card-body
-print '</div>'; // sf-card
-
-print '<div class="sf-card">';
-print '<div class="sf-card-body">';
-print '<div class="sf-products-head">';
-print '<div>';
-print '<h3 class="sf-box-title" style="margin-bottom:4px;">' . $langs->trans('Products') . '</h3>';
-print '<p>' . $langs->trans('SafraLineMovement') . '</p>';
-print '</div>';
-print '</div>';
-
-print '<div class="sf-table-wrap">';
-print '<table class="sf-table" id="products-table">';
-print '<thead><tr>';
-print '<th>' . $langs->trans('Product') . '</th>';
-print '<th>' . $langs->trans('Area') . ' (ha)</th>';
-print '<th>' . $langs->trans('Dose') . '</th>';
-print '<th>' . $langs->trans('Unit') . '</th>';
-print '<th>' . $langs->trans('Total') . '</th>';
-print '<th>' . $langs->trans('Movement') . '</th>';
-print '<th>' . $langs->trans('Warehouse') . '</th>';
-print '<th></th>';
+print '<th>' . $langs->trans('Unit') . '</th><th></th>';
 print '</tr></thead><tbody>';
 
-if (!empty($activity->lines)) {
-    foreach ($activity->lines as $line) {
-        $lineUnitOptions = $unitOptions;
-        if (!empty($line->dose_unit) && !isset($lineUnitOptions[$line->dose_unit])) {
-            $lineUnitOptions[$line->dose_unit] = $line->dose_unit;
-        }
-        print '<tr>';
-        print '<td>' . $form->selectarray('product_id[]', $productOptions, $line->fk_product, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-product', 0) . '</td>';
-        print '<td><input type="number" name="line_area[]" class="sf-input sf-line-area" value="' . dol_escape_htmltag(price2num($line->area_applied)) . '" step="0.0001" min="0" readonly></td>';
-        print '<td><input type="number" name="line_dose[]" class="sf-input sf-line-dose" value="' . dol_escape_htmltag(price2num($line->dose)) . '" step="0.0001" min="0"></td>';
-        print '<td>' . $form->selectarray('line_unit[]', $lineUnitOptions, $line->dose_unit, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit', 0) . '</td>';
-        print '<td><input type="number" name="line_total[]" class="sf-input sf-line-total" value="' . dol_escape_htmltag(price2num($line->total)) . '" step="0.0001" min="0" readonly></td>';
-        print '<td>' . $form->selectarray('line_movement[]', $movementTypes, $line->movement_type, 1, 0, 0, '', 0, 0, 0, '', 'sf-input', 0) . '</td>';
-        print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, $line->fk_warehouse, 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-warehouse', 0) . '</td>';
-        print '<td><button type="button" class="sf-remove sf-remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">x</button></td>';
-        print '</tr>';
-    }
-} else {
-    print '<tr>';
-    print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-product', 0) . '</td>';
-    print '<td><input type="number" name="line_area[]" class="sf-input sf-line-area" value="' . dol_escape_htmltag($defaultLineArea) . '" step="0.0001" min="0" readonly></td>';
-    print '<td><input type="number" name="line_dose[]" class="sf-input sf-line-dose" value="0" step="0.0001" min="0"></td>';
-    print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit', 0) . '</td>';
-    print '<td><input type="number" name="line_total[]" class="sf-input sf-line-total" value="0" step="0.0001" min="0" readonly></td>';
-    print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1, 0, 0, '', 0, 0, 0, '', 'sf-input', 0) . '</td>';
-    print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-warehouse', 0) . '</td>';
-    print '<td><button type="button" class="sf-remove sf-remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">x</button></td>';
-    print '</tr>';
+$lines = !empty($activity->lines) ? $activity->lines : array();
+if (empty($lines)) {
+    $emptyLine = new FvActivityLine($db);
+    $emptyLine->area_planned = $activity->area_planned ?: $activity->area_total;
+    $emptyLine->area_done = $activity->area_done;
+    $emptyLine->movement_type = FvActivityLine::MOVEMENT_CONSUME;
+    $lines[] = $emptyLine;
 }
 
-print '</tbody></table>';
-print '<template id="product-line-template">';
-print '<tr>';
-print '<td>' . $form->selectarray('product_id[]', $productOptions, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-product', 0) . '</td>';
-print '<td><input type="number" name="line_area[]" class="sf-input sf-line-area" value="0" step="0.0001" min="0" readonly></td>';
-print '<td><input type="number" name="line_dose[]" class="sf-input sf-line-dose" value="0" step="0.0001" min="0"></td>';
-print '<td>' . $form->selectarray('line_unit[]', $unitOptions, 'L/ha', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-line-unit', 0) . '</td>';
-print '<td><input type="number" name="line_total[]" class="sf-input sf-line-total" value="0" step="0.0001" min="0" readonly></td>';
-print '<td>' . $form->selectarray('line_movement[]', $movementTypes, 'consume', 1, 0, 0, '', 0, 0, 0, '', 'sf-input', 0) . '</td>';
-print '<td>' . $form->selectarray('line_warehouse[]', $warehouses, '', 1, 0, 0, '', 0, 0, 0, '', 'sf-input sf-select-warehouse', 0) . '</td>';
-print '<td><button type="button" class="sf-remove sf-remove-line" aria-label="' . dol_escape_htmltag($langs->trans('Delete')) . '">x</button></td>';
-print '</tr>';
-print '</template>';
+foreach ($lines as $line) {
+    print '<tr class="js-line-row">';
+    print '<td>' . $form->selectarray('line_product_id[]', array(0 => '') + $productOptions, $line->fk_product, 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '<input type="hidden" name="line_movement_type[]" value="' . dol_escape_htmltag(FvActivityLine::normalizeMovementType($line->movement_type)) . '"></td>';
+    print '<td>' . $form->selectarray('line_warehouse_id[]', array(0 => '') + $warehouseOptions, $line->fk_warehouse, 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '</td>';
+    if ($isCreateMode) {
+        print '<td><input class="flat js-line-area-planned" type="number" step="0.0001" min="0" name="line_area_planned[]" value="' . dol_escape_htmltag(price2num($line->area_planned ?: $line->area_applied ?: $activity->area_planned)) . '"></td>';
+        print '<td><input class="flat js-line-dose-planned" type="number" step="0.0001" min="0" name="line_dose_planned[]" value="' . dol_escape_htmltag(price2num($line->dose_planned ?: $line->dose)) . '"></td>';
+        print '<td><input class="flat js-line-qty-planned" type="number" step="0.0001" min="0" name="line_qty_planned[]" value="' . dol_escape_htmltag(price2num($line->qty_planned ?: $line->total)) . '"><input type="hidden" name="line_area_done[]" value=""><input type="hidden" name="line_dose_done[]" value=""><input type="hidden" name="line_qty_done[]" value=""></td>';
+    } else {
+        print '<td><input type="hidden" name="line_area_planned[]" value="' . dol_escape_htmltag(price2num($line->area_planned ?: $line->area_applied)) . '"><input type="hidden" name="line_dose_planned[]" value="' . dol_escape_htmltag(price2num($line->dose_planned ?: $line->dose)) . '"><input type="hidden" name="line_qty_planned[]" value="' . dol_escape_htmltag(price2num($line->qty_planned ?: $line->total)) . '"><input class="flat js-line-area-done" type="number" step="0.0001" min="0" name="line_area_done[]" value="' . dol_escape_htmltag(price2num($line->area_done ?: $line->area_planned ?: $line->area_applied ?: $activity->area_done ?: $activity->area_planned)) . '"></td>';
+        print '<td><input class="flat js-line-dose-done" type="number" step="0.0001" min="0" name="line_dose_done[]" value="' . dol_escape_htmltag(price2num($line->dose_done ?: $line->dose_planned ?: $line->dose)) . '"></td>';
+        print '<td><input class="flat js-line-qty-done" type="number" step="0.0001" min="0" name="line_qty_done[]" value="' . dol_escape_htmltag(price2num($line->qty_done ?: $line->total ?: $line->qty_planned)) . '"></td>';
+    }
+    print '<td>' . $form->selectarray('line_dose_unit[]', $unitOptions, $line->dose_unit ?: 'kg/ha', 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '<input type="hidden" name="line_unit_cost[]" value="' . dol_escape_htmltag(price2num($line->unit_cost)) . '"><input type="hidden" name="line_note[]" value="' . dol_escape_htmltag($line->note) . '"></td>';
+    print '<td><button type="button" class="button small js-remove-row">x</button></td>';
+    print '</tr>';
+}
+print '</tbody></table></div>';
+print '<div class="safra-actions" style="margin-top:10px"><button class="button" type="button" id="add-line">' . $langs->trans('Add') . '</button></div>';
 print '</div>';
 
-print '<div class="sf-actions">';
-print '<button type="button" class="sf-btn sf-btn-add" id="add-line">+ ' . $langs->trans('Add') . '</button>';
-print '<button type="submit" class="sf-btn sf-btn-save">' . $langs->trans('Save') . '</button>';
+print '<div class="safra-section">';
+print '<h3>' . $langs->trans('SafraActivityTeam') . '</h3>';
+print '<div class="safra-table-wrap"><table class="safra-table safra-table-compact" id="team-lines"><thead><tr><th>' . $langs->trans('User') . '</th><th>' . $langs->trans('Role') . '</th><th>' . $langs->trans('SafraActivityPlannedHours') . '</th>';
+if (!$isCreateMode) {
+    print '<th>' . $langs->trans('SafraActivityDoneHours') . '</th>';
+}
+print '<th></th></tr></thead><tbody>';
+foreach (!empty($teamLinks) ? $teamLinks : array((object) array()) as $row) {
+    print '<tr>';
+    print '<td>' . $form->selectarray('team_user_id[]', array(0 => '') + $userOptions, isset($row->fk_user) ? $row->fk_user : 0, 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '</td>';
+    print '<td><input class="flat" type="text" name="team_role[]" value="' . dol_escape_htmltag(isset($row->role) ? $row->role : '') . '"></td>';
+    print '<td><input class="flat" type="number" step="0.01" min="0" name="team_planned_hours[]" value="' . dol_escape_htmltag(isset($row->planned_hours) ? price2num($row->planned_hours) : '') . '"></td>';
+    $teamHidden = '<input type="hidden" name="team_note[]" value="' . dol_escape_htmltag(isset($row->note) ? $row->note : '') . '">';
+    if ($isCreateMode) {
+        $teamHidden .= '<input type="hidden" name="team_done_hours[]" value="">';
+    } else {
+        print '<td><input class="flat" type="number" step="0.01" min="0" name="team_done_hours[]" value="' . dol_escape_htmltag(isset($row->done_hours) && $row->done_hours > 0 ? price2num($row->done_hours) : (isset($row->planned_hours) ? price2num($row->planned_hours) : '')) . '"></td>';
+    }
+    print '<td>' . $teamHidden . '<button type="button" class="button small js-remove-row">x</button></td>';
+    print '</tr>';
+}
+print '</tbody></table></div><div class="safra-actions" style="margin-top:10px"><button class="button" type="button" id="add-team">' . $langs->trans('Add') . '</button></div></div>';
+
+print '<div class="safra-section">';
+print '<h3>' . $langs->trans('SafraActivityFleet') . '</h3>';
+print '<div class="safra-grid" style="grid-template-columns:1fr 1fr">';
+print '<div><h3>' . $langs->trans('SafraVehicleLabel') . '</h3><div class="safra-table-wrap"><table class="safra-table safra-table-compact" id="vehicle-lines"><thead><tr><th>' . $langs->trans('SafraVehicleLabel') . '</th><th>' . $langs->trans('SafraActivityPlannedHours') . '</th>';
+if (!$isCreateMode) {
+    print '<th>' . $langs->trans('SafraActivityDoneHours') . '</th>';
+}
+print '<th></th></tr></thead><tbody>';
+foreach (!empty($vehicleLinks) ? $vehicleLinks : array((object) array()) as $row) {
+    print '<tr><td>' . $form->selectarray('vehicle_id[]', array(0 => '') + $vehicleOptions, isset($row->fk_vehicle) ? $row->fk_vehicle : 0, 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '</td>';
+    print '<td><input class="flat" type="number" step="0.01" min="0" name="vehicle_planned_hours[]" value="' . dol_escape_htmltag(isset($row->planned_hours) ? price2num($row->planned_hours) : '') . '"></td>';
+    $vehicleHidden = '<input type="hidden" name="vehicle_note[]" value="' . dol_escape_htmltag(isset($row->note) ? $row->note : '') . '">';
+    if ($isCreateMode) {
+        $vehicleHidden .= '<input type="hidden" name="vehicle_done_hours[]" value="">';
+    } else {
+        print '<td><input class="flat" type="number" step="0.01" min="0" name="vehicle_done_hours[]" value="' . dol_escape_htmltag(isset($row->done_hours) && $row->done_hours > 0 ? price2num($row->done_hours) : (isset($row->planned_hours) ? price2num($row->planned_hours) : '')) . '"></td>';
+    }
+    print '<td>' . $vehicleHidden . '<button type="button" class="button small js-remove-row">x</button></td></tr>';
+}
+print '</tbody></table></div><div class="safra-actions" style="margin-top:10px"><button class="button" type="button" id="add-vehicle">' . $langs->trans('Add') . '</button></div></div>';
+
+print '<div><h3>' . $langs->trans('SafraImplementsLabel') . '</h3><div class="safra-table-wrap"><table class="safra-table safra-table-compact" id="implement-lines"><thead><tr><th>' . $langs->trans('SafraImplementsLabel') . '</th><th>' . $langs->trans('SafraActivityPlannedHours') . '</th>';
+if (!$isCreateMode) {
+    print '<th>' . $langs->trans('SafraActivityDoneHours') . '</th>';
+}
+print '<th></th></tr></thead><tbody>';
+foreach (!empty($implementLinks) ? $implementLinks : array((object) array()) as $row) {
+    print '<tr><td>' . $form->selectarray('implement_id[]', array(0 => '') + $implementOptions, isset($row->fk_implement) ? $row->fk_implement : 0, 0, 0, 0, '', 0, 0, 0, '', 'flat', 1) . '</td>';
+    print '<td><input class="flat" type="number" step="0.01" min="0" name="implement_planned_hours[]" value="' . dol_escape_htmltag(isset($row->planned_hours) ? price2num($row->planned_hours) : '') . '"></td>';
+    $implementHidden = '<input type="hidden" name="implement_note[]" value="' . dol_escape_htmltag(isset($row->note) ? $row->note : '') . '">';
+    if ($isCreateMode) {
+        $implementHidden .= '<input type="hidden" name="implement_done_hours[]" value="">';
+    } else {
+        print '<td><input class="flat" type="number" step="0.01" min="0" name="implement_done_hours[]" value="' . dol_escape_htmltag(isset($row->done_hours) && $row->done_hours > 0 ? price2num($row->done_hours) : (isset($row->planned_hours) ? price2num($row->planned_hours) : '')) . '"></td>';
+    }
+    print '<td>' . $implementHidden . '<button type="button" class="button small js-remove-row">x</button></td></tr>';
+}
+print '</tbody></table></div><div class="safra-actions" style="margin-top:10px"><button class="button" type="button" id="add-implement">' . $langs->trans('Add') . '</button></div></div>';
+print '</div></div>';
+
+print '<div class="safra-section">';
+print '<h3>' . $langs->trans('Note') . '</h3>';
+print '<textarea class="flat" name="note_public" rows="4" style="width:100%">' . dol_escape_htmltag($activity->note_public) . '</textarea>';
 print '</div>';
 
-print '</div>'; // sf-card-body
-print '</div>'; // sf-card
-print '</div>'; // sf-shell
+print '<div class="safra-actions">';
+print '<button class="button button-save" type="submit" onclick="document.getElementById(\'safra-form-action\').value=\'save\';">' . $langs->trans('Save') . '</button>';
+if ($canFinishFromCard) {
+    print '<button class="button safra-finish-button" type="submit" onclick="document.getElementById(\'safra-form-action\').value=\'save_complete\';return confirm(\'' . dol_escape_js($langs->transnoentities('SafraActivityFinishConfirm')) . '\');">' . $langs->trans('SafraActivityFinishNow') . '</button>';
+}
+print '</div>';
+
+print '</div>';
 print '</form>';
 
 if ($activity->id) {
-    print '<div class="sf-toolbar">';
-
-    if (!$activity->isCompleted() && !$activity->isCanceled() && !$activity->isInProgress()) {
-        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
-        print '<input type="hidden" name="token" value="' . newToken() . '">';
-        print '<input type="hidden" name="action" value="start">';
-        print '<input type="hidden" name="id" value="' . $activity->id . '">';
-        print '<button class="sf-btn-inline" type="submit">' . $langs->trans('SafraActivityStart') . '</button>';
-        print '</form>';
+    print '<div class="safra-actions" style="margin-top:14px">';
+    if (!$activity->isInProgress() && !$activity->isCompleted() && !$activity->isCanceled()) {
+        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '"><input type="hidden" name="token" value="' . newToken() . '"><input type="hidden" name="id" value="' . ((int) $activity->id) . '"><input type="hidden" name="action" value="start"><button class="button" type="submit">' . $langs->trans('SafraActivityStart') . '</button></form>';
     }
-
-    if (!$activity->isCompleted() && !$activity->isCanceled()) {
-        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
-        print '<input type="hidden" name="token" value="' . newToken() . '">';
-        print '<input type="hidden" name="action" value="complete">';
-        print '<input type="hidden" name="id" value="' . $activity->id . '">';
-        print '<button class="sf-btn-inline" type="submit">' . $langs->trans('SafraActivityComplete') . '</button>';
-        print '</form>';
+    if ($activity->isCompleted() || $activity->isCanceled()) {
+        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '"><input type="hidden" name="token" value="' . newToken() . '"><input type="hidden" name="id" value="' . ((int) $activity->id) . '"><input type="hidden" name="action" value="reopen"><button class="button" type="submit">' . $langs->trans('SafraActivityReopen') . '</button></form>';
     }
-
-    if (!$activity->isCanceled() && !$activity->isCompleted()) {
-        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '">';
-        print '<input type="hidden" name="token" value="' . newToken() . '">';
-        print '<input type="hidden" name="action" value="cancel">';
-        print '<input type="hidden" name="id" value="' . $activity->id . '">';
-        print '<button class="sf-btn-inline" type="submit">' . $langs->trans('SafraActivityCancel') . '</button>';
-        print '</form>';
+    if (!$activity->isCanceled()) {
+        print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '"><input type="hidden" name="token" value="' . newToken() . '"><input type="hidden" name="id" value="' . ((int) $activity->id) . '"><input type="hidden" name="action" value="cancel"><button class="button" type="submit">' . $langs->trans('SafraActivityCancel') . '</button></form>';
     }
-
-    $confirmMessage = dol_escape_js($langs->transnoentities('ConfirmDelete'));
-    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" onsubmit="return confirm(\'' . $confirmMessage . '\');">';
-    print '<input type="hidden" name="token" value="' . newToken() . '">';
-    print '<input type="hidden" name="action" value="delete">';
-    print '<input type="hidden" name="id" value="' . $activity->id . '">';
-    print '<button class="sf-btn-inline sf-btn-danger" type="submit">' . $langs->trans('SafraActivityDelete') . '</button>';
-    print '</form>';
-
+    print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '" onsubmit="return confirm(\'' . dol_escape_js($langs->transnoentities('ConfirmDelete')) . '\');"><input type="hidden" name="token" value="' . newToken() . '"><input type="hidden" name="id" value="' . ((int) $activity->id) . '"><input type="hidden" name="action" value="delete"><button class="button safra-danger" type="submit">' . $langs->trans('SafraActivityDelete') . '</button></form>';
     print '</div>';
 }
 
-print '<script>';
-?>
-var talhaoData = <?php echo json_encode($talhaoDetails); ?>;
-var talhaoPlaceholderText = '<?php echo dol_escape_js($talhaoPlaceholder); ?>';
-var talhaoInfoEl = document.getElementById('talhao-area-info');
-var areaBaseInput = document.getElementById('area-base');
-var areaPctInput = document.getElementById('area-percentage');
-var areaTotalInput = document.getElementById('area-total');
-var sfSelectSeq = 0;
-
-function sfToNumber(value) {
-    if (value === null || value === undefined) return 0;
-    var normalized = value.toString().replace(',', '.').trim();
-    var parsed = parseFloat(normalized);
-    return isNaN(parsed) ? 0 : parsed;
-}
-
-function sfRecalcLine(row) {
-    if (!row) return;
-    var areaInput = row.querySelector('.sf-line-area');
-    var doseInput = row.querySelector('.sf-line-dose');
-    var totalInput = row.querySelector('.sf-line-total');
-    if (!areaInput || !doseInput || !totalInput) return;
-    var area = sfToNumber(areaInput.value);
-    var dose = sfToNumber(doseInput.value);
-    totalInput.value = (area * dose).toFixed(4);
-}
-
-function sfNextSelectId(prefix) {
-    sfSelectSeq += 1;
-    return prefix + '_' + sfSelectSeq;
-}
-
-function sfEnsureUniqueSelectId(select) {
-    if (!select) return;
-
-    var base = (select.name || 'sf_select').replace(/\[\]/g, '').replace(/[^a-zA-Z0-9_]/g, '_');
-    var currentId = select.id || '';
-
-    if (!currentId) {
-        select.id = sfNextSelectId(base);
-        return;
-    }
-
-    var countSameId = 0;
-    document.querySelectorAll('[id]').forEach(function (node) {
-        if (node.id === currentId) {
-            countSameId += 1;
-        }
-    });
-
-    if (countSameId > 1) {
-        select.id = sfNextSelectId(base);
-    }
-}
-
-function sfEnhanceLineSelects(row) {
-    var hasJquery = !!(window.jQuery && window.jQuery.fn);
-    var canSelect2 = hasJquery && typeof window.jQuery.fn.select2 === 'function';
-    var canCombobox = hasJquery && typeof window.jQuery.fn.combobox === 'function';
-
-    if (!row || !hasJquery || (!canSelect2 && !canCombobox)) {
-        return;
-    }
-
-    var $row = window.jQuery(row);
-    var selector = 'select[name="product_id[]"], select[name="line_unit[]"], select[name="line_movement[]"], select[name="line_warehouse[]"]';
-
-    $row.find(selector).each(function () {
-        var $select = window.jQuery(this);
-
-        sfEnsureUniqueSelectId(this);
-
-        if ($select.hasClass('select2-hidden-accessible')) {
-            return;
-        }
-
-        if (canSelect2) {
-            $select.select2({
-                dir: 'ltr',
-                width: 'resolve',
-                minimumResultsForSearch: 0,
-                minimumInputLength: 0,
-                language: (typeof select2arrayoflanguage === 'undefined') ? 'en' : select2arrayoflanguage,
-                containerCssClass: ':all:',
-                selectionCssClass: ':all:',
-                dropdownCssClass: 'ui-dialog',
-                matcher: function (params, data) {
-                    if (!data || typeof data.text === 'undefined') return data;
-                    if (window.jQuery.trim(params.term || '') === '') return data;
-
-                    var term = (params.term || '').toLowerCase();
-                    var text = (data.text || '').toLowerCase();
-                    var keywords = term.split(' ');
-
-                    for (var i = 0; i < keywords.length; i++) {
-                        if (!keywords[i]) continue;
-                        if (text.indexOf(keywords[i]) === -1) return null;
-                    }
-
-                    return data;
-                },
-                escapeMarkup: function (markup) { return markup; }
-            });
-        } else if (canCombobox && $select.next('.ui-combobox').length === 0) {
-            $select.combobox();
-        }
-    });
-}
-
-function sfBindLine(row) {
-    if (!row) return;
-
-    sfEnhanceLineSelects(row);
-
-    var areaInput = row.querySelector('.sf-line-area');
-    var doseInput = row.querySelector('.sf-line-dose');
-
-    if (doseInput) {
-        doseInput.addEventListener('input', function () { sfRecalcLine(row); });
-        doseInput.addEventListener('change', function () { sfRecalcLine(row); });
-    }
-
-    if (areaInput) {
-        areaInput.addEventListener('change', function () { sfRecalcLine(row); });
-    }
-
-    var removeBtn = row.querySelector('.sf-remove-line');
-    if (removeBtn) {
-        removeBtn.addEventListener('click', function () {
-            var rows = document.querySelectorAll('#products-table tbody tr');
-            if (rows.length > 1) {
-                row.remove();
-            }
-        });
-    }
-
-    sfRecalcLine(row);
-}
-
-function sfApplyAreaToLines(areaValue) {
-    var normalizedArea = sfToNumber(areaValue);
-    document.querySelectorAll('#products-table tbody tr').forEach(function (row) {
-        var areaInput = row.querySelector('.sf-line-area');
-        if (!areaInput) return;
-        areaInput.value = normalizedArea.toFixed(4);
-        sfRecalcLine(row);
-    });
-}
-
-function sfSyncAreaFromPercentage() {
-    if (!areaBaseInput || !areaPctInput || !areaTotalInput) return;
-
-    var baseArea = sfToNumber(areaBaseInput.value);
-    var pct = sfToNumber(areaPctInput.value);
-
-    if (pct < 0) pct = 0;
-    if (pct > 100) pct = 100;
-
-    areaPctInput.value = pct.toFixed(2);
-
-    var computed = baseArea * (pct / 100);
-    areaTotalInput.value = computed.toFixed(4);
-    sfApplyAreaToLines(computed);
-}
-
-function sfUpdateTalhaoArea(talhaoId) {
-    var hiddenField = document.querySelector('input[name="fk_fieldplot"]');
-    var info = talhaoInfoEl;
-    var data = talhaoData[talhaoId] || null;
-
-    if (hiddenField) {
-        hiddenField.value = data ? talhaoId : '';
-    }
-
-    if (areaBaseInput) {
-        var baseArea = data ? sfToNumber(data.area) : 0;
-        areaBaseInput.value = baseArea ? baseArea.toFixed(4) : '';
-    }
-
-    if (info) {
-        if (data) {
-            var labels = [];
-            if (data.ref) labels.push(data.ref);
-            if (data.label) labels.push(data.label);
-            if (data.area) labels.push(sfToNumber(data.area).toFixed(4) + ' ha');
-            if (data.municipio) labels.push(data.municipio);
-            info.textContent = labels.join(' | ');
-        } else {
-            info.textContent = talhaoPlaceholderText;
-        }
-    }
-
-    if (!areaPctInput.value) {
-        areaPctInput.value = '100.00';
-    }
-
-    sfSyncAreaFromPercentage();
-}
-
-function sfFetchTalhaoForProject(projectId) {
-    var numericProjectId = parseInt(projectId, 10) || 0;
-    if (!numericProjectId) {
-        sfUpdateTalhaoArea('');
-        return;
-    }
-
-    var url = '<?php echo dol_buildpath('/safra/ajax/project_talhao.php', 1); ?>?id=' + encodeURIComponent(numericProjectId);
-    fetch(url, { credentials: 'same-origin' })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            if (!data || !data.success || !data.talhao_id) {
-                sfUpdateTalhaoArea('');
-                return;
-            }
-
-            var talhaoId = String(data.talhao_id);
-            if (data.talhao) {
-                talhaoData[talhaoId] = {
-                    ref: data.talhao.ref || '',
-                    label: data.talhao.label || '',
-                    area: data.talhao.area || 0,
-                    municipio: data.talhao.municipio || ''
-                };
-            }
-
-            sfUpdateTalhaoArea(talhaoId);
-        })
-        .catch(function () {
-            sfUpdateTalhaoArea('');
-        });
-}
-
-function sfGetProjectId() {
-    var projectSelect = document.querySelector('select[name="fk_project"]');
-    if (!projectSelect) return '';
-
-    var selected = projectSelect.value || '';
-    if (window.jQuery) {
-        var jqValue = window.jQuery(projectSelect).val();
-        if (jqValue !== null && jqValue !== undefined) {
-            selected = jqValue;
-        }
-    }
-
-    return selected;
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('#products-table tbody tr').forEach(sfBindLine);
-
-    var addLineBtn = document.getElementById('add-line');
-    if (addLineBtn) {
-        addLineBtn.addEventListener('click', function () {
-            var tbody = document.querySelector('#products-table tbody');
-            var template = document.getElementById('product-line-template');
-            var source = template && template.content ? template.content.querySelector('tr') : null;
-            if (!source) return;
-
-            var clone = source.cloneNode(true);
-
-            clone.querySelectorAll('script').forEach(function (node) {
-                node.remove();
-            });
-
-            tbody.appendChild(clone);
-
-            var currentArea = areaTotalInput ? sfToNumber(areaTotalInput.value) : 0;
-            var areaInput = clone.querySelector('.sf-line-area');
-            if (areaInput) {
-                areaInput.value = currentArea.toFixed(4);
-            }
-
-            sfBindLine(clone);
-        });
-    }
-
-    if (areaPctInput) {
-        areaPctInput.addEventListener('input', sfSyncAreaFromPercentage);
-        areaPctInput.addEventListener('change', sfSyncAreaFromPercentage);
-    }
-
-    var projectSelect = document.querySelector('select[name="fk_project"]');
-    if (projectSelect) {
-        var handler = function () {
-            sfFetchTalhaoForProject(sfGetProjectId());
-        };
-
-        projectSelect.addEventListener('change', handler, { passive: true });
-
-        if (window.jQuery) {
-            window.jQuery(projectSelect).on('select2:select select2:clear', handler);
-        }
-
-        handler();
-    }
-
-    var initialTalhao = document.querySelector('input[name="fk_fieldplot"]');
-    if (initialTalhao && initialTalhao.value && talhaoData[initialTalhao.value]) {
-        sfUpdateTalhaoArea(initialTalhao.value);
-    } else {
-        sfSyncAreaFromPercentage();
-    }
-});
-<?php
-print '</script>';
+print '<script>
+(function(){
+function n(v){v=(v||"").toString().replace(",", ".");var x=parseFloat(v);return isNaN(x)?0:x}
+function bindRemove(scope){(scope||document).querySelectorAll(".js-remove-row").forEach(function(btn){if(btn.dataset.bound)return;btn.dataset.bound=1;btn.addEventListener("click",function(){var tr=btn.closest("tr");var tbody=tr&&tr.parentNode;if(tbody&&tbody.children.length>1)tr.remove();});});}
+function cloneFirst(tableId){var tbody=document.querySelector("#"+tableId+" tbody");if(!tbody||!tbody.children.length)return;var row=tbody.children[0].cloneNode(true);row.querySelectorAll("input").forEach(function(i){if(i.type==="hidden"){if(i.name==="line_movement_type[]"){i.value="consume";}else{i.value="";}return;}i.value="";});row.querySelectorAll("select").forEach(function(s){s.selectedIndex=0;});tbody.appendChild(row);if(tableId==="activity-lines"){var area=document.getElementById("safra-area-planned");var lineArea=row.querySelector(".js-line-area-planned");if(area&&lineArea)setAutoInput(lineArea,area.value);}bindRemove(row);bindLine(row);}
+function recalc(row){var ap=row.querySelector(".js-line-area-planned"),dp=row.querySelector(".js-line-dose-planned"),qp=row.querySelector(".js-line-qty-planned");var ad=row.querySelector(".js-line-area-done"),dd=row.querySelector(".js-line-dose-done"),qd=row.querySelector(".js-line-qty-done");if(ap&&dp&&qp&&n(ap.value)>0&&n(dp.value)>0)qp.value=(n(ap.value)*n(dp.value)).toFixed(4);if(ad&&dd&&qd&&n(ad.value)>0&&n(dd.value)>0)qd.value=(n(ad.value)*n(dd.value)).toFixed(4);}
+function bindLine(row){if(!row||row.dataset.boundLine)return;row.dataset.boundLine=1;row.querySelectorAll(".js-line-area-planned,.js-line-dose-planned,.js-line-area-done,.js-line-dose-done").forEach(function(input){input.addEventListener("input",function(){recalc(row);});});}
+document.querySelectorAll(".js-line-row").forEach(bindLine);
+bindRemove(document);
+["type","fk_fieldplot"].forEach(function(name){var el=document.querySelector("[name=\\""+name+"\\"]");if(el)el.required=true;});
+var projectSelect=document.getElementById("safra-project-select");
+var contextBox=document.getElementById("safra-project-context");
+var contextLoadedText="' . dol_escape_js($langs->transnoentities('SafraProjectContextLoaded')) . '";
+function setAutoInput(el,value){if(!el||value===null||value===undefined||value==="")return;var val=String(value);if(!el.value||el.dataset.autoValue===el.value){el.value=val;el.dataset.autoValue=val;}}
+function setAutoSelect(el,id,label){if(!el||!id)return;var val=String(id);var exists=false;Array.prototype.forEach.call(el.options,function(option){if(option.value===val)exists=true;});if(!exists){var option=document.createElement("option");option.value=val;option.textContent=label||("#"+val);el.appendChild(option);}if(!el.value||el.dataset.autoValue===el.value){el.value=val;el.dataset.autoValue=val;if(window.jQuery)window.jQuery(el).trigger("change");else el.dispatchEvent(new Event("change",{bubbles:true}));}}
+function setLineAreas(area){if(area===null||area===undefined||area==="")return;document.querySelectorAll(".js-line-area-planned").forEach(function(input){setAutoInput(input,area);var row=input.closest("tr");if(row)recalc(row);});}
+function applyProjectContext(data){if(!data||!data.success)return;var parts=[];if(data.talhao){setAutoSelect(document.getElementById("safra-fieldplot-select"),data.talhao.id,data.talhao.display);setAutoInput(document.getElementById("safra-area-planned"),data.talhao.area);setLineAreas(data.talhao.area);parts.push(data.talhao.display);}if(data.cultura){setAutoInput(document.getElementById("safra-crop-name"),data.cultura.label||data.cultura.display);parts.push(data.cultura.display);}if(data.cultivar){setAutoInput(document.getElementById("safra-cultivar-name"),data.cultivar.label||data.cultivar.display);parts.push(data.cultivar.display);}if(contextBox&&parts.length)contextBox.textContent=contextLoadedText+": "+parts.join(" | ");}
+function fetchProjectContext(){if(!projectSelect||!projectSelect.value)return;var url=projectSelect.getAttribute("data-context-url")||"";if(!url)return;fetch(url+"?id="+encodeURIComponent(projectSelect.value),{credentials:"same-origin"}).then(function(r){return r.json();}).then(applyProjectContext).catch(function(){});}
+if(projectSelect){projectSelect.addEventListener("change",fetchProjectContext);if(window.jQuery)window.jQuery(projectSelect).on("select2:select select2:clear",fetchProjectContext);fetchProjectContext();}
+var addLine=document.getElementById("add-line"); if(addLine)addLine.addEventListener("click",function(){cloneFirst("activity-lines");});
+var addTeam=document.getElementById("add-team"); if(addTeam)addTeam.addEventListener("click",function(){cloneFirst("team-lines");});
+var addVehicle=document.getElementById("add-vehicle"); if(addVehicle)addVehicle.addEventListener("click",function(){cloneFirst("vehicle-lines");});
+var addImplement=document.getElementById("add-implement"); if(addImplement)addImplement.addEventListener("click",function(){cloneFirst("implement-lines");});
+})();
+</script>';
 
 llxFooter();
 $db->close();

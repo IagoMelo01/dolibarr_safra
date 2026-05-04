@@ -26,7 +26,7 @@ $token = GETPOST('token', 'alphanohtml');
 $messages = array();
 $errors = array();
 
-$targetVersion = '1.2.0';
+$targetVersion = '2.0.0';
 $currentVersion = '1.0.0';
 if (!empty($conf->global->SAFRA_VERSION)) {
     $currentVersion = $conf->global->SAFRA_VERSION;
@@ -39,18 +39,18 @@ if (!empty($conf->global->SAFRA_VERSION)) {
 
 $upgradeSteps = array(
     array(
-        'title' => 'Safra Activity canonical schema',
-        'description' => 'Ensures canonical safra_activity* tables exist before migration.',
+        'title' => 'Safra Activity rebuild schema',
+        'description' => 'Drops the previous agricultural activity tables and recreates the operational activity schema.',
         'sql' => array(
-            '/safra/sql/migrations/20260409_migrate_aplicacao_to_activity.sql',
+            '/safra/sql/migrations/20260504_rebuild_activity_schema.sql',
         ),
         'checks' => array(
-            'Confirm `SELECT COUNT(*) FROM llx_safra_activity` returns records after migration.',
-            'Confirm `SELECT COUNT(*) FROM llx_safra_activity_line` returns records after migration.',
-            'Confirm no query relies on `llx_safra_aplicacao*` anymore.',
+            'Confirm `SHOW COLUMNS FROM llx_safra_activity` includes season, crop_name, progress and date_planned_start.',
+            'Confirm `SHOW TABLES LIKE "llx_safra_activity_vehicle"` returns one table.',
+            'Confirm activity completion creates movements in `llx_stock_mouvement` with `origintype = "safra_activity"`.',
         ),
         'rollback' => array(
-            'Restore the database backup taken before this upgrade.',
+            'Restore the database backup taken before this destructive rebuild.',
             'Revert SAFRA_VERSION to its previous value if needed.',
         ),
     ),
@@ -69,13 +69,6 @@ if ($action === 'run') {
                 break 2;
             }
             $messages[] = $execution['message'];
-        }
-    }
-
-    if (empty($errors)) {
-        $migrationOk = safraMigrateLegacyAplicacao($db, $messages, $errors);
-        if (!$migrationOk) {
-            $errors[] = 'Legacy migration failed. No destructive cleanup was applied.';
         }
     }
 
@@ -109,14 +102,14 @@ print '<div class="fiche">';
 print '<div class="fichecenter">';
 print '<div class="fichehalfleft">';
 print '<h3>Upgrade overview</h3>';
-print '<p>This assistant migrates legacy `safra_aplicacao*` data into canonical `safra_activity*` tables and removes the legacy model.</p>';
+print '<p>This assistant rebuilds the agricultural activity schema from scratch. Existing `safra_activity*` data is discarded by design.</p>';
 print '<p><strong>Current version:</strong> ' . dol_escape_htmltag($currentVersion) . '<br />';
 print '<strong>Target version:</strong> ' . dol_escape_htmltag($targetVersion) . '</p>';
 
 print '<h3>Pre-deployment checklist</h3>';
 print '<ol>';
 print '<li>Place Dolibarr in maintenance mode and notify users about a brief downtime.</li>';
-print '<li>Take a full database backup (schema and data).</li>';
+print '<li>Take a full database backup (schema and data); this rebuild is destructive for activity tables.</li>';
 print '<li>Pause background jobs during migration.</li>';
 print '</ol>';
 
@@ -142,7 +135,7 @@ foreach ($upgradeSteps as $index => $step) {
 print '<h3>Post-deployment actions</h3>';
 print '<ol>';
 print '<li>Flush Dolibarr caches and restart queue workers or cron jobs.</li>';
-print '<li>Run smoke tests in UI: list, card, save, start, complete, cancel, delete.</li>';
+print '<li>Run smoke tests in UI: list, card, save, start, complete with stock movement, cancel with reversal.</li>';
 print '<li>Run API smoke tests: <code>GET /api/index.php/sfactivities?limit=5</code>.</li>';
 print '</ol>';
 

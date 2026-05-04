@@ -1,6 +1,6 @@
 <?php
 /*
- * REST API for Safra Activities.
+ * REST API for Safra agricultural activities.
  */
 
 use Luracast\Restler\RestException;
@@ -10,8 +10,6 @@ dol_include_once('/safra/class/FvActivity.class.php');
 dol_include_once('/safra/class/FvActivityLine.class.php');
 
 /**
- * API class for safra activities.
- *
  * @access protected
  * @class DolibarrApiAccess {@requires user}
  */
@@ -20,9 +18,6 @@ class Sfactivities extends DolibarrApi
     /** @var FvActivity */
     public $activity;
 
-    /**
-     * Constructor.
-     */
     public function __construct()
     {
         global $db;
@@ -46,17 +41,11 @@ class Sfactivities extends DolibarrApi
     {
         $this->assertReadRight();
 
-        $limit = (int) $limit;
-        if ($limit <= 0) {
-            $limit = 100;
-        }
-        $limit = min(1000, $limit);
-
+        $limit = max(1, min(1000, (int) $limit));
         $page = max(0, (int) $page);
         $offset = $limit * $page;
 
-        $sql = 'SELECT t.rowid';
-        $sql .= ' FROM ' . MAIN_DB_PREFIX . 'safra_activity as t';
+        $sql = 'SELECT t.rowid FROM ' . MAIN_DB_PREFIX . 'safra_activity as t';
         $sql .= ' WHERE t.entity IN (' . getEntity('safra_activity') . ')';
 
         if (!empty($sqlfilters)) {
@@ -97,9 +86,7 @@ class Sfactivities extends DolibarrApi
     {
         $this->assertReadRight();
 
-        $activity = $this->fetchActivityOr404($id);
-
-        return $this->formatActivity($activity, (int) $include_lines > 0);
+        return $this->formatActivity($this->fetchActivityOr404($id), (int) $include_lines > 0);
     }
 
     /**
@@ -111,7 +98,6 @@ class Sfactivities extends DolibarrApi
     public function post($request_data = null)
     {
         $this->assertWriteRight();
-
         if (!is_array($request_data)) {
             throw new RestException(400, 'No activity data provided.');
         }
@@ -120,26 +106,22 @@ class Sfactivities extends DolibarrApi
 
         $activity = new FvActivity($this->db);
         $this->hydrateActivity($activity, $request_data, true);
-
-        if (empty($activity->label)) {
+        if (trim((string) $activity->label) === '') {
             $this->db->rollback();
             throw new RestException(400, 'Missing required field: label');
         }
 
-        $res = $activity->create(DolibarrApiAccess::$user);
-        if ($res <= 0) {
+        if ($activity->create(DolibarrApiAccess::$user) <= 0) {
             $this->db->rollback();
             throw new RestException(500, $activity->error ?: $activity->errorsToString());
         }
 
-        $applyRes = $this->applyRelationsAndLines($activity, $request_data);
-        if ($applyRes < 0) {
+        if ($this->applyRelationsAndLines($activity, $request_data) < 0) {
             $this->db->rollback();
-            throw new RestException(500, $activity->error ?: 'Failed to save activity relations/lines.');
+            throw new RestException(500, $activity->error ?: 'Failed to save activity relations.');
         }
 
         $this->db->commit();
-
         $activity->fetch($activity->id);
 
         return $this->formatActivity($activity, true);
@@ -155,31 +137,25 @@ class Sfactivities extends DolibarrApi
     public function put($id, $request_data = null)
     {
         $this->assertWriteRight();
-
         if (!is_array($request_data)) {
             throw new RestException(400, 'No activity data provided.');
         }
 
         $activity = $this->fetchActivityOr404($id);
-
         $this->db->begin();
 
         $this->hydrateActivity($activity, $request_data, false);
-
-        $res = $activity->update(DolibarrApiAccess::$user);
-        if ($res <= 0) {
+        if ($activity->update(DolibarrApiAccess::$user) <= 0) {
             $this->db->rollback();
             throw new RestException(500, $activity->error ?: $activity->errorsToString());
         }
 
-        $applyRes = $this->applyRelationsAndLines($activity, $request_data);
-        if ($applyRes < 0) {
+        if ($this->applyRelationsAndLines($activity, $request_data) < 0) {
             $this->db->rollback();
-            throw new RestException(500, $activity->error ?: 'Failed to save activity relations/lines.');
+            throw new RestException(500, $activity->error ?: 'Failed to save activity relations.');
         }
 
         $this->db->commit();
-
         $activity->fetch($activity->id);
 
         return $this->formatActivity($activity, true);
@@ -196,9 +172,7 @@ class Sfactivities extends DolibarrApi
         $this->assertDeleteRight();
 
         $activity = $this->fetchActivityOr404($id);
-
-        $res = $activity->delete(DolibarrApiAccess::$user);
-        if ($res <= 0) {
+        if ($activity->delete(DolibarrApiAccess::$user) <= 0) {
             throw new RestException(500, $activity->error ?: $activity->errorsToString());
         }
 
@@ -206,11 +180,6 @@ class Sfactivities extends DolibarrApi
     }
 
     /**
-     * Start activity.
-     *
-     * @param int $id
-     * @return array
-     *
      * @url POST {id}/start
      */
     public function postStart($id)
@@ -218,8 +187,7 @@ class Sfactivities extends DolibarrApi
         $this->assertWriteRight();
 
         $activity = $this->fetchActivityOr404($id);
-        $res = $activity->start(DolibarrApiAccess::$user);
-        if ($res <= 0) {
+        if ($activity->start(DolibarrApiAccess::$user) <= 0) {
             throw new RestException(500, $activity->error ?: $activity->errorsToString());
         }
 
@@ -229,11 +197,6 @@ class Sfactivities extends DolibarrApi
     }
 
     /**
-     * Complete activity.
-     *
-     * @param int $id
-     * @return array
-     *
      * @url POST {id}/complete
      */
     public function postComplete($id)
@@ -241,8 +204,7 @@ class Sfactivities extends DolibarrApi
         $this->assertWriteRight();
 
         $activity = $this->fetchActivityOr404($id);
-        $res = $activity->complete(DolibarrApiAccess::$user);
-        if ($res <= 0) {
+        if ($activity->complete(DolibarrApiAccess::$user) <= 0) {
             throw new RestException(500, $activity->error ?: $activity->errorsToString());
         }
 
@@ -252,11 +214,6 @@ class Sfactivities extends DolibarrApi
     }
 
     /**
-     * Cancel activity.
-     *
-     * @param int $id
-     * @return array
-     *
      * @url POST {id}/cancel
      */
     public function postCancel($id)
@@ -264,8 +221,7 @@ class Sfactivities extends DolibarrApi
         $this->assertWriteRight();
 
         $activity = $this->fetchActivityOr404($id);
-        $res = $activity->cancel(DolibarrApiAccess::$user);
-        if ($res <= 0) {
+        if ($activity->cancel(DolibarrApiAccess::$user) <= 0) {
             throw new RestException(500, $activity->error ?: $activity->errorsToString());
         }
 
@@ -278,113 +234,108 @@ class Sfactivities extends DolibarrApi
      * Fill object fields from request payload.
      *
      * @param FvActivity $activity
-     * @param array      $requestData
+     * @param array      $data
      * @param bool       $isCreate
      * @return void
      */
-    private function hydrateActivity(FvActivity $activity, array $requestData, $isCreate)
+    private function hydrateActivity(FvActivity $activity, array $data, $isCreate)
     {
-        if ($isCreate && empty($activity->ref)) {
-            $activity->ref = '(PROV)';
+        foreach (array('ref', 'label', 'season', 'crop_name', 'cultivar_name', 'weather', 'note_public', 'note_private') as $field) {
+            if (array_key_exists($field, $data)) {
+                $activity->{$field} = is_scalar($data[$field]) ? (string) $data[$field] : '';
+            }
         }
 
-        if (array_key_exists('ref', $requestData)) {
-            $activity->ref = trim((string) $requestData['ref']);
+        if (array_key_exists('type', $data)) {
+            $activity->type = FvActivity::normalizeType($data['type']);
         }
-        if (array_key_exists('label', $requestData)) {
-            $activity->label = trim((string) $requestData['label']);
+        if (array_key_exists('status', $data)) {
+            $activity->status = FvActivity::normalizeStatus($data['status']);
+        } elseif ($isCreate && empty($activity->status)) {
+            $activity->status = FvActivity::STATUS_DRAFT;
         }
-        if (array_key_exists('type', $requestData)) {
-            $activity->type = FvActivity::normalizeType($requestData['type']);
-        }
-        if (array_key_exists('status', $requestData)) {
-            $activity->status = FvActivity::normalizeStatus($requestData['status']);
+        if (array_key_exists('priority', $data)) {
+            $activity->priority = FvActivity::normalizePriority($data['priority']);
         }
 
-        if (array_key_exists('fk_project', $requestData)) {
-            $activity->fk_project = $this->asNullableInt($requestData['fk_project']);
+        foreach (array('fk_project', 'fk_task', 'fk_thirdparty', 'fk_soc', 'fk_fieldplot', 'fk_talhao') as $field) {
+            if (!array_key_exists($field, $data)) {
+                continue;
+            }
+            $target = $field;
+            if ($field === 'fk_soc') {
+                $target = 'fk_thirdparty';
+            } elseif ($field === 'fk_talhao') {
+                $target = 'fk_fieldplot';
+            }
+            $activity->{$target} = $this->asNullableInt($data[$field]);
         }
-        if (array_key_exists('fk_task', $requestData)) {
-            $activity->fk_task = $this->asNullableInt($requestData['fk_task']);
+
+        foreach (array('progress', 'area_planned', 'area_done', 'area_total') as $field) {
+            if (array_key_exists($field, $data)) {
+                $activity->{$field} = price2num($data[$field], 'MT');
+            }
         }
-        if (array_key_exists('fk_thirdparty', $requestData) || array_key_exists('fk_soc', $requestData)) {
-            $thirdparty = array_key_exists('fk_thirdparty', $requestData) ? $requestData['fk_thirdparty'] : $requestData['fk_soc'];
-            $activity->fk_thirdparty = $this->asNullableInt($thirdparty);
-        }
-        if (array_key_exists('fk_fieldplot', $requestData) || array_key_exists('fk_talhao', $requestData)) {
-            $fieldplot = array_key_exists('fk_fieldplot', $requestData) ? $requestData['fk_fieldplot'] : $requestData['fk_talhao'];
-            $activity->fk_fieldplot = $this->asNullableInt($fieldplot);
-        }
-        if (array_key_exists('area_total', $requestData)) {
-            $activity->area_total = price2num($requestData['area_total'], 'MT');
-        }
-        if (array_key_exists('note_public', $requestData)) {
-            $activity->note_public = $requestData['note_public'];
-        }
-        if (array_key_exists('note_private', $requestData)) {
-            $activity->note_private = $requestData['note_private'];
+
+        foreach (array('date_planned_start', 'date_planned_end', 'date_start', 'date_end') as $field) {
+            if (array_key_exists($field, $data)) {
+                $activity->{$field} = $this->asTimestamp($data[$field]);
+            }
         }
 
         $activity->fk_user_modif = (int) DolibarrApiAccess::$user->id;
     }
 
     /**
-     * Save optional relation arrays and line payload.
+     * Save relation arrays and input lines.
      *
      * @param FvActivity $activity
-     * @param array      $requestData
+     * @param array      $data
      * @return int
      */
-    private function applyRelationsAndLines(FvActivity $activity, array $requestData)
+    private function applyRelationsAndLines(FvActivity $activity, array $data)
     {
-        if (array_key_exists('machine_ids', $requestData) && is_array($requestData['machine_ids'])) {
-            if ($activity->setMachines($requestData['machine_ids']) < 0) {
+        if (array_key_exists('lines', $data)) {
+            if (!is_array($data['lines'])) {
+                $activity->error = 'Invalid lines payload.';
                 return -1;
             }
-        }
-
-        if (array_key_exists('implement_ids', $requestData) && is_array($requestData['implement_ids'])) {
-            if ($activity->setImplements($requestData['implement_ids']) < 0) {
-                return -1;
-            }
-        }
-
-        if (array_key_exists('user_ids', $requestData) && is_array($requestData['user_ids'])) {
-            if ($activity->setUsers($requestData['user_ids']) < 0) {
-                return -1;
-            }
-        }
-
-        if (array_key_exists('lines', $requestData) && is_array($requestData['lines'])) {
             if (FvActivityLine::deleteForActivity($this->db, $activity->id) < 0) {
                 $activity->error = $this->db->lasterror();
                 return -1;
             }
 
-            foreach ($requestData['lines'] as $lineData) {
+            foreach ($data['lines'] as $position => $lineData) {
                 if (!is_array($lineData)) {
                     continue;
                 }
-
-                $fkProduct = $this->asNullableInt(isset($lineData['fk_product']) ? $lineData['fk_product'] : null);
-                if ($fkProduct === null || $fkProduct <= 0) {
+                $productId = $this->asNullableInt(isset($lineData['fk_product']) ? $lineData['fk_product'] : null);
+                if (empty($productId)) {
                     continue;
                 }
 
                 $line = new FvActivityLine($this->db);
                 $line->fk_activity = (int) $activity->id;
-                $line->fk_product = $fkProduct;
-                $line->area_applied = price2num(isset($lineData['area_applied']) ? $lineData['area_applied'] : 0, 'MT');
-                $line->dose = price2num(isset($lineData['dose']) ? $lineData['dose'] : 0, 'MT');
-                $line->dose_unit = isset($lineData['dose_unit']) ? (string) $lineData['dose_unit'] : '';
-                $line->total = price2num(isset($lineData['total']) ? $lineData['total'] : ($line->area_applied * $line->dose), 'MT');
-                $line->movement_type = isset($lineData['movement_type']) ? (string) $lineData['movement_type'] : 'consume';
-                if (!in_array($line->movement_type, array('consume', 'return', 'transfer'), true)) {
-                    $line->movement_type = 'consume';
-                }
+                $line->position = (int) $position + 1;
+                $line->fk_product = $productId;
                 $line->fk_warehouse = $this->asNullableInt(isset($lineData['fk_warehouse']) ? $lineData['fk_warehouse'] : null);
-                $line->fk_user_creat = (int) DolibarrApiAccess::$user->id;
-                $line->fk_user_modif = (int) DolibarrApiAccess::$user->id;
+                $line->movement_type = isset($lineData['movement_type']) ? $lineData['movement_type'] : FvActivityLine::MOVEMENT_CONSUME;
+                foreach (array('area_planned', 'area_done', 'dose_planned', 'dose_done', 'qty_planned', 'qty_done', 'unit_cost') as $field) {
+                    if (array_key_exists($field, $lineData)) {
+                        $line->{$field} = price2num($lineData[$field], 'MT');
+                    }
+                }
+                if (array_key_exists('area_applied', $lineData)) {
+                    $line->area_applied = price2num($lineData['area_applied'], 'MT');
+                }
+                if (array_key_exists('dose', $lineData)) {
+                    $line->dose = price2num($lineData['dose'], 'MT');
+                }
+                if (array_key_exists('total', $lineData)) {
+                    $line->total = price2num($lineData['total'], 'MT');
+                }
+                $line->dose_unit = isset($lineData['dose_unit']) ? (string) $lineData['dose_unit'] : '';
+                $line->note = isset($lineData['note']) ? (string) $lineData['note'] : '';
 
                 if ($line->create(DolibarrApiAccess::$user) < 0) {
                     $activity->error = $line->error ?: $line->errorsToString();
@@ -393,11 +344,45 @@ class Sfactivities extends DolibarrApi
             }
         }
 
+        if (array_key_exists('user_links', $data) && is_array($data['user_links'])) {
+            if ($activity->setUsers($data['user_links']) < 0) {
+                return -1;
+            }
+        } elseif (array_key_exists('user_ids', $data) && is_array($data['user_ids'])) {
+            if ($activity->setUsers($data['user_ids']) < 0) {
+                return -1;
+            }
+        }
+
+        if (array_key_exists('vehicle_links', $data) && is_array($data['vehicle_links'])) {
+            if ($activity->setVehicles($data['vehicle_links']) < 0) {
+                return -1;
+            }
+        } elseif (array_key_exists('vehicle_ids', $data) && is_array($data['vehicle_ids'])) {
+            if ($activity->setVehicles($data['vehicle_ids']) < 0) {
+                return -1;
+            }
+        } elseif (array_key_exists('machine_ids', $data) && is_array($data['machine_ids'])) {
+            if ($activity->setVehicles($data['machine_ids']) < 0) {
+                return -1;
+            }
+        }
+
+        if (array_key_exists('implement_links', $data) && is_array($data['implement_links'])) {
+            if ($activity->setImplements($data['implement_links']) < 0) {
+                return -1;
+            }
+        } elseif (array_key_exists('implement_ids', $data) && is_array($data['implement_ids'])) {
+            if ($activity->setImplements($data['implement_ids']) < 0) {
+                return -1;
+            }
+        }
+
         return 1;
     }
 
     /**
-     * Build API payload from activity object.
+     * Format activity payload.
      *
      * @param FvActivity $activity
      * @param bool       $includeLines
@@ -410,23 +395,35 @@ class Sfactivities extends DolibarrApi
             'rowid' => (int) $activity->id,
             'ref' => (string) $activity->ref,
             'label' => (string) $activity->label,
+            'type' => FvActivity::normalizeType($activity->type),
+            'status' => FvActivity::normalizeStatus($activity->status),
+            'status_label' => FvActivity::getStatusLabel($activity->status),
+            'priority' => FvActivity::normalizePriority($activity->priority),
+            'progress' => (float) $activity->progress,
+            'season' => (string) $activity->season,
+            'crop_name' => (string) $activity->crop_name,
+            'cultivar_name' => (string) $activity->cultivar_name,
             'fk_project' => $this->asNullableInt($activity->fk_project),
             'fk_task' => $this->asNullableInt($activity->fk_task),
             'fk_thirdparty' => $this->asNullableInt($activity->fk_thirdparty),
             'fk_fieldplot' => $this->asNullableInt($activity->fk_fieldplot),
+            'area_planned' => (float) $activity->area_planned,
+            'area_done' => (float) $activity->area_done,
             'area_total' => (float) $activity->area_total,
-            'type' => (string) FvActivity::normalizeType($activity->type),
-            'status' => (int) FvActivity::normalizeStatus($activity->status),
-            'status_label' => FvActivity::getStatusLabel($activity->status),
+            'date_planned_start' => $activity->date_planned_start,
+            'date_planned_end' => $activity->date_planned_end,
+            'date_start' => $activity->date_start,
+            'date_end' => $activity->date_end,
+            'weather' => (string) $activity->weather,
             'note_public' => (string) $activity->note_public,
             'note_private' => (string) $activity->note_private,
-            'date_creation' => $activity->date_creation,
-            'tms' => $activity->tms,
-            'fk_user_creat' => $this->asNullableInt($activity->fk_user_creat),
-            'fk_user_modif' => $this->asNullableInt($activity->fk_user_modif),
-            'machine_ids' => $activity->fetchMachines(),
-            'implement_ids' => $activity->fetchImplements(),
             'user_ids' => $activity->fetchUsers(),
+            'vehicle_ids' => $activity->fetchVehicles(),
+            'machine_ids' => $activity->fetchVehicles(),
+            'implement_ids' => $activity->fetchImplements(),
+            'user_links' => $activity->fetchUserLinks(),
+            'vehicle_links' => $activity->fetchVehicleLinks(),
+            'implement_links' => $activity->fetchImplementLinks(),
         );
 
         if ($includeLines) {
@@ -438,14 +435,18 @@ class Sfactivities extends DolibarrApi
                     'rowid' => (int) $line->id,
                     'fk_activity' => (int) $line->fk_activity,
                     'fk_product' => $this->asNullableInt($line->fk_product),
-                    'area_applied' => (float) $line->area_applied,
-                    'dose' => (float) $line->dose,
-                    'dose_unit' => (string) $line->dose_unit,
-                    'total' => (float) $line->total,
-                    'movement_type' => (string) $line->movement_type,
                     'fk_warehouse' => $this->asNullableInt($line->fk_warehouse),
-                    'date_creation' => $line->date_creation,
-                    'tms' => $line->tms,
+                    'movement_type' => FvActivityLine::normalizeMovementType($line->movement_type),
+                    'area_planned' => (float) $line->area_planned,
+                    'area_done' => (float) $line->area_done,
+                    'dose_planned' => (float) $line->dose_planned,
+                    'dose_done' => (float) $line->dose_done,
+                    'dose_unit' => (string) $line->dose_unit,
+                    'qty_planned' => (float) $line->qty_planned,
+                    'qty_done' => (float) $line->qty_done,
+                    'total' => (float) $line->total,
+                    'unit_cost' => (float) $line->unit_cost,
+                    'note' => (string) $line->note,
                 );
             }
             $data['lines'] = $lines;
@@ -480,11 +481,22 @@ class Sfactivities extends DolibarrApi
         }
 
         $value = (int) $value;
-        if ($value <= 0) {
+
+        return $value > 0 ? $value : null;
+    }
+
+    private function asTimestamp($value)
+    {
+        if ($value === null || $value === '') {
             return null;
         }
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
 
-        return $value;
+        $timestamp = strtotime((string) $value);
+
+        return $timestamp ? $timestamp : null;
     }
 
     private function assertReadRight()
