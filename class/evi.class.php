@@ -25,6 +25,7 @@
 
 // Put here all includes required by your class file
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
+dol_include_once('/safra/lib/safra_storage.lib.php');
 //require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
 //require_once DOL_DOCUMENT_ROOT . '/product/class/product.class.php';
 
@@ -1230,12 +1231,12 @@ class EVI extends CommonObject
 		}
 
 		if(!$talhao){
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetchAll();
+			$talhaoObj = new Talhao($this->db);
+			$talhao = $talhaoObj->fetchAll();
 		} else {
-			$t_id = $talhao;
-			$talhao = new Talhao($this->db);
-			$talhao = $talhao->fetch($t_id);
+			$singleTalhao = new Talhao($this->db);
+			$fetchSingle = $singleTalhao->fetch((int) $talhao->id);
+			$talhao = ($fetchSingle > 0) ? array($singleTalhao) : array();
 		}
 		global $conf;
 		// URL para o serviÃ§o WMS do Sentinel Hub
@@ -1255,8 +1256,7 @@ class EVI extends CommonObject
 	
 			// Define as opÃ§Ãµes do cURL
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+			safra_configure_curl_ssl($ch);
 
 			// curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			// 	'Content-Type: application/json',
@@ -1286,6 +1286,7 @@ class EVI extends CommonObject
 	
 			// Executa a sessÃ£o cURL
 			$response = curl_exec($ch);
+			$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 	
                         // Verifica erros
                         if (curl_errno($ch)) {
@@ -1301,19 +1302,21 @@ class EVI extends CommonObject
 			// echo '<pre>';
 			// echo '</pre>';
 	
-			// Define o caminho do arquivo para salvar a resposta
-			$file_path = DOL_DOCUMENT_ROOT.'/custom/safra/json/evi/'. $file_name .'.json'; // Altere para o diretÃ³rio desejado
+			$errorMessage = '';
+			$file_path = safra_write_satellite_json_file('evi', $file_name, $response, $errorMessage);
+			if ($file_path === false) {
+				dol_syslog(__METHOD__.' invalid satellite JSON response for '.$file_name.' (HTTP '.$httpCode.', '.$errorMessage.')', LOG_WARNING);
+				if ($cont == 0) {
+					setEventMessages('Sem dados para esse periodo!', null, 'warnings');
+					$cont++;
+				}
+				continue;
+			}
 
-			
-			// Salva a resposta em um arquivo
-                        if (!file_put_contents($file_path, $response)) {
-                                dol_syslog(__METHOD__.' failed to write '.$file_path, LOG_ERR);
-                        } else {
-                                if (filesize($file_path) < 1000 && $cont == 0) {
-                                        dol_syslog(__METHOD__.' no data returned for '.$requestUrl, LOG_WARNING);
-                                        setEventMessages('Sem dados para esse periodo!', null, 'warnings');
-                                        $cont++;
-                                }
+                        if (filesize($file_path) < 1000 && $cont == 0) {
+                                dol_syslog(__METHOD__.' no data returned for '.$requestUrl, LOG_WARNING);
+                                setEventMessages('Sem dados para esse periodo!', null, 'warnings');
+                                $cont++;
 			}
 			
 			$evi = new EVI($this->db);
@@ -1321,7 +1324,7 @@ class EVI extends CommonObject
 			$evi->label = $time;
 			$evi->talhao = $key->id;
 			$evi->date_creation = dol_now();
-			$evi->caminho_json = './json/evi/'. $file_name .'.json';
+			$evi->caminho_json = 'json/evi/'. $file_name .'.json';
 			$evi->create($user);
 
 		}

@@ -63,6 +63,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
 include_once './class/evi.class.php';
 dol_include_once('/safra/class/safra_satellite_statistics.class.php');
+dol_include_once('/safra/lib/safra_storage.lib.php');
 
 // Load translation files required by the page
 $langs->loadLangs(array("safra@safra"));
@@ -186,8 +187,8 @@ foreach ($list_talhao as $key => $talhao) {
 
 if ($consulta != '') {
     $evi_obj = new EVI($db);
-    $filename = './json/evi/' . $consulta . '.json';
-    if (file_exists($filename)) {
+    $filename = safra_resolve_satellite_json_path('evi', $consulta);
+    if (safra_satellite_json_is_valid_file($filename)) {
         // echo filesize($filename);
         if (filesize($filename) < 1000) {
             $dados = explode("_", $consulta);

@@ -59,6 +59,7 @@ require_once DOL_DOCUMENT_ROOT . '/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
 dol_include_once('/safra/class/safra_satellite_statistics.class.php');
 dol_include_once('/safra/class/safra_satellite_health.class.php');
+dol_include_once('/safra/lib/safra_storage.lib.php');
 
 $langs->loadLangs(array('safra@safra'));
 
@@ -98,12 +99,12 @@ $indexDefinitions = array(
             'Acima de 0.6: vigor vegetativo alto.',
         ),
         'chart' => array(
-            'color' => '#2563eb',
-            'gradient' => array('rgba(37, 99, 235, 0.32)', 'rgba(37, 99, 235, 0.06)'),
+            'color' => '#16a34a',
+            'gradient' => array('rgba(22, 163, 74, 0.32)', 'rgba(22, 163, 74, 0.05)'),
             'range' => array('min' => -0.2, 'max' => 1),
             'decimals' => 3,
-            'rangeFillColor' => 'rgba(37, 99, 235, 0.16)',
-            'rangeLineColor' => 'rgba(37, 99, 235, 0.32)',
+            'rangeFillColor' => 'rgba(22, 163, 74, 0.14)',
+            'rangeLineColor' => 'rgba(22, 163, 74, 0.32)',
         ),
     ),
     'ndmi' => array(
@@ -134,12 +135,12 @@ $indexDefinitions = array(
             'Acima de 0.4: boa disponibilidade de agua.',
         ),
         'chart' => array(
-            'color' => '#16a34a',
-            'gradient' => array('rgba(22, 163, 74, 0.32)', 'rgba(22, 163, 74, 0.05)'),
+            'color' => '#2563eb',
+            'gradient' => array('rgba(37, 99, 235, 0.32)', 'rgba(37, 99, 235, 0.06)'),
             'range' => array('min' => -0.2, 'max' => 1),
             'decimals' => 3,
-            'rangeFillColor' => 'rgba(22, 163, 74, 0.14)',
-            'rangeLineColor' => 'rgba(22, 163, 74, 0.32)',
+            'rangeFillColor' => 'rgba(37, 99, 235, 0.16)',
+            'rangeLineColor' => 'rgba(37, 99, 235, 0.32)',
         ),
     ),
     'swir' => array(
@@ -209,12 +210,12 @@ $indexDefinitions = array(
             '78-100: excelente.',
         ),
         'chart' => array(
-            'color' => '#15803d',
-            'gradient' => array('rgba(21, 128, 61, 0.30)', 'rgba(21, 128, 61, 0.06)'),
+            'color' => '#7c3aed',
+            'gradient' => array('rgba(124, 58, 237, 0.28)', 'rgba(124, 58, 237, 0.06)'),
             'range' => array('min' => 0, 'max' => 100),
             'decimals' => 2,
-            'rangeFillColor' => 'rgba(21, 128, 61, 0.14)',
-            'rangeLineColor' => 'rgba(21, 128, 61, 0.30)',
+            'rangeFillColor' => 'rgba(124, 58, 237, 0.12)',
+            'rangeLineColor' => 'rgba(124, 58, 237, 0.30)',
         ),
     ),
 );
@@ -271,36 +272,36 @@ if ($selectedTalhaoId > 0 && isset($talhaoLabelById[$selectedTalhaoId])) {
 
 $mapStatusMessage = '';
 if (!empty($fileKey) && $selectedTalhaoId > 0) {
-    $mapAbsoluteFile = DOL_DOCUMENT_ROOT . '/custom/safra/json/' . $selectedMeta['folder'] . '/' . $fileKey . '.json';
+    $mapAbsoluteFile = safra_resolve_satellite_json_path($selectedMeta['folder'], $fileKey);
     $validSelectedRange = !empty($selectedDateRange) && preg_match('/^\d{4}-\d{2}-\d{2}\/\d{4}-\d{2}-\d{2}$/', $selectedDateRange);
     $selectedTalhao = new Talhao($db);
     if ($validSelectedRange && $selectedTalhao->fetch($selectedTalhaoId) > 0) {
         if ($selectedIndex === 'health') {
             $sourceBase = str_replace('/', '_', $selectedDateRange) . '_' . $selectedTalhaoId;
-            $ndviPath = DOL_DOCUMENT_ROOT . '/custom/safra/json/ndvi/' . $sourceBase . '.json';
-            $ndmiPath = DOL_DOCUMENT_ROOT . '/custom/safra/json/ndmi/' . $sourceBase . '.json';
-            $swirPath = DOL_DOCUMENT_ROOT . '/custom/safra/json/swir/' . $sourceBase . '.json';
+            $ndviPath = safra_resolve_satellite_json_path('ndvi', $sourceBase);
+            $ndmiPath = safra_resolve_satellite_json_path('ndmi', $sourceBase);
+            $swirPath = safra_resolve_satellite_json_path('swir', $sourceBase);
 
             dol_include_once('/safra/class/ndvi.class.php');
             dol_include_once('/safra/class/ndmi.class.php');
             dol_include_once('/safra/class/swir.class.php');
 
-            if (!is_file($ndviPath)) {
+            if (!safra_satellite_json_is_valid_file($ndviPath)) {
                 $ndvi = new NDVI($db);
                 $ndvi->requestNDVIData(null, $selectedDateRange, $selectedTalhao);
             }
-            if (!is_file($ndmiPath)) {
+            if (!safra_satellite_json_is_valid_file($ndmiPath)) {
                 $ndmi = new NDMI($db);
                 $ndmi->requestNDMIData(null, $selectedDateRange, $selectedTalhao);
             }
-            if (!is_file($swirPath)) {
+            if (!safra_satellite_json_is_valid_file($swirPath)) {
                 $swir = new SWIR($db);
                 $swir->requestSWIRData(null, $selectedDateRange, $selectedTalhao);
             }
 
             // Always regenerate health to apply the latest scoring model.
             SafraSatelliteHealth::generateForRange($db, $selectedDateRange, $selectedTalhaoId);
-        } elseif (!is_file($mapAbsoluteFile)) {
+        } elseif (!safra_satellite_json_is_valid_file($mapAbsoluteFile)) {
             if ($selectedIndex === 'ndvi') {
                 dol_include_once('/safra/class/ndvi.class.php');
                 $obj = new NDVI($db);
@@ -317,7 +318,7 @@ if (!empty($fileKey) && $selectedTalhaoId > 0) {
         }
     }
 
-    if (!is_file($mapAbsoluteFile)) {
+    if (!safra_satellite_json_is_valid_file($mapAbsoluteFile)) {
         $mapStatusMessage = $langs->trans('SafraSatelliteMapMissingFile');
     }
 }
@@ -406,7 +407,7 @@ foreach ($weeklySeriesByIndex as $seriesPayload) {
 
 $weeklyMessageKey = '';
 if ($selectedTalhaoId > 0 && !$hasChartNumericData) {
-    $messagePriority = array('missing_credentials', 'missing_geometry', 'talhao_not_found', 'no_data');
+    $messagePriority = array('invalid_credentials', 'missing_credentials', 'credential_connection_error', 'missing_geometry', 'talhao_not_found', 'no_data');
     foreach ($messagePriority as $messageCode) {
         foreach ($weeklySeriesByIndex as $seriesPayload) {
             if (!empty($seriesPayload['message']) && $seriesPayload['message'] === $messageCode) {
@@ -422,6 +423,12 @@ if ($selectedTalhaoId > 0 && !$hasChartNumericData) {
 
 $weeklyMessageText = '';
 switch ($weeklyMessageKey) {
+    case 'invalid_credentials':
+        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageInvalidCredentials');
+        break;
+    case 'credential_connection_error':
+        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageCredentialConnectionError');
+        break;
     case 'missing_credentials':
         $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
         break;
@@ -692,6 +699,7 @@ print '</div>';
     const arquivo_post = <?php echo json_encode($fileKey ? $fileKey : ''); ?>;
     const satellite_index_selected = <?php echo json_encode($selectedIndex); ?>;
     const satellite_index_options = <?php echo json_encode($indexClientConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    const satellite_json_endpoint = <?php echo json_encode(dol_buildpath('/safra/satellite_json.php', 1)); ?>;
     const map_choose_filters_message = <?php echo json_encode($langs->trans('SafraSatelliteMapChooseFilters')); ?>;
     const map_missing_file_message = <?php echo json_encode($langs->trans('SafraSatelliteMapMissingFile')); ?>;
     window.satelliteChartInstances = window.satelliteChartInstances || [];

@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plano Safra - Requisitos Pendentes e Implantacao</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5d6a75;
+      --line: #d9e0e6;
+      --surface: #ffffff;
+      --band: #f5f7f9;
+      --accent: #176b52;
+      --accent-2: #8a5a12;
+      --danger: #b3261e;
+      --info: #1f5e99;
+      --ok: #247a3e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #f0f3f5;
+      font: 15px/1.55 Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      background: #17202a;
+      color: #fff;
+      padding: 34px 24px 28px;
+      border-bottom: 6px solid var(--accent);
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    h1 {
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    h2 {
+      margin-top: 28px;
+      margin-bottom: 12px;
+      font-size: 22px;
+      color: #10251f;
+    }
+
+    h3 {
+      margin-top: 18px;
+      margin-bottom: 8px;
+      font-size: 17px;
+    }
+
+    p {
+      margin: 8px 0;
+    }
+
+    code {
+      padding: 1px 4px;
+      border: 1px solid #dde5ea;
+      border-radius: 4px;
+      background: #f8fafb;
+      color: #12312a;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.94em;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: #d6e1dc;
+      max-width: 900px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: #f2f6f4;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 13px;
+    }
+
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    .band {
+      background: var(--band);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 18px;
+      margin: 22px -24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 14px;
+      min-height: 110px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 4px;
+      color: var(--accent);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .summary-list,
+    .checklist {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    .summary-list li,
+    .checklist li {
+      margin: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: #fff;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #eaf0ee;
+      color: #10251f;
+      font-weight: 700;
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .p0 {
+      color: #fff;
+      background: var(--danger);
+    }
+
+    .p1 {
+      color: #fff;
+      background: var(--accent-2);
+    }
+
+    .p2 {
+      color: #fff;
+      background: var(--info);
+    }
+
+    .p3 {
+      color: #fff;
+      background: var(--muted);
+    }
+
+    .status-ok {
+      color: var(--ok);
+      font-weight: 700;
+    }
+
+    .status-risk {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .phase {
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      margin: 10px 0;
+      background: #f8fbfa;
+    }
+
+    .phase small {
+      display: block;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    footer {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 10px 24px 36px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      header,
+      main {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 13px;
+      }
+
+      th,
+      td {
+        padding: 7px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Plano Safra - requisitos pendentes e implantacao</h1>
+    <p class="subtitle">Levantamento do que ainda falta para levar o modulo Safra a um ciclo controlado de homologacao, release e producao.</p>
+    <div class="meta">
+      <span class="pill">Data: 2026-05-21</span>
+      <span class="pill">Branch: main</span>
+      <span class="pill">Commit inspecionado: 031312e</span>
+      <span class="pill">PHP local: 8.2.26</span>
+      <span class="pill">Testes locais: passando</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <h2>Resumo executivo</h2>
+      <p>O modulo Safra ja possui uma base operacional relevante: CRUDs agronomicos, mapas, visao satelital, workflow de atividades agricolas, integracao com estoque, sincronizacao com tarefas de projeto, API REST e uma suite minima de testes. O modulo ainda nao deve ser tratado como pronto para producao sem um ciclo de hardening e homologacao.</p>
+      <ul class="summary-list">
+        <li><strong>Pronto para evoluir:</strong> Activity, API, schema canonico, testes basicos e runbook existem.</li>
+        <li><strong>Bloqueios de producao:</strong> hardening SSL no Sentinel, rotacao de credenciais, definicao da estrategia de migracao destrutiva, homologacao em staging e limpeza documental.</li>
+        <li><strong>Maior risco funcional:</strong> regra de reabertura/alteracao de atividades concluidas com movimentacao de estoque.</li>
+        <li><strong>Maior risco operacional:</strong> ativacao em ambientes enxutos por causa da lista ampla de dependencias em <code>core/modules/modSafra.class.php</code>.</li>
+      </ul>
+    </section>
+
+    <section class="band">
+      <div class="grid">
+        <div class="metric">
+          <strong>58</strong>
+          <span>diretorios no snapshot local, excluindo .git</span>
+        </div>
+        <div class="metric">
+          <strong>489</strong>
+          <span>arquivos no snapshot local, excluindo .git</span>
+        </div>
+        <div class="metric">
+          <strong>4</strong>
+          <span>testes locais principais em <code>tests/run.php</code></span>
+        </div>
+        <div class="metric">
+          <strong>P0</strong>
+          <span>prioridade dos itens que bloqueiam implantacao</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Estado atual validado</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>Ja existe</th>
+            <th>Pendente</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Activity</td>
+            <td>Objeto <code>FvActivity</code>, linhas, usuarios, veiculos, implementos, status, estoque e task sync.</td>
+            <td>Homologar em staging, fechar regra de reabertura com estoque, filtros/relatorios e operacao em massa.</td>
+          </tr>
+          <tr>
+            <td>API</td>
+            <td><code>class/api_sfactivities.class.php</code> com CRUD e transicoes <code>start</code>, <code>complete</code>, <code>cancel</code>.</td>
+            <td>Documentar contrato final, validar com Dolibarr REST real e decidir endpoints adicionais.</td>
+          </tr>
+          <tr>
+            <td>Estoque</td>
+            <td>Movimentos via <code>MouvementStock</code> com <code>origintype = 'safra_activity'</code> e reversao no cancelamento.</td>
+            <td>Validar saldo real, lote/serie quando aplicavel, armazem obrigatorio e duplicidade em fluxos de edicao.</td>
+          </tr>
+          <tr>
+            <td>Satelite</td>
+            <td>Visao unificada, cache semanal, indices NDVI/NDMI/NDWI/EVI/SWIR e saude geral.</td>
+            <td>Corrigir SSL, validar credenciais reais, tratar falhas operacionais e confirmar cron de todos os indices.</td>
+          </tr>
+          <tr>
+            <td>Qualidade</td>
+            <td><code>php tests\run.php</code> passa localmente; ha script <code>build/ci/checks.ps1</code>.</td>
+            <td>Adicionar testes de integracao, UI smoke, checks de seguranca e homologacao com base espelho.</td>
+          </tr>
+          <tr>
+            <td>Documentacao</td>
+            <td>Runbook, guia de migracao, roteiro manual e documentos de dominio existem.</td>
+            <td>Remover drift de <code>Aplicacao</code>, corrigir encoding e alinhar README/Asciidoc ao estado real.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Backlog de requisitos pendentes</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Prioridade</th>
+            <th>Requisito</th>
+            <th>Evidencia no repositorio</th>
+            <th>Entrega esperada</th>
+            <th>Criterio de aceite</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag p0">P0</span></td>
+            <td>Reativar verificacao SSL nas chamadas Sentinel Hub.</td>
+            <td><code>class/safra_satellite_statistics.class.php</code> usa <code>CURLOPT_SSL_VERIFYPEER =&gt; false</code>.</td>
+            <td>cURL com peer/host verification ativo e tratamento de erro claro.</td>
+            <td>Nenhum <code>CURLOPT_SSL_VERIFYPEER =&gt; false</code> em codigo de integracao.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p0">P0</span></td>
+            <td>Rotacionar credenciais Sentinel/Embrapa e invalidar tokens antigos.</td>
+            <td><code>json/cache/token.json</code> existe como artefato local ignorado pelo Git.</td>
+            <td>Credenciais novas configuradas em <code>admin/setup.php</code> e token cache regenerado.</td>
+            <td>Token antigo removido do ambiente e chamadas autenticadas funcionando em staging.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p0">P0</span></td>
+            <td>Definir estrategia de migracao Activity para producao.</td>
+            <td><code>20260504_rebuild_activity_schema.sql</code> descarta dados <code>safra_activity*</code>.</td>
+            <td>Decisao formal: rebuild destrutivo autorizado ou migracao preservativa implementada.</td>
+            <td>Go/no-go assinado com backup, rollback e validacao de dados.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p0">P0</span></td>
+            <td>Executar homologacao em staging com base espelho.</td>
+            <td><code>project-steps.md</code> marca Gate 3 como parcial.</td>
+            <td>Ciclo UAT cobrindo Activity, estoque, task sync, API e satelite.</td>
+            <td>Roteiro de smoke concluido sem erros bloqueantes.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Fechar regra de reabertura de atividade concluida com estoque.</td>
+            <td><code>FvActivity::reopen()</code> reabre sem alterar estoque.</td>
+            <td>Regra documentada e implementada: bloquear, reverter ou criar ajuste controlado.</td>
+            <td>Nao ha como editar consumo concluido gerando saldo incoerente.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Racionalizar dependencias do modulo.</td>
+            <td><code>modSafra.class.php</code> depende de muitos modulos nao necessariamente obrigatorios.</td>
+            <td>Lista reduzida a dependencias reais ou dependencias opcionais tratadas por feature flag.</td>
+            <td>Modulo ativa em instalacao Dolibarr minima com Projeto, Produto, Estoque e Cron.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Completar filtros e operacao em massa da lista de atividades.</td>
+            <td>Ha chaves de traducao para mass action e kanban, mas so existem list/card/edit.</td>
+            <td>Filtros por safra, cultura, talhao, status, prazo, responsavel e acoes em lote priorizadas.</td>
+            <td>Usuario encontra e atualiza atividades operacionais sem edicao uma a uma quando aplicavel.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Adicionar visao operacional de agenda/kanban se confirmada pelo negocio.</td>
+            <td>Sem pagina dedicada em <code>activity/</code>; traducoes citam kanban.</td>
+            <td>Decisao funcional e, se aprovada, tela por status/prazo.</td>
+            <td>Equipe visualiza fila de atividades por status e data planejada.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Consolidar custos planejados e realizados.</td>
+            <td><code>unit_cost</code> existe em linhas, mas nao ha relatorio/rollup completo.</td>
+            <td>Campos calculados ou relatorio por atividade, talhao, cultura e safra.</td>
+            <td>Total planejado e realizado bate com linhas e movimentos de estoque.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Validar integracao real com frota.</td>
+            <td>Links usam classes <code>Veiculo</code> e <code>Implemento</code>, sem FK fisica.</td>
+            <td>Contrato confirmado com o modulo de frota instalado no ambiente alvo.</td>
+            <td>Selecao, exibicao e persistencia de veiculos/implementos funcionam em staging.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p1">P1</span></td>
+            <td>Fortalecer validacao de estoque antes de concluir.</td>
+            <td>Conclusao exige armazem, mas precisa validacao com saldo/lote real.</td>
+            <td>Pre-checagem de saldo, produto, armazem e lote quando o produto exige rastreio.</td>
+            <td>Conclusao falha com mensagem clara quando estoque for insuficiente ou inconsistente.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p2">P2</span></td>
+            <td>Documentar contrato REST final.</td>
+            <td>API existe, mas README ainda descreve fluxo antigo de uso basico.</td>
+            <td>Exemplos de payload, permissoes, erros e transicoes.</td>
+            <td>Integrador consegue criar, consultar e concluir atividade via API sem ler o codigo.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p2">P2</span></td>
+            <td>Melhorar observabilidade de satelite e cron.</td>
+            <td>Cron registrado em <code>modSafra.class.php</code> chama <code>NDVI::doScheduledJob()</code>.</td>
+            <td>Logs, status de ultima sincronizacao, falhas por talhao e indice.</td>
+            <td>Operador identifica se a ausencia de dados e credencial, geometria, nuvem ou API.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p2">P2</span></td>
+            <td>Adicionar invalidacao/limpeza controlada de cache satelital.</td>
+            <td>Cache em <code>json/cache/*</code> e saidas em <code>json/{indice}</code>.</td>
+            <td>Acao administrativa ou rotina segura para limpar caches por indice/talhao.</td>
+            <td>Limpeza nao remove arquivos de estrutura e nao vaza tokens.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p2">P2</span></td>
+            <td>Atualizar documentacao legada e traducoes.</td>
+            <td><code>doc/Documentation.asciidoc</code> e chaves <code>SafraAplicacao*</code> ainda existem.</td>
+            <td>Docs e labels alinhados ao modelo Activity, preservando apenas o tipo operacional aplicacao.</td>
+            <td>Nenhuma tela ou guia chama o objeto atual de legado incorretamente.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p2">P2</span></td>
+            <td>Sanear dados seed e encoding.</td>
+            <td>Alguns SQL/Markdown exibem mojibake.</td>
+            <td>Arquivos essenciais em UTF-8 consistente e seeds revisados.</td>
+            <td>Instalacao nova nao exibe textos corrompidos.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p2">P2</span></td>
+            <td>Expandir testes alem dos stubs.</td>
+            <td>Suite local cobre regras isoladas, nao uma instancia Dolibarr real.</td>
+            <td>Smoke automatizado com banco de teste e, se viavel, browser para telas principais.</td>
+            <td>CI pega regressao em schema, API, Activity UI e estoque antes do deploy.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p3">P3</span></td>
+            <td>Melhorar dashboards e relatorios gerenciais.</td>
+            <td><code>safraindex.php</code> mostra dados agregados, mas nao fecha custo/produtividade.</td>
+            <td>Indicadores por safra, talhao, cultura, custo, execucao e saude vegetal.</td>
+            <td>Gestor consegue acompanhar operacao sem consultas SQL manuais.</td>
+          </tr>
+          <tr>
+            <td><span class="tag p3">P3</span></td>
+            <td>Revisar empacotamento e versionamento publico.</td>
+            <td>Descriptor usa <code>development</code>; changelog principal esta antigo.</td>
+            <td>Versao semantica, changelog de release e pacote validado.</td>
+            <td>Pacote pode ser instalado, atualizado e revertido com instrucoes claras.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Plano de implantacao</h2>
+      <div class="phase">
+        <h3>Fase 0 - Preparacao e seguranca</h3>
+        <small>Duracao estimada: 1 a 2 dias</small>
+        <p>Corrigir SSL Sentinel, rotacionar credenciais, limpar tokens locais, confirmar variaveis de setup e atualizar runbook com responsaveis por backup e rollback.</p>
+      </div>
+      <div class="phase">
+        <h3>Fase 1 - Estrategia de dados e staging</h3>
+        <small>Duracao estimada: 2 a 4 dias</small>
+        <p>Subir ambiente de homologacao com copia controlada da base, executar <code>upgrade.php</code>, validar schema, dados, permissoes e integracoes com projeto/estoque.</p>
+      </div>
+      <div class="phase">
+        <h3>Fase 2 - Homologacao funcional Activity</h3>
+        <small>Duracao estimada: 3 a 6 dias</small>
+        <p>Validar fluxo completo de atividades, regra de reabertura, consumo e reversao de estoque, recursos, tarefas, API e relatorios minimos de operacao.</p>
+      </div>
+      <div class="phase">
+        <h3>Fase 3 - Homologacao satelital e dados agronomicos</h3>
+        <small>Duracao estimada: 2 a 5 dias</small>
+        <p>Validar talhoes com geometria real, credenciais Sentinel, indices, saude geral, cache, cron, Embrapa e mensagens de erro para falta de dados.</p>
+      </div>
+      <div class="phase">
+        <h3>Fase 4 - Release candidate</h3>
+        <small>Duracao estimada: 1 a 3 dias</small>
+        <p>Atualizar changelog, README, documentacao, versao do modulo, pacote de distribuicao, scripts de checks e termo de go/no-go.</p>
+      </div>
+      <div class="phase">
+        <h3>Fase 5 - Producao e pos-deploy</h3>
+        <small>Duracao estimada: janela controlada + 5 dias de monitoramento</small>
+        <p>Aplicar backup, deploy, upgrade, smoke checks, reativar crons, monitorar logs e registrar qualquer ajuste em backlog.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Checklist go/no-go</h2>
+      <ul class="checklist">
+        <li><span class="status-risk">Bloqueia go-live:</span> SSL Sentinel ainda desligado.</li>
+        <li><span class="status-risk">Bloqueia go-live:</span> credenciais antigas nao rotacionadas.</li>
+        <li><span class="status-risk">Bloqueia go-live:</span> ausencia de backup validado antes de migracao destrutiva.</li>
+        <li><span class="status-risk">Bloqueia go-live:</span> falha em criar/concluir/cancelar atividade com movimento de estoque.</li>
+        <li><span class="status-risk">Bloqueia go-live:</span> API ou UI permitindo mutacao sem permissao correta.</li>
+        <li><span class="status-ok">Libera release candidate:</span> <code>php tests\run.php</code> e <code>build/ci/checks.ps1</code> passam.</li>
+        <li><span class="status-ok">Libera release candidate:</span> UAT staging aprovado por usuario de operacao.</li>
+        <li><span class="status-ok">Libera release candidate:</span> rollback testado ou restauracao de backup ensaiada.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Roteiro minimo de smoke test</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fluxo</th>
+            <th>Passos</th>
+            <th>Resultado esperado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Activity UI</td>
+            <td>Criar, salvar, iniciar, concluir, cancelar, reabrir e excluir uma atividade sem estoque.</td>
+            <td>Status e tarefas de projeto sincronizados sem erro.</td>
+          </tr>
+          <tr>
+            <td>Activity estoque</td>
+            <td>Criar atividade com produto, armazem e quantidade executada; concluir; cancelar.</td>
+            <td>Movimento de baixa e reversao aparecem em <code>llx_stock_mouvement</code>.</td>
+          </tr>
+          <tr>
+            <td>API</td>
+            <td>Executar <code>GET /sfactivities</code>, <code>POST /sfactivities</code>, <code>POST /sfactivities/{id}/complete</code>.</td>
+            <td>Respostas respeitam permissao, payload e linhas com <code>include_lines=1</code>.</td>
+          </tr>
+          <tr>
+            <td>Satelite</td>
+            <td>Abrir <code>satellite_view.php</code>, escolher talhao real, periodo e indice.</td>
+            <td>Mapa, serie semanal, cache e mensagens de erro funcionam.</td>
+          </tr>
+          <tr>
+            <td>Produto e catalogo</td>
+            <td>Abrir produto Dolibarr e vincular formulado/tecnico/cultura/praga conforme aplicavel.</td>
+            <td>Tabs e AJAX persistem links sem duplicidade.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Arquivos mais provaveis de mudanca</h2>
+      <ul class="summary-list">
+        <li><code>class/safra_satellite_statistics.class.php</code> - hardening SSL e erros Sentinel.</li>
+        <li><code>core/modules/modSafra.class.php</code> - dependencias, cron, menus e permissoes.</li>
+        <li><code>class/FvActivity.class.php</code> - regra de reabertura, status, sync e validacoes.</li>
+        <li><code>class/ActivityStockService.class.php</code> - saldo, reversao, lotes e mensagens.</li>
+        <li><code>activity/activity_list.php</code> e <code>activity/activity_card.php</code> - filtros, acoes e UX operacional.</li>
+        <li><code>class/api_sfactivities.class.php</code> - contrato REST, erros e novos endpoints.</li>
+        <li><code>sql/llx_safra_activity*.sql</code>, <code>sql/mysql/activity.sql</code> e <code>sql/migrations/*</code> - qualquer mudanca de schema.</li>
+        <li><code>langs/pt_BR/safra.lang</code> e <code>langs/en_US/safra.lang</code> - labels e limpeza de legado.</li>
+        <li><code>README.md</code>, <code>doc/deploy_runbook.md</code>, <code>doc/safra_activity_migration.md</code> - release e implantacao.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Documento gerado a partir de inspecao local do repositorio em 2026-05-21. Atualize este arquivo sempre que um requisito for concluido, descartado ou reclassificado.
+  </footer>
+</body>
+</html>

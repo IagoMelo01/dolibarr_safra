@@ -302,7 +302,7 @@
                 // console.log("talhao:"+talhao_ids[i])
                 // console.log("selecionado:"+talhaoElement.value)
                 if (talhao_ids[i] == consultado[2]) {
-                    url = window.location.href.replace("evi_view.php", "json/evi/" + caminho.replace("/", "_") + ".json");
+                    url = "<?php echo dol_buildpath('/safra/satellite_json.php', 1); ?>?index=evi&file=" + encodeURIComponent(caminho.replace("/", "_"));
                     console.log('url consultada: ');
                     console.log(url);
                     let json_layer = renderGeoJSON(data);

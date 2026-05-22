@@ -6,10 +6,10 @@
 require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
 dol_include_once('/safra/class/safra_satellite_statistics.class.php');
 dol_include_once('/safra/class/talhao.class.php');
+dol_include_once('/safra/lib/safra_storage.lib.php');
 
 class SafraSatelliteHealth
 {
-    private const OUTPUT_DIR = '/custom/safra/json/saude_geral';
     private const NDVI_MIN = -0.2;
     private const NDVI_MAX = 0.9;
     private const NDMI_MIN = -0.35;
@@ -786,7 +786,7 @@ class SafraSatelliteHealth
      */
     private static function buildIndexPath($index, $fileBase)
     {
-        return DOL_DOCUMENT_ROOT . '/custom/safra/json/' . trim($index, '/') . '/' . $fileBase . '.json';
+        return safra_resolve_satellite_json_path(trim($index, '/'), $fileBase);
     }
 
     /**
@@ -798,7 +798,7 @@ class SafraSatelliteHealth
      */
     private static function buildOutputPath($fileBase)
     {
-        return rtrim(DOL_DOCUMENT_ROOT . self::OUTPUT_DIR, '/') . '/' . $fileBase . '.json';
+        return safra_satellite_json_path('saude_geral', $fileBase);
     }
 
     /**

@@ -689,12 +689,11 @@
             return '';
         }
 
-        const folder = satellite_index_options[selectedIndex].folder;
-        if (!folder) {
+        if (!satellite_index_options[selectedIndex].folder || !satellite_json_endpoint) {
             return '';
         }
 
-        return `./json/${folder}/${arquivoElement.value}.json`;
+        return `${satellite_json_endpoint}?index=${encodeURIComponent(selectedIndex)}&file=${encodeURIComponent(arquivoElement.value)}`;
     }
 
     function featureStyle(feature) {

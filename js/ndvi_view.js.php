@@ -302,7 +302,7 @@
                 // console.log("talhao:"+talhao_ids[i])
                 // console.log("selecionado:"+talhaoElement.value)
                 if (talhao_ids[i] == consultado[2]) {
-                    url = window.location.href.replace("ndvi_view.php", "json/ndvi/" + caminho.replace("/", "_") + ".json");
+                    url = "<?php echo dol_buildpath('/safra/satellite_json.php', 1); ?>?index=ndvi&file=" + encodeURIComponent(caminho.replace("/", "_"));
                     console.log(url);
                     let json_layer = renderGeoJSON(data);
                     // let ndvi_layer = renderGeoJSON(url);

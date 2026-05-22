@@ -5,28 +5,29 @@
 
 require_once DOL_DOCUMENT_ROOT . '/core/lib/files.lib.php';
 dol_include_once('/safra/class/talhao.class.php');
+dol_include_once('/safra/lib/safra_storage.lib.php');
 
 class SafraSatelliteStatistics
 {
-    private const CACHE_BASE = '/custom/safra/json/cache';
     private const TOKEN_FILENAME = 'token.json';
     private const CACHE_VERSION = 'v2';
+    private static $lastCredentialError = '';
 
     private static $indexConfig = array(
         'ndvi' => array(
             'inputs' => array('B04', 'B08'),
             'formula' => '(samples.B08 - samples.B04) / (samples.B08 + samples.B04)',
             'range' => array('min' => -0.2, 'max' => 1),
-            'color' => '#2563eb',
-            'gradient' => array('rgba(37, 99, 235, 0.32)', 'rgba(37, 99, 235, 0.06)'),
+            'color' => '#16a34a',
+            'gradient' => array('rgba(22, 163, 74, 0.32)', 'rgba(22, 163, 74, 0.05)'),
             'decimals' => 3,
         ),
         'ndmi' => array(
             'inputs' => array('B08', 'B11'),
             'formula' => '(samples.B08 - samples.B11) / (samples.B08 + samples.B11)',
             'range' => array('min' => -0.2, 'max' => 1),
-            'color' => '#16a34a',
-            'gradient' => array('rgba(22, 163, 74, 0.32)', 'rgba(22, 163, 74, 0.05)'),
+            'color' => '#2563eb',
+            'gradient' => array('rgba(37, 99, 235, 0.32)', 'rgba(37, 99, 235, 0.06)'),
             'decimals' => 3,
         ),
         'ndwi' => array(
@@ -93,25 +94,18 @@ class SafraSatelliteStatistics
         $cacheData = self::readJson($cacheFile);
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
-        if (!empty($cacheData['validUntil'])) {
-            try {
-                $validUntil = new DateTimeImmutable($cacheData['validUntil']);
-                if ($validUntil > $now && !empty($cacheData['points']) && is_array($cacheData['points'])) {
-                    $cacheData['index'] = $index;
-                    $cacheData['talhaoId'] = (int) $talhaoId;
+        if (self::isUsableCache($cacheData, $now)) {
+            $cacheData['index'] = $index;
+            $cacheData['talhaoId'] = (int) $talhaoId;
 
-                    return $cacheData;
-                }
-            } catch (Exception $e) {
-                // Ignore invalid cache expiration date
-            }
+            return $cacheData;
         }
 
         $token = self::getAccessToken();
         if (empty($token)) {
             return array(
                 'points' => isset($cacheData['points']) && is_array($cacheData['points']) ? $cacheData['points'] : array(),
-                'message' => 'missing_credentials',
+                'message' => self::$lastCredentialError ? self::$lastCredentialError : 'missing_credentials',
                 'index' => $index,
                 'talhaoId' => (int) $talhaoId,
             );
@@ -154,13 +148,16 @@ class SafraSatelliteStatistics
         );
 
         $response = self::requestStatistics($token, $body);
-        if (empty($response) || empty($response['data']) || !is_array($response['data'])) {
+        if (!is_array($response)) {
             return array(
                 'points' => array(),
                 'message' => 'no_data',
                 'index' => $index,
                 'talhaoId' => (int) $talhaoId,
             );
+        }
+        if (empty($response['data']) || !is_array($response['data'])) {
+            return self::writeAndReturnEmptyCache($cacheFile, $now, (int) $talhaoId, $index, 'no_data');
         }
 
         $rawByInterval = array();
@@ -192,12 +189,7 @@ class SafraSatelliteStatistics
         $points = self::buildContinuousWeeklyPoints($rawByInterval, $from, $weeks, $config['decimals']);
 
         if (!self::hasNumericWeeklyPoints($points)) {
-            return array(
-                'points' => array(),
-                'message' => 'no_data',
-                'index' => $index,
-                'talhaoId' => (int) $talhaoId,
-            );
+            return self::writeAndReturnEmptyCache($cacheFile, $now, (int) $talhaoId, $index, 'no_data', $points);
         }
 
         $validUntil = self::computeNextUpdate($now);
@@ -206,6 +198,58 @@ class SafraSatelliteStatistics
             'index' => $index,
             'generatedAt' => $now->format(DATE_ATOM),
             'validUntil' => $validUntil->format(DATE_ATOM),
+            'points' => $points,
+        );
+
+        self::writeJson($cacheFile, $payload);
+
+        return $payload;
+    }
+
+    /**
+     * Check if cache can be used without calling Sentinel again.
+     *
+     * @param array|null        $cacheData
+     * @param DateTimeImmutable $now
+     *
+     * @return bool
+     */
+    private static function isUsableCache($cacheData, DateTimeImmutable $now)
+    {
+        if (!is_array($cacheData) || empty($cacheData['validUntil']) || !isset($cacheData['points']) || !is_array($cacheData['points'])) {
+            return false;
+        }
+
+        try {
+            $validUntil = new DateTimeImmutable($cacheData['validUntil']);
+
+            return $validUntil > $now;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Write and return a valid empty-result cache payload.
+     *
+     * @param string            $cacheFile
+     * @param DateTimeImmutable $now
+     * @param int               $talhaoId
+     * @param string            $index
+     * @param string            $message
+     * @param array             $points
+     *
+     * @return array
+     */
+    private static function writeAndReturnEmptyCache($cacheFile, DateTimeImmutable $now, $talhaoId, $index, $message, array $points = array())
+    {
+        $validUntil = self::computeNextUpdate($now);
+        $payload = array(
+            'talhaoId' => (int) $talhaoId,
+            'index' => $index,
+            'generatedAt' => $now->format(DATE_ATOM),
+            'validUntil' => $validUntil->format(DATE_ATOM),
+            'message' => $message,
             'points' => $points,
         );
 
@@ -272,8 +316,8 @@ class SafraSatelliteStatistics
                 'Content-Type: application/json',
             ),
             CURLOPT_TIMEOUT => 45,
-            CURLOPT_SSL_VERIFYPEER => false,
         ));
+        safra_configure_curl_ssl($ch);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -317,9 +361,12 @@ class SafraSatelliteStatistics
      */
     private static function getAccessToken()
     {
+        self::$lastCredentialError = '';
         $clientId = getDolGlobalString('SAFRA_API_SENTINELHUB_CLIENT_ID', '');
         $clientSecret = getDolGlobalString('SAFRA_API_SENTINELHUB_CLIENT_SECRET', '');
         if (empty($clientId) || empty($clientSecret)) {
+            self::$lastCredentialError = 'missing_credentials';
+
             return null;
         }
 
@@ -352,14 +399,15 @@ class SafraSatelliteStatistics
             CURLOPT_POSTFIELDS => $postData,
             CURLOPT_HTTPHEADER => array('Content-Type: application/x-www-form-urlencoded'),
             CURLOPT_TIMEOUT => 30,
-            CURLOPT_SSL_VERIFYPEER => false,
         ));
+        safra_configure_curl_ssl($ch);
 
         $response = curl_exec($ch);
         if ($response === false) {
             $error = curl_error($ch);
             dol_syslog(__METHOD__ . ' curl error: ' . $error, LOG_ERR);
             curl_close($ch);
+            self::$lastCredentialError = 'credential_connection_error';
 
             return null;
         }
@@ -368,6 +416,7 @@ class SafraSatelliteStatistics
 
         if ($httpCode >= 400) {
             dol_syslog(__METHOD__ . ' authentication failed HTTP ' . $httpCode . ' - ' . $response, LOG_ERR);
+            self::$lastCredentialError = in_array((int) $httpCode, array(400, 401, 403), true) ? 'invalid_credentials' : 'credential_connection_error';
 
             return null;
         }
@@ -375,6 +424,7 @@ class SafraSatelliteStatistics
         $data = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE || empty($data['access_token'])) {
             dol_syslog(__METHOD__ . ' invalid token response: ' . $response, LOG_ERR);
+            self::$lastCredentialError = 'credential_connection_error';
 
             return null;
         }
@@ -445,7 +495,7 @@ class SafraSatelliteStatistics
      */
     private static function buildPath($file = '')
     {
-        $base = rtrim(DOL_DOCUMENT_ROOT . self::CACHE_BASE, '/');
+        $base = safra_json_path('cache');
         if ($file !== '') {
             return $base . '/' . ltrim($file, '/');
         }
