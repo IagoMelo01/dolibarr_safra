@@ -15,13 +15,33 @@
 
 CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_formulado (
   rowid INT AUTO_INCREMENT PRIMARY KEY,
+
   ref VARCHAR(128) NOT NULL,
   label VARCHAR(255) NOT NULL,
+
   description TEXT NULL,
+
+  ingrediente_ativo TEXT NULL,
+  modo_acao VARCHAR(255) NULL,
+  classe VARCHAR(100) NULL,
+
+  registro_mapa VARCHAR(100) NULL,
+  fabricante VARCHAR(255) NULL,
+  dosagem VARCHAR(100) NULL,
+  unidade_medida VARCHAR(20) NULL,
+
   status TINYINT NOT NULL DEFAULT 1,
+
   date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   tms TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
   fk_user_creat INT NOT NULL,
   fk_user_modif INT NULL,
-  UNIQUE KEY uk_safra_pf_ref (ref)
-) ENGINE=innodb;
+
+  UNIQUE KEY uk_safra_pf_ref (ref),
+
+  KEY idx_safra_pf_label (label),
+  KEY idx_safra_pf_classe (classe),
+  KEY idx_safra_pf_status (status)
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
