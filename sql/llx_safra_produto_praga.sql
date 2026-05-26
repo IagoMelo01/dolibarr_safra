@@ -13,7 +13,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see https://www.gnu.org/licenses/.
 
-CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_praga (
+CREATE TABLE IF NOT EXISTS llx_safra_produto_praga (
   rowid INT AUTO_INCREMENT PRIMARY KEY,
   fk_produto INT NOT NULL,
   fk_praga INT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_praga (
   INDEX idx_pf (fk_produto),
   INDEX idx_pg (fk_praga),
   CONSTRAINT fk_spp_prod FOREIGN KEY (fk_produto)
-    REFERENCES __MAIN_DB_PREFIX__safra_produto_formulado(rowid) ON DELETE CASCADE,
+    REFERENCES llx_safra_produto_formulado(rowid) ON DELETE CASCADE,
   CONSTRAINT fk_spp_prag FOREIGN KEY (fk_praga)
-    REFERENCES __MAIN_DB_PREFIX__safra_pragas(rowid) ON DELETE CASCADE
+    REFERENCES llx_safra_pragas(rowid) ON DELETE CASCADE
 ) ENGINE=innodb;

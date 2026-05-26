@@ -13,5 +13,5 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see https://www.gnu.org/licenses/.
 
-ALTER TABLE __MAIN_DB_PREFIX__safra_produto_formulado ADD INDEX idx_safra_pf_status (status);
-ALTER TABLE __MAIN_DB_PREFIX__safra_produto_formulado ADD INDEX idx_safra_pf_fk_user_creat (fk_user_creat);
+ALTER TABLE llx_safra_produto_formulado ADD INDEX idx_safra_pf_status (status);
+ALTER TABLE llx_safra_produto_formulado ADD INDEX idx_safra_pf_fk_user_creat (fk_user_creat);

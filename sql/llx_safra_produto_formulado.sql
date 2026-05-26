@@ -13,7 +13,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see https://www.gnu.org/licenses/.
 
-CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_formulado (
+CREATE TABLE IF NOT EXISTS llx_safra_produto_formulado (
   rowid INT AUTO_INCREMENT PRIMARY KEY,
 
   ref VARCHAR(128) NOT NULL,
@@ -44,4 +44,4 @@ CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_formulado (
   KEY idx_safra_pf_classe (classe),
   KEY idx_safra_pf_status (status)
 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB;

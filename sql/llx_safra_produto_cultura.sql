@@ -13,7 +13,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see https://www.gnu.org/licenses/.
 
-CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_cultura (
+CREATE TABLE IF NOT EXISTS llx_safra_produto_cultura (
   rowid INT AUTO_INCREMENT PRIMARY KEY,
   fk_produto INT NOT NULL,
   fk_cultura INT NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_produto_cultura (
   INDEX idx_pf (fk_produto),
   INDEX idx_cult (fk_cultura),
   CONSTRAINT fk_spc_prod FOREIGN KEY (fk_produto)
-    REFERENCES __MAIN_DB_PREFIX__safra_produto_formulado(rowid) ON DELETE CASCADE,
+    REFERENCES llx_safra_produto_formulado(rowid) ON DELETE CASCADE,
   CONSTRAINT fk_spc_cult FOREIGN KEY (fk_cultura)
-    REFERENCES __MAIN_DB_PREFIX__safra_cultura(rowid) ON DELETE CASCADE
+    REFERENCES llx_safra_cultura(rowid) ON DELETE CASCADE
 ) ENGINE=innodb;
