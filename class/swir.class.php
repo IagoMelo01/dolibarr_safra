@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /* Copyright (C) 2017  Laurent Destailleur      <eldy@users.sourceforge.net>
  * Copyright (C) 2023  FrÃ©dÃ©ric France          <frederic.france@netlogic.fr>
  * Copyright (C) 2024 SuperAdmin
