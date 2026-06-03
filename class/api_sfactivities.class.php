@@ -300,11 +300,8 @@ class Sfactivities extends DolibarrApi
                 $activity->error = 'Invalid lines payload.';
                 return -1;
             }
-            if (FvActivityLine::deleteForActivity($this->db, $activity->id) < 0) {
-                $activity->error = $this->db->lasterror();
-                return -1;
-            }
 
+            $lines = array();
             foreach ($data['lines'] as $position => $lineData) {
                 if (!is_array($lineData)) {
                     continue;
@@ -315,6 +312,11 @@ class Sfactivities extends DolibarrApi
                 }
 
                 $line = new FvActivityLine($this->db);
+                $lineId = isset($lineData['id']) ? $this->asNullableInt($lineData['id']) : (isset($lineData['rowid']) ? $this->asNullableInt($lineData['rowid']) : null);
+                if (!empty($lineId)) {
+                    $line->id = (int) $lineId;
+                    $line->rowid = (int) $lineId;
+                }
                 $line->fk_activity = (int) $activity->id;
                 $line->position = (int) $position + 1;
                 $line->fk_product = $productId;
@@ -337,10 +339,11 @@ class Sfactivities extends DolibarrApi
                 $line->dose_unit = isset($lineData['dose_unit']) ? (string) $lineData['dose_unit'] : '';
                 $line->note = isset($lineData['note']) ? (string) $lineData['note'] : '';
 
-                if ($line->create(DolibarrApiAccess::$user) < 0) {
-                    $activity->error = $line->error ?: $line->errorsToString();
-                    return -1;
-                }
+                $lines[] = $line;
+            }
+
+            if ($activity->replaceInputLines($lines, DolibarrApiAccess::$user, false) < 0) {
+                return -1;
             }
         }
 
@@ -446,6 +449,8 @@ class Sfactivities extends DolibarrApi
                     'qty_done' => (float) $line->qty_done,
                     'total' => (float) $line->total,
                     'unit_cost' => (float) $line->unit_cost,
+                    'fk_stock_movement' => $this->asNullableInt($line->fk_stock_movement),
+                    'stock_movement_qty' => (float) $line->stock_movement_qty,
                     'note' => (string) $line->note,
                 );
             }

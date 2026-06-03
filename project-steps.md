@@ -1,6 +1,6 @@
 ﻿# Safra - Execucao do Plano (Sem Legado `aplicacao`)
 
-Data: 2026-04-09
+Data: 2026-06-03
 Escopo: `C:\wamp64\www\dolibarr_23\htdocs\custom\safra`
 
 ## Status por fase
@@ -28,6 +28,10 @@ Gate 1: **CONCLUIDO**.
 - [x] Superficies SQL alinhadas com schema de Activity (`sql/mysql/activity.sql`, `sql/llx_safra_activity*.sql`, seeds de activity).
 - [x] API oficial implementada em `class/api_sfactivities.class.php` com CRUD, transicoes (`start`, `complete`, `cancel`) e `include_lines=1`.
 - [x] Permissao `SafraActivity` aplicada em UI/API; mutacoes da UI com validacao de token e POST-only.
+- [x] Estoque por linha de insumo implementado com `fk_stock_movement`, estorno em edicao/remocao e `MouvementStock` com usuario logado.
+- [x] Sincronizacao automatica com tarefas de projeto removida; resta apenas vinculo opcional por extrafield quando `fk_task` for informado.
+- [x] Politica de desenvolvimento definida: migracoes destrutivas sao aceitaveis ate existir base produtiva com cliente ativo.
+- [x] Card de Atividade reorganizado em abas Dolibarr para dados gerais, insumos, calda, equipe, veiculos e implementos.
 
 Gate 2: **CONCLUIDO (validacao funcional local)**.
 
@@ -51,7 +55,7 @@ Gate 3: **PARCIAL** (pendente homologacao/UAT).
 3. Rodar `upgrade.php` em base de desenvolvimento com snapshot legado para validar migracao unica ponta-a-ponta.
 4. Homologar fluxo completo em staging:
    - UI Activity (`create/save/start/complete/cancel/delete`)
-   - Estoque (`origintype = 'safra_activity'`)
+   - Estoque por insumo (`origintype = 'safra_activity'`, `fk_stock_movement`, estorno em edicao/remocao)
    - API (`/api/index.php/sfactivities`)
 5. Emitir go/no-go com checklist de deploy e rollback.
 
@@ -59,4 +63,3 @@ Gate 3: **PARCIAL** (pendente homologacao/UAT).
 
 - Nao ha camada de compatibilidade para `aplicacao` apos esta entrega.
 - Rollback suportado via restauracao de backup anterior a migracao unica.
- 

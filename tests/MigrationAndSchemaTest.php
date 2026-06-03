@@ -25,6 +25,7 @@ $assert($migrationSql !== false, 'Unable to read migration SQL file');
 $assert(stripos($migrationSql, 'DROP TABLE IF EXISTS __MAIN_DB_PREFIX__safra_activity') !== false, 'Migration must rebuild safra_activity table');
 $assert(stripos($migrationSql, 'CREATE TABLE __MAIN_DB_PREFIX__safra_activity') !== false, 'Migration must create safra_activity table');
 $assert(stripos($migrationSql, 'CREATE TABLE __MAIN_DB_PREFIX__safra_activity_vehicle') !== false, 'Migration must create safra_activity_vehicle table');
+$assert(stripos($migrationSql, 'fk_stock_movement') !== false, 'Migration must track stock movement per activity line');
 
 $upgradeContent = file_get_contents($upgradeFile);
 $assert($upgradeContent !== false, 'Unable to read upgrade.php');
@@ -39,5 +40,6 @@ $assert($mysqlSchema !== false && $llxSchema !== false, 'Unable to read canonica
 $assert(stripos($mysqlSchema, 'safra_aplicacao') === false, 'Canonical mysql schema must not depend on safra_aplicacao');
 $assert(stripos($llxSchema, 'fk_task') !== false, 'Canonical llx schema must expose fk_task');
 $assert(stripos($llxSchema, 'season') !== false, 'Canonical llx schema must expose season');
+$assert(stripos($mysqlSchema, 'fk_stock_movement') !== false, 'Canonical mysql schema must expose line stock movement tracking');
 
 return true;

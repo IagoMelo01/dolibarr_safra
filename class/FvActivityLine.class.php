@@ -28,6 +28,78 @@ class FvActivityLine extends CommonObjectLine
     /** @var int */
     public $isextrafieldmanaged = 1;
 
+    /** @var int */
+    public $id;
+
+    /** @var int */
+    public $rowid;
+
+    /** @var int */
+    public $entity;
+
+    /** @var int */
+    public $fk_activity;
+
+    /** @var int */
+    public $position;
+
+    /** @var int */
+    public $fk_product;
+
+    /** @var int */
+    public $fk_warehouse;
+
+    /** @var string */
+    public $movement_type = self::MOVEMENT_CONSUME;
+
+    /** @var float */
+    public $area_planned = 0;
+
+    /** @var float */
+    public $area_done = 0;
+
+    /** @var float */
+    public $dose_planned = 0;
+
+    /** @var float */
+    public $dose_done = 0;
+
+    /** @var string */
+    public $dose_unit = '';
+
+    /** @var float */
+    public $qty_planned = 0;
+
+    /** @var float */
+    public $qty_done = 0;
+
+    /** @var float */
+    public $total = 0;
+
+    /** @var float */
+    public $area_applied = 0;
+
+    /** @var float */
+    public $dose = 0;
+
+    /** @var float */
+    public $unit_cost = 0;
+
+    /** @var int|null */
+    public $fk_stock_movement;
+
+    /** @var float */
+    public $stock_movement_qty = 0;
+
+    /** @var string */
+    public $note = '';
+
+    /** @var int */
+    public $fk_user_creat;
+
+    /** @var int */
+    public $fk_user_modif;
+
     /** @var array */
     public $fields = array(
         'rowid' => array('type' => 'integer', 'label' => 'TechnicalID', 'enabled' => '1', 'visible' => -1, 'notnull' => 1, 'position' => 10),
@@ -48,6 +120,8 @@ class FvActivityLine extends CommonObjectLine
         'area_applied' => array('type' => 'double(24,8)', 'label' => 'AreaApplied', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 160),
         'dose' => array('type' => 'double(24,8)', 'label' => 'Dose', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 170),
         'unit_cost' => array('type' => 'double(24,8)', 'label' => 'UnitCost', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'default' => '0', 'position' => 180),
+        'fk_stock_movement' => array('type' => 'integer:MouvementStock:product/stock/class/mouvementstock.class.php:1', 'label' => 'StockMovement', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'index' => 1, 'position' => 185),
+        'stock_movement_qty' => array('type' => 'double(24,8)', 'label' => 'SafraActivityStockMovementQty', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 186),
         'note' => array('type' => 'text', 'label' => 'Note', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 190),
         'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 200),
         'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 210),
@@ -112,6 +186,7 @@ class FvActivityLine extends CommonObjectLine
         $this->qty_planned = self::asNumber($this->qty_planned);
         $this->qty_done = self::asNumber($this->qty_done);
         $this->unit_cost = self::asNumber($this->unit_cost);
+        $this->stock_movement_qty = self::asNumber($this->stock_movement_qty);
 
         if ($this->area_planned <= 0 && !empty($this->area_applied)) {
             $this->area_planned = self::asNumber($this->area_applied);
@@ -155,6 +230,32 @@ class FvActivityLine extends CommonObjectLine
         }
 
         $sql = 'DELETE FROM ' . MAIN_DB_PREFIX . 'safra_activity_line WHERE fk_activity = ' . $activityId;
+        if (!$db->query($sql)) {
+            return -1;
+        }
+
+        return 1;
+    }
+
+    /**
+     * Delete one persisted activity line.
+     *
+     * @param DoliDB $db
+     * @param int    $lineId
+     * @param int    $activityId
+     * @return int
+     */
+    public static function deleteById($db, $lineId, $activityId = 0)
+    {
+        $lineId = (int) $lineId;
+        if ($lineId <= 0) {
+            return 0;
+        }
+
+        $sql = 'DELETE FROM ' . MAIN_DB_PREFIX . 'safra_activity_line WHERE rowid = ' . $lineId;
+        if ((int) $activityId > 0) {
+            $sql .= ' AND fk_activity = ' . ((int) $activityId);
+        }
         if (!$db->query($sql)) {
             return -1;
         }

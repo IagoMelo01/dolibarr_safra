@@ -6,7 +6,9 @@ class MouvementStock
     public $error = '';
     public $origin;
     public $origin_id = 0;
+    public $origin_type = '';
     public $origintype = '';
+    public $fk_origin = 0;
     public static $movements = array();
     public static $autoIncrement = 1;
 
@@ -17,17 +19,17 @@ class MouvementStock
 
     public function livraison($user, $productId, $warehouseId, $qty, $price = 0, $label = '', $originType = '', $originId = 0)
     {
-        return $this->recordMovement('consume', $productId, $warehouseId, $qty, $label, $originType, $originId);
+        return $this->recordMovement('consume', $productId, $warehouseId, 0 - abs((float) $qty), $label, $originType, $originId);
     }
 
     public function reception($user, $productId, $warehouseId, $qty, $price = 0, $label = '', $originType = '', $originId = 0)
     {
-        return $this->recordMovement('return', $productId, $warehouseId, $qty, $label, $originType, $originId);
+        return $this->recordMovement('return', $productId, $warehouseId, abs((float) $qty), $label, $originType, $originId);
     }
 
     protected function recordMovement($type, $productId, $warehouseId, $qty, $label, $originType, $originId)
     {
-        if ($qty <= 0) {
+        if (abs((float) $qty) <= 0) {
             $this->error = 'InvalidQty';
             return -1;
         }
@@ -39,8 +41,8 @@ class MouvementStock
             'fk_warehouse' => (int) $warehouseId,
             'qty' => (float) $qty,
             'label' => $label,
-            'origintype' => $originType,
-            'fk_origin' => $originId,
+            'origintype' => $originType ?: $this->origin_type ?: $this->origintype,
+            'fk_origin' => $originId ?: $this->origin_id ?: $this->fk_origin,
         );
         self::$movements[$this->id] = $entry;
         if (is_object($this->db)) {
@@ -50,6 +52,14 @@ class MouvementStock
             $this->db->stockMovements[$this->id] = $entry;
         }
         return 1;
+    }
+
+    public function setOrigin($originType, $originId, $lineIdSrc = 0, $lineIdOrigin = 0)
+    {
+        $this->origin_type = $originType;
+        $this->origin_id = (int) $originId;
+        $this->origintype = $originType;
+        $this->fk_origin = (int) $originId;
     }
 
     public function fetch($id)

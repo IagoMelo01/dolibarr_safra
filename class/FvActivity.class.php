@@ -133,10 +133,7 @@ class FvActivity extends CommonObject
 
         $result = $this->createCommon($user);
         if ($result > 0) {
-            $syncResult = $this->syncTask($user, true);
-            if ($syncResult < 0) {
-                return -1;
-            }
+            $this->syncOptionalTaskLink();
             $this->call_trigger('SAFRA_ACTIVITY_CREATE', $user);
         }
 
@@ -158,7 +155,6 @@ class FvActivity extends CommonObject
             $this->type = self::normalizeType($this->type);
             $this->priority = self::normalizePriority($this->priority);
             $this->syncLegacyAreaAliases();
-            $this->syncStatusFromTask(null, false);
             $this->fetchLines();
         }
 
@@ -175,24 +171,20 @@ class FvActivity extends CommonObject
     {
         $this->prepareForSave($user, false);
 
-        $skipTaskSync = !empty($this->context['skip_task_sync']);
         $result = $this->updateCommon($user);
 
-        if ($result > 0 && !$skipTaskSync) {
-            $taskResult = $this->syncTask($user, true);
-            if ($taskResult < 0) {
-                return -1;
-            }
+        if ($result > 0) {
+            $this->syncOptionalTaskLink();
         }
 
         return $result;
     }
 
     /**
-     * Delete activity only when no stock movement was posted.
+     * Delete activity only when no stock movement history was posted.
      *
      * @param User $user
-     * @param bool $deleteLinkedTask
+     * @param bool $deleteLinkedTask Kept for backward compatibility; tasks are not deleted by Safra.
      * @return int
      */
     public function delete($user, $deleteLinkedTask = true)
@@ -200,13 +192,6 @@ class FvActivity extends CommonObject
         if ($this->hasStockMovements()) {
             $this->error = 'ErrorSafraActivityDeleteWithStock';
             return -1;
-        }
-
-        if ($deleteLinkedTask && empty($this->context['skip_task_delete'])) {
-            $deleteTask = $this->deleteLinkedTask($user);
-            if ($deleteTask < 0) {
-                return -1;
-            }
         }
 
         $this->deleteAllRelations();
@@ -341,14 +326,14 @@ class FvActivity extends CommonObject
             $this->db->begin();
         }
 
-        if ($this->hasStockMovements()) {
-            $revertResult = $this->revertStockMovements($user, false);
-            if ($revertResult < 0) {
-                if ($useLocalTransaction) {
-                    $this->db->rollback();
-                }
-                return -1;
+        $revertResult = $this->revertStockMovements($user, false);
+        if ($revertResult < 0) {
+            if ($useLocalTransaction) {
+                $this->db->rollback();
             }
+            return -1;
+        }
+        if ($revertResult > 0) {
             $this->appendPrivateNotes(array(is_object($langs) ? $langs->trans('SafraActivityStockRevertedLog', $this->ref ?: $this->id) : 'Stock reversed'));
         }
 
@@ -374,7 +359,8 @@ class FvActivity extends CommonObject
     }
 
     /**
-     * Reopen a canceled or completed activity without changing stock.
+     * Reopen a canceled or completed activity. Stock remains tied to active lines;
+     * later line edits reverse and repost the affected item.
      *
      * @param User $user
      * @return int
@@ -423,6 +409,119 @@ class FvActivity extends CommonObject
         }
 
         return count($this->lines);
+    }
+
+    /**
+     * Replace activity input lines and keep Dolibarr stock movements in sync.
+     *
+     * @param FvActivityLine[] $lines
+     * @param User             $user
+     * @param bool             $useTransaction
+     * @return int
+     */
+    public function replaceInputLines(array $lines, User $user, $useTransaction = true)
+    {
+        if (empty($this->id)) {
+            $this->error = 'ErrorSafraActivityInvalidIdentifier';
+            return -1;
+        }
+
+        dol_include_once('/safra/class/ActivityStockService.class.php');
+
+        $existingLines = $this->fetchLineMap();
+        $service = new ActivityStockService($this->db);
+        $useLocalTransaction = $useTransaction && empty($this->db->transaction_opened);
+        if ($useLocalTransaction) {
+            $this->db->begin();
+        }
+
+        $savedLineIds = array();
+        $position = 1;
+        foreach ($lines as $line) {
+            if (!($line instanceof FvActivityLine)) {
+                continue;
+            }
+
+            $line->fk_activity = (int) $this->id;
+            $line->position = $position++;
+            $line->prepareForSave();
+
+            if ((int) $line->fk_product <= 0) {
+                continue;
+            }
+
+            $lineId = !empty($line->id) ? (int) $line->id : (!empty($line->rowid) ? (int) $line->rowid : 0);
+            if ($lineId > 0 && isset($existingLines[$lineId])) {
+                $oldLine = $existingLines[$lineId];
+                $line->id = $lineId;
+                $line->rowid = $lineId;
+                $line->fk_stock_movement = isset($oldLine->fk_stock_movement) ? (int) $oldLine->fk_stock_movement : 0;
+                $line->stock_movement_qty = isset($oldLine->stock_movement_qty) ? (float) $oldLine->stock_movement_qty : 0;
+                $result = $line->update($user);
+            } else {
+                $line->id = 0;
+                $line->rowid = 0;
+                $line->fk_stock_movement = 0;
+                $line->stock_movement_qty = 0;
+                $result = $line->create($user);
+                if ($result > 0 && empty($line->id)) {
+                    $line->id = (int) $result;
+                    $line->rowid = (int) $result;
+                }
+            }
+
+            if ($result < 0) {
+                if ($useLocalTransaction) {
+                    $this->db->rollback();
+                }
+                $this->error = $line->error ?: $line->errorsToString();
+                return -1;
+            }
+
+            $stockResult = $service->syncLineMovement($this, $line, $user, false);
+            if ($stockResult < 0) {
+                if ($useLocalTransaction) {
+                    $this->db->rollback();
+                }
+                $this->error = $service->error ?: 'ErrorSafraActivityStockMovement';
+                return -1;
+            }
+
+            if (!empty($line->id)) {
+                $savedLineIds[(int) $line->id] = true;
+            }
+        }
+
+        foreach ($existingLines as $lineId => $oldLine) {
+            if (isset($savedLineIds[$lineId])) {
+                continue;
+            }
+
+            $stockResult = $service->removeLineMovement($this, $oldLine, $user, false);
+            if ($stockResult < 0) {
+                if ($useLocalTransaction) {
+                    $this->db->rollback();
+                }
+                $this->error = $service->error ?: 'ErrorSafraActivityStockMovement';
+                return -1;
+            }
+
+            if (FvActivityLine::deleteById($this->db, $lineId, (int) $this->id) < 0) {
+                if ($useLocalTransaction) {
+                    $this->db->rollback();
+                }
+                $this->error = $this->db->lasterror();
+                return -1;
+            }
+        }
+
+        if ($useLocalTransaction) {
+            $this->db->commit();
+        }
+
+        $this->fetchLines();
+
+        return 1;
     }
 
     /**
@@ -567,9 +666,44 @@ class FvActivity extends CommonObject
             return false;
         }
 
+        $sqlLine = 'SELECT COUNT(rowid) as nb FROM ' . MAIN_DB_PREFIX . $this->table_element_line
+            . ' WHERE fk_activity = ' . ((int) $this->id)
+            . ' AND fk_stock_movement IS NOT NULL AND fk_stock_movement > 0';
+        $resqlLine = $this->db->query($sqlLine);
+        if ($resqlLine) {
+            $lineObj = $this->db->fetch_object($resqlLine);
+            if ($lineObj && ((int) $lineObj->nb > 0)) {
+                return true;
+            }
+        }
+
         $sql = 'SELECT COUNT(rowid) as nb FROM ' . MAIN_DB_PREFIX . "stock_mouvement"
             . ' WHERE fk_origin = ' . ((int) $this->id)
             . " AND origintype = 'safra_activity'";
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            return false;
+        }
+
+        $obj = $this->db->fetch_object($resql);
+
+        return $obj && ((int) $obj->nb > 0);
+    }
+
+    /**
+     * Check if at least one current line still points to an active stock movement.
+     *
+     * @return bool
+     */
+    public function hasActiveStockMovements()
+    {
+        if (empty($this->id)) {
+            return false;
+        }
+
+        $sql = 'SELECT COUNT(rowid) as nb FROM ' . MAIN_DB_PREFIX . $this->table_element_line
+            . ' WHERE fk_activity = ' . ((int) $this->id)
+            . ' AND fk_stock_movement IS NOT NULL AND fk_stock_movement > 0';
         $resql = $this->db->query($sql);
         if (!$resql) {
             return false;
@@ -625,7 +759,7 @@ class FvActivity extends CommonObject
         }
 
         $service = new ActivityStockService($this->db);
-        $result = $service->revertConsumptionMovements($this, $stockUser, $useTransaction);
+        $result = $service->removeActivityLineMovements($this, $stockUser, $useTransaction);
         if ($result < 0) {
             $this->error = $service->error;
         }
@@ -1158,6 +1292,50 @@ class FvActivity extends CommonObject
         }
 
         return implode("\n", $description);
+    }
+
+    /**
+     * Keep optional task extrafield link when a task id was explicitly provided.
+     *
+     * @return int
+     */
+    protected function syncOptionalTaskLink()
+    {
+        if (empty($this->fk_task)) {
+            return 0;
+        }
+
+        return $this->syncTaskExtrafieldLink((int) $this->fk_task);
+    }
+
+    /**
+     * Fetch current line objects indexed by id.
+     *
+     * @return FvActivityLine[]
+     */
+    protected function fetchLineMap()
+    {
+        $map = array();
+        if (empty($this->id)) {
+            return $map;
+        }
+
+        $sql = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . $this->table_element_line
+            . ' WHERE fk_activity = ' . ((int) $this->id);
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            $this->error = $this->db->lasterror();
+            return $map;
+        }
+
+        while ($obj = $this->db->fetch_object($resql)) {
+            $line = new FvActivityLine($this->db);
+            if ($line->fetch((int) $obj->rowid) > 0) {
+                $map[(int) $line->id] = $line;
+            }
+        }
+
+        return $map;
     }
 
     /**

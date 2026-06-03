@@ -1,12 +1,12 @@
 # Safra Repository Skills
 
-Last updated: 2026-05-21
+Last updated: 2026-06-03
 
 This file is a repository-local skill index for agents working on `custom/safra`. It is not a packaged Codex skill bundle. Use it as the first procedural reference after `AGENTS.md`.
 
 ## Skill: Activity Workflow Change
 
-Use when changing agricultural operations, planning/execution fields, stock consumption, project task sync, REST API payloads or Activity UI.
+Use when changing agricultural operations, planning/execution fields, stock consumption, optional task links, REST API payloads or Activity UI.
 
 Read first:
 - `class/FvActivity.class.php`
@@ -18,8 +18,8 @@ Read first:
 - `core/triggers/interface_modSafra_ActivityTrigger.class.php`
 
 Procedure:
-1. Confirm the status transition and stock rule before editing.
-2. Check whether the change affects UI, API, task sync, stock movement or all of them.
+1. Confirm the status transition and per-line stock rule before editing.
+2. Check whether the change affects UI, API, optional task link, stock movement or all of them.
 3. Keep `SafraActivity` permissions consistent across UI and API.
 4. Update both PHP object fields and SQL schema surfaces when adding fields.
 5. Add or update tests under `tests/` for domain, stock or API behavior.
@@ -27,9 +27,15 @@ Procedure:
 
 Acceptance checks:
 - Create, save, start, complete, cancel and delete still behave coherently.
-- Stock movements use `origintype = 'safra_activity'`.
-- Cancellation reverses movements without duplicate posting.
-- Project task sync does not loop or orphan tasks.
+- Existing activities use Dolibarr-style tabs, and each tab saves only its own data.
+- Selecting a project fills field plot, planned area, crop and cultivar from project extrafields when present.
+- Saving an input line with product, warehouse and used quantity creates a stock movement.
+- Editing product, warehouse, dose or quantity reverses the old line movement and posts a new one.
+- Removing an input line reverses its active movement and deletes the line.
+- Stock movements use `origintype = 'safra_activity'` and line `fk_stock_movement` tracks the current movement.
+- The spray mixture tab calculates total spray volume, required tanks, area per tank and quantity per tank from saved inputs.
+- Cancellation reverses active line movements without duplicate posting.
+- Project task workflow is not synchronized; only the optional task extrafield link may be maintained.
 
 ## Skill: Activity Schema or Migration Change
 
@@ -47,7 +53,7 @@ Read first:
 - `tests/MigrationAndSchemaTest.php`
 
 Procedure:
-1. Decide whether the change is destructive or preservative.
+1. Decide whether the change is destructive or preservative. During development without active client data, destructive rebuilds are acceptable; after production go-live, prefer preservative migrations.
 2. Update every SQL surface, not only the migration.
 3. Update object `$fields` arrays and relation helpers.
 4. Update tests that assert canonical schema behavior.
@@ -57,6 +63,7 @@ Acceptance checks:
 - `php tests\run.php` passes.
 - Upgrade path has backup, rollback and post-check instructions.
 - There is no accidental dependency on removed `safra_aplicacao*` tables.
+- `llx_safra_activity_line` exposes `fk_stock_movement` and `stock_movement_qty` whenever stock tracking is required.
 
 ## Skill: Satellite Monitoring Change
 

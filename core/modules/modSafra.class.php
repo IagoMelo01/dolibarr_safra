@@ -152,7 +152,7 @@ class modSafra extends DolibarrModules
 		// A condition to hide module
 		$this->hidden = false;
 		// List of module class names that must be enabled if this module is enabled. Example: array('always'=>array('modModuleToEnable1','modModuleToEnable2'), 'FR'=>array('modModuleToEnableFR')...)
-		$this->depends = array('always'=>array('modProjet','modEventOrganization','modSociete','modHoliday','modExpenseReport','modRecruitment','modHRM','modPropale','modCommande','modExpedition','modContrat','modFicheinter','modTicket','modKnowledgeManagement','modPartnership','modFournisseur','modSupplierProposal','modReception','modIncoterm','modFacture','modTax','modSalaries','modLoan','modDon','modBanque','modPaymentByBankTransfer','modPrelevement','modMargin','modComptabilite','modProduct','modService','modStock','modProductBatch','modVariants','modBom','modMrp','modWorkstation','modAgenda','modResource','modMultiCurrency','modExternalRss','modBookmark','modBarcode','modWorkflow','modStripe','modPaypal','modPrinting','modReceiptPrinter','modCron','modSyslog'));
+		$this->depends = array('always'=>array('modProduct','modStock','modCron'));
 		// List of module class names to disable if this one is disabled. Example: array('modModuleToDisable1', ...)
 		$this->requiredby = array();
 		// List of module class names this module is in conflict with. Example: array('modModuleToDisable1', ...)

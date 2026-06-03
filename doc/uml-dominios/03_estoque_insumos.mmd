@@ -4,10 +4,13 @@ classDiagram
     namespace Estoque de Insumos {
         class ActivityStockService {
             +createConsumptionMovements(activity, user, force, tx) int
-            +revertConsumptionMovements(activity, user, tx) int
+            +syncLineMovement(activity, line, user, tx) int
+            +removeLineMovement(activity, line, user, tx) int
+            +removeActivityLineMovements(activity, user, tx) int
         }
 
         class FvActivity {
+            +replaceInputLines(lines, user, tx) int
             +createStockMovements(user, force, tx) int
             +revertStockMovements(user, tx) int
         }
@@ -15,8 +18,9 @@ classDiagram
         class FvActivityLine {
             +fk_product
             +fk_warehouse
-            +qty
-            +unit
+            +qty_done
+            +fk_stock_movement
+            +stock_movement_qty
         }
     }
 
@@ -28,6 +32,6 @@ classDiagram
     FvActivity "1" o-- "0..*" FvActivityLine : itens consumidos
     FvActivity ..> ActivityStockService : delega lancamentos
     ActivityStockService ..> User : operador
-    ActivityStockService ..> MouvementStock : registro de consumo
+    ActivityStockService ..> MouvementStock : lancamento e estorno
     FvActivityLine ..> Product : insumo
     FvActivityLine ..> Entrepot : armazem

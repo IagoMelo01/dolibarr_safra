@@ -1,6 +1,6 @@
 # AGENTS Guide for Safra Module
 
-Last updated: 2026-05-21
+Last updated: 2026-06-03
 Repository path: `C:\wamp64\www\dolibarr_23\htdocs\custom\safra`
 Default branch: `main`
 Latest local commit inspected: `031312e 2026-05-04 modulo atividades`
@@ -14,21 +14,22 @@ For the current requirements backlog and deployment plan, read `plan.html` first
 - Product: Dolibarr custom module `safra` for agronomic operations, field plots, products, crop monitoring, satellite indicators and agricultural activities.
 - Runtime: PHP/Dolibarr custom module style, mostly procedural pages plus `CommonObject` classes.
 - Database: MySQL/MariaDB using Dolibarr `llx_` prefix conventions.
-- Current strategic core: `FvActivity` workflow with stock movement integration, project task sync and REST API.
-- Current branch state: Activity rebuild, API, local tests and deploy runbook exist. Staging homologation and production readiness are still pending.
+- Current strategic core: `FvActivity` workflow with per-input stock movement integration and REST API.
+- Current branch state: Activity rebuild, per-line stock movement tracking, API, local tests and deploy runbook exist. Staging homologation and production readiness are still pending.
 
 ## Current Key Files
 - Activity UI:
   - `activity/activity_list.php`
   - `activity/activity_card.php`
   - `activity/activity_edit.php`
+  - `activity/activity_card.php` uses Dolibarr-style tabs for General, Inputs, Spray mixture, Team, Vehicles and Implements.
 - Activity domain:
   - `class/FvActivity.class.php`
   - `class/FvActivityLine.class.php`
   - `class/ActivityStockService.class.php`
   - `class/api_sfactivities.class.php`
 - Activity integration:
-  - `core/triggers/interface_modSafra_ActivityTrigger.class.php`
+  - `core/triggers/interface_modSafra_ActivityTrigger.class.php` (project task lifecycle no-op)
   - `core/triggers/interface_99_modSafra_SafraTriggers.class.php`
 - Module descriptor, menus and permissions:
   - `core/modules/modSafra.class.php`
@@ -112,12 +113,18 @@ For the current requirements backlog and deployment plan, read `plan.html` first
   - `SAFRA_ACTIVITY_CANCEL`
   - `SAFRA_ACTIVITY_DELETE`
 - Stock integration:
-  - Completion posts Dolibarr stock movements through `ActivityStockService`.
-  - Movements use `origintype = 'safra_activity'`.
-  - Cancellation reverses posted stock movements.
-- Project task sync:
-  - Activity creation/update syncs to Dolibarr project tasks.
-  - Task extrafield link uses `fk_activity`.
+  - Saving an input line posts or updates a Dolibarr stock movement through `ActivityStockService`.
+  - Each line stores its active movement in `fk_stock_movement` and `stock_movement_qty`.
+  - Movements use `origintype = 'safra_activity'` and `fk_origin = safra_activity.rowid`.
+  - Changing product, warehouse, dose or quantity reverses the previous line movement and posts a new one.
+  - Removing a line reverses its active movement and deletes the line.
+  - Cancellation reverses active line movements only; historical movements remain for audit.
+- Project task relation:
+  - Activity creation/update does not create, update, close or delete Dolibarr project tasks.
+  - If `fk_task` is explicitly set, the optional task extrafield link uses `fk_activity`.
+- Project relation:
+  - Selecting a project fills field plot, planned area, crop and cultivar from project extrafields when present.
+  - Business rule: one project represents one season for one field plot.
 - Resource links:
   - users in `safra_activity_user`
   - vehicles in `safra_activity_vehicle`
@@ -146,7 +153,8 @@ For the current requirements backlog and deployment plan, read `plan.html` first
   - `sql/migrations/20260504_rebuild_activity_schema.sql`
 - `upgrade.php` currently executes the rebuild migration and sets `SAFRA_VERSION`.
 - Legacy migration helper functions still exist in `upgrade.php`, but the local tests assert the legacy migration is not called during the rebuild.
-- Before production, decide explicitly whether the target database can accept destructive rebuild or requires a preservation migration.
+- Destructive rebuilds are acceptable while the module is in development and there is no active client production data.
+- After production go-live, migrations must preserve client data or include a tested data migration path.
 
 ## Testing and Validation
 - Local command that passed during this update:
@@ -160,8 +168,10 @@ For the current requirements backlog and deployment plan, read `plan.html` first
   - `powershell -ExecutionPolicy Bypass -File build\ci\checks.ps1`
 - Manual checks remain mandatory in a real Dolibarr instance:
   - Activity list/card/create/save/start/complete/cancel/delete.
-  - Stock movement and reversal in `llx_stock_mouvement`.
-  - Project task creation/update/deletion sync.
+  - Add/edit/remove input lines and confirm stock movement/reversal in `llx_stock_mouvement`.
+  - Project selection fills field plot/area/crop/cultivar from project extrafields.
+  - Activity tabs save independently: General, Inputs, Spray mixture, Team, Vehicles and Implements.
+  - Optional task extrafield link only when `fk_task` is explicitly set.
   - API smoke calls.
   - Satellite map, chart and cache behavior.
 
@@ -170,12 +180,12 @@ For the current requirements backlog and deployment plan, read `plan.html` first
 - Staging/UAT with a database mirror is still required.
 - `class/safra_satellite_statistics.class.php` still disables cURL peer verification in Sentinel calls; this must be hardened before production.
 - Runtime token cache exists at `json/cache/token.json`; it is ignored by Git, but operational credential rotation is still required.
-- `core/modules/modSafra.class.php` declares a very broad dependency list, including modules that may not be true hard requirements. This can block activation in lean Dolibarr instances.
+- `core/modules/modSafra.class.php` now keeps hard dependencies narrow (`modProduct`, `modStock`, `modCron`); validate optional modules in staging.
 - Several translation and documentation keys still use `Aplicacao` wording even after the `safra_activity*` cutover.
 - `doc/Documentation.asciidoc` and `doc/temp/safra.asciidoc` still document legacy `Aplicacao` objects.
 - Activity UI has list and card pages, but no dedicated kanban/calendar/mass-action implementation despite translation keys suggesting those concepts.
 - Activity cost fields exist at line level, but planned/actual cost rollups and reports are not fully operationalized.
-- Reopening completed activities needs a formal business rule when stock movements already exist.
+- Reopening completed activities keeps active line movements; editing an input line reverses and reposts its movement.
 - Satellite integration needs real credential, geometry, no-data, cloud-cover and scheduled-job validation in staging.
 - Seed/reference data contains encoding artifacts in some files and should be sanitized before a release package.
 
@@ -214,4 +224,4 @@ For the current requirements backlog and deployment plan, read `plan.html` first
 
 ## Final Notes
 - This module is close to a controlled staging cycle, not a production-ready release.
-- The next best engineering move is to harden Sentinel SSL, rotate credentials, confirm the migration strategy, and run a full staging UAT over Activity, stock, project tasks, API and satellite views.
+- The next best engineering move is to harden Sentinel SSL, rotate credentials, confirm the migration strategy, and run a full staging UAT over Activity, stock, optional task links, API and satellite views.

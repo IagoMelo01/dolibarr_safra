@@ -24,15 +24,17 @@ classDiagram
             +complete(user) int
             +cancel(user, allowDelete) int
             +fetchLines() int
+            +replaceInputLines(lines, user, tx) int
         }
 
         class FvActivityLine {
             +rowid
             +fk_activity
             +fk_product
-            +qty
-            +unit
+            +qty_done
+            +dose_done
             +fk_warehouse
+            +fk_stock_movement
             +create(user) int
             +deleteForActivity(db, activityId) int
         }
@@ -50,6 +52,6 @@ classDiagram
 
     FvActivity "1" o-- "0..*" FvActivityLine : insumos/apontamentos
     FvActivity ..> User : creator/modifier
-    FvActivity ..> Project : fk_project
-    FvActivity ..> Task : fk_task
+    FvActivity ..> Project : optional context
+    FvActivity ..> Task : optional extrafield link
     FvActivity ..> Talhao : fk_fieldplot

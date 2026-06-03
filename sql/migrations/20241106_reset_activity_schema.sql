@@ -54,6 +54,8 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_line (
     total DOUBLE DEFAULT 0,
     movement_type VARCHAR(16) DEFAULT 'consume',
     fk_warehouse INTEGER,
+    fk_stock_movement INTEGER,
+    stock_movement_qty DOUBLE DEFAULT 0,
     date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     fk_user_creat INTEGER,
@@ -62,9 +64,11 @@ CREATE TABLE __MAIN_DB_PREFIX__safra_activity_line (
     INDEX idx_safra_activity_line_fk_activity (fk_activity),
     INDEX idx_safra_activity_line_fk_product (fk_product),
     INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse),
+    INDEX idx_safra_activity_line_fk_stock_movement (fk_stock_movement),
     CONSTRAINT llx_safra_activity_line_fk_activity FOREIGN KEY (fk_activity) REFERENCES __MAIN_DB_PREFIX__safra_activity(rowid) ON DELETE CASCADE,
     CONSTRAINT llx_safra_activity_line_fk_product FOREIGN KEY (fk_product) REFERENCES __MAIN_DB_PREFIX__product(rowid) ON DELETE SET NULL,
     CONSTRAINT llx_safra_activity_line_fk_warehouse FOREIGN KEY (fk_warehouse) REFERENCES __MAIN_DB_PREFIX__entrepot(rowid) ON DELETE SET NULL,
+    CONSTRAINT llx_safra_activity_line_fk_stock_movement FOREIGN KEY (fk_stock_movement) REFERENCES __MAIN_DB_PREFIX__stock_mouvement(rowid) ON DELETE SET NULL,
     CONSTRAINT llx_safra_activity_line_fk_user_creat FOREIGN KEY (fk_user_creat) REFERENCES __MAIN_DB_PREFIX__user(rowid) ON DELETE SET NULL,
     CONSTRAINT llx_safra_activity_line_fk_user_modif FOREIGN KEY (fk_user_modif) REFERENCES __MAIN_DB_PREFIX__user(rowid) ON DELETE SET NULL
 ) ENGINE=innodb;
