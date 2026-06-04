@@ -2521,21 +2521,21 @@ class modSafra extends DolibarrModules
 			'',
 			'isModEnabled("safra")'
 		);
-		$extrafields->addExtraField(
-			'FvActivity',
-			'Atividade Agricola',
-			'link',
-			151,
-			'',
-			'projet_task',
-			0,
-			0,
-			'',
-			array('options' => array("FvActivity:safra/class/FvActivity.class.php:1"=>null)),
-			1,
-			'',
-			'isModEnabled("safra")'
-		);
+		// $extrafields->addExtraField(
+		// 	'FvActivity',
+		// 	'Atividade Agricola',
+		// 	'link',
+		// 	151,
+		// 	'',
+		// 	'projet_task',
+		// 	0,
+		// 	0,
+		// 	'',
+		// 	array('options' => array("FvActivity:safra/class/FvActivity.class.php:1"=>null)),
+		// 	1,
+		// 	'',
+		// 	'isModEnabled("safra")'
+		// );
 
 
 		// Create extrafields during init
