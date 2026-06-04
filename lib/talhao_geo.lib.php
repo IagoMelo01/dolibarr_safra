@@ -456,7 +456,7 @@ function safra_talhao_polygons_to_wkt(array $polygons)
 }
 
 /**
- * Extract polygons from a GeoJSON string (Feature or Geometry).
+ * Extract polygons from a GeoJSON string (FeatureCollection, Feature or Geometry).
  *
  * @param string $geojson
  * @return array<int,array<int,array{0:float,1:float}>>
@@ -470,6 +470,19 @@ function safra_talhao_extract_polygons_from_geojson($geojson)
         $decoded = json_decode($geojson, true);
         if (!is_array($decoded)) {
                 return array();
+        }
+
+        if (isset($decoded['type']) && $decoded['type'] === 'FeatureCollection') {
+                $polygons = array();
+                $features = isset($decoded['features']) && is_array($decoded['features']) ? $decoded['features'] : array();
+                foreach ($features as $feature) {
+                        if (!is_array($feature) || empty($feature['geometry'])) {
+                                continue;
+                        }
+                        $polygons = array_merge($polygons, safra_talhao_extract_polygons_from_geometry($feature['geometry']));
+                }
+
+                return $polygons;
         }
 
         if (isset($decoded['type']) && $decoded['type'] === 'Feature') {

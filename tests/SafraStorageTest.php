@@ -23,6 +23,32 @@ if ($satellitePath !== $expectedRoot.'/json/ndvi/2026-05-17_2026-05-23_1.json') 
     throw new RuntimeException('Safra satellite JSON path is not under documents storage.');
 }
 
+$rawWkt = 'POLYGON((-50.00000000 -20.00000000, -50.10000000 -20.00000000, -50.10000000 -20.10000000, -50.00000000 -20.00000000))';
+$encodedWkt = rawurlencode($rawWkt);
+if (safra_normalize_wkt($encodedWkt) !== $rawWkt) {
+    throw new RuntimeException('Encoded talhao WKT must be normalized before Sentinel requests.');
+}
+if (safra_satellite_talhao_wkt((object) array('wkt' => $encodedWkt)) !== $rawWkt) {
+    throw new RuntimeException('Talhao WKT helper must accept legacy encoded WKT.');
+}
+
+$geoJsonTalhao = (object) array(
+    'wkt' => '',
+    'geo_json' => '{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-50,-20],[-50.1,-20],[-50.1,-20.1],[-50,-20]]]},"properties":{}}',
+);
+$expectedGeoJsonWkt = 'POLYGON((-50.00000000 -20.00000000, -50.10000000 -20.00000000, -50.10000000 -20.10000000, -50.00000000 -20.00000000))';
+if (safra_satellite_talhao_wkt($geoJsonTalhao) !== $expectedGeoJsonWkt) {
+    throw new RuntimeException('Talhao WKT helper must derive WKT from GeoJSON when WKT is empty.');
+}
+
+$featureCollectionTalhao = (object) array(
+    'wkt' => '',
+    'geo_json' => '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-50,-20],[-50.1,-20],[-50.1,-20.1],[-50,-20]]]},"properties":{}}]}',
+);
+if (safra_satellite_talhao_wkt($featureCollectionTalhao) !== $expectedGeoJsonWkt) {
+    throw new RuntimeException('Talhao WKT helper must derive WKT from GeoJSON FeatureCollection.');
+}
+
 safra_ensure_dir(dirname($satellitePath));
 if (!is_dir(dirname($satellitePath))) {
     throw new RuntimeException('Safra storage helper did not create target directory.');

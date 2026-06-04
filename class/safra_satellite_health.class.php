@@ -868,7 +868,7 @@ class SafraSatelliteHealth
 
         $dir = dirname($path);
         if (!is_dir($dir)) {
-            dol_mkdir($dir);
+            safra_ensure_dir($dir);
         }
 
         $encoded = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

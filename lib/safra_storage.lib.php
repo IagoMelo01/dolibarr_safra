@@ -67,10 +67,15 @@ function safra_ensure_dir($dir)
 
     if (function_exists('dol_mkdir')) {
         dol_mkdir($dir);
-        return;
+        if (is_dir($dir)) {
+            return;
+        }
     }
 
     @mkdir($dir, 0777, true);
+    if (!is_dir($dir) && function_exists('dol_syslog')) {
+        dol_syslog(__FUNCTION__ . ' failed to create directory ' . $dir, LOG_ERR);
+    }
 }
 
 /**
@@ -116,6 +121,69 @@ function safra_satellite_json_path($folder, $fileBase)
     $fileBase = basename((string) $fileBase, '.json');
 
     return safra_json_path($folder . '/' . $fileBase . '.json');
+}
+
+/**
+ * Normalize WKT before it is sent to Sentinel Hub.
+ *
+ * @param string $wkt Raw or URL-encoded WKT.
+ *
+ * @return string
+ */
+function safra_normalize_wkt($wkt)
+{
+    $wkt = trim((string) $wkt);
+    if ($wkt === '') {
+        return '';
+    }
+
+    for ($i = 0; $i < 3 && strpos($wkt, '%') !== false; $i++) {
+        $decoded = rawurldecode($wkt);
+        if ($decoded === $wkt) {
+            break;
+        }
+        $wkt = trim($decoded);
+    }
+
+    $wkt = html_entity_decode($wkt, ENT_QUOTES, 'UTF-8');
+    $wktUpper = strtoupper($wkt);
+    if (strpos($wktUpper, 'POLYGON') !== 0 && strpos($wktUpper, 'MULTIPOLYGON') !== 0) {
+        return '';
+    }
+
+    return $wkt;
+}
+
+/**
+ * Resolve a WKT geometry from a talhao object, falling back to geo_json when needed.
+ *
+ * @param object $talhao Talhao object.
+ *
+ * @return string
+ */
+function safra_satellite_talhao_wkt($talhao)
+{
+    $wkt = safra_normalize_wkt(isset($talhao->wkt) ? $talhao->wkt : '');
+    if ($wkt !== '') {
+        return $wkt;
+    }
+
+    $geoJson = isset($talhao->geo_json) ? (string) $talhao->geo_json : '';
+    if ($geoJson === '') {
+        return '';
+    }
+
+    dol_include_once('/safra/lib/talhao_geo.lib.php');
+    if (!function_exists('safra_talhao_extract_polygons_from_geojson') || !function_exists('safra_talhao_polygons_to_wkt')) {
+        return '';
+    }
+
+    $polygons = safra_talhao_extract_polygons_from_geojson($geoJson);
+    if (empty($polygons)) {
+        return '';
+    }
+
+    return safra_talhao_polygons_to_wkt($polygons);
 }
 
 /**
@@ -183,6 +251,9 @@ function safra_write_satellite_json_file($folder, $fileBase, $payload, &$errorMe
 
     if (@file_put_contents($path, $payload, LOCK_EX) === false) {
         $errorMessage = 'write_failed';
+        if (function_exists('dol_syslog')) {
+            dol_syslog(__FUNCTION__ . ' failed to write satellite JSON ' . $path, LOG_ERR);
+        }
         return false;
     }
 

@@ -237,7 +237,6 @@ function updateInputs(layer) {
         var bbox = bounds.toBBoxString();
         var geojson = layer.toGeoJSON();
         var wkt = wellknown.stringify(geojson);
-        var encodedWKT = encodeURIComponent(wkt);
 
         var inputGeoJson = document.getElementById('geo_json');
         if (inputGeoJson) {
@@ -246,7 +245,7 @@ function updateInputs(layer) {
 
         var inputWkt = document.getElementById('wkt');
         if (inputWkt) {
-                inputWkt.value = encodedWKT;
+                inputWkt.value = wkt;
         }
 
         var inputBbox = document.getElementById('bbox');
