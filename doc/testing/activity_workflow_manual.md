@@ -15,11 +15,11 @@ Manual roteiro para validar o fluxo canonico `safra_activity*` em uma instancia 
 | Cenario | Passos | Resultado esperado |
 | --- | --- | --- |
 | Criar atividade | Abrir nova atividade, informar nome, tipo e projeto. Se o projeto tiver extrafields de talhao, cultura e cultivar, nao preencher esses campos manualmente. | Registro salvo com `ref`, status planejado e talhao/area/cultura/cultivar vindos do projeto. |
-| Aba Insumos | Abrir a aba Insumos, selecionar produto, armazem, movimento, area executada e dose. Conferir quantidade calculada e salvar. | Linha salva e movimento em `llx_stock_mouvement` com `origintype = 'safra_activity'`; `fk_stock_movement` gravado na linha. |
-| Alterar insumo | Alterar dose ou quantidade executada e salvar a aba Insumos. | Movimento anterior estornado e novo movimento gravado, sem duplicar saldo. |
-| Remover insumo | Remover a linha do insumo e salvar a aba Insumos. | Movimento ativo estornado e linha removida. |
-| Aba Calda | Abrir Calculo de calda, informar vazao por ha e capacidade do tanque. | Tela mostra volume total, numero de tanques, area por tanque e quantidade de cada insumo por tanque. |
-| Abas opcionais | Preencher e salvar Equipe, Veiculos e Implementos separadamente. | Cada aba salva somente seus dados, sem exigir que o produtor preencha as outras abas. |
+| Aba Insumos | Abrir a aba Insumos, clicar Adicionar, preencher o modal com produto, armazem, movimento, area executada e dose. Conferir quantidade calculada e salvar. | Linha aparece na lista e movimento em `llx_stock_mouvement` com `origintype = 'safra_activity'`; `fk_stock_movement` gravado na linha. |
+| Alterar insumo | Clicar no lapis da linha, alterar dose ou quantidade executada no modal e salvar. | Movimento anterior estornado e novo movimento gravado, sem duplicar saldo. |
+| Remover insumo | Clicar na lixeira da linha e confirmar. | Movimento ativo estornado e linha removida. |
+| Aba Calda | Abrir Calculo de calda, informar vazao por ha e capacidade do tanque, clicar Atualizar calculo e recarregar a aba. | Tela persiste area, vazao, tanque, volume total, numero de tanques e area por tanque; tabela mostra quantidade de cada insumo por tanque. |
+| Abas opcionais | Em Equipe, Veiculos e Implementos, clicar Adicionar, preencher o modal e salvar. Depois editar pelo lapis e remover pela lixeira. | Cada aba salva somente seus dados, sem exigir que o produtor preencha as outras abas. |
 | Iniciar | Acionar **Iniciar atividade**. | Status `In Progress`. |
 | Concluir | Acionar **Concluir atividade** ou salvar/concluir pela aba Geral. | Status `Completed`; movimentos existentes permanecem consistentes. |
 | Cancelar | Acionar **Cancelar atividade**. | Status `Canceled` e movimentos ativos estornados. |

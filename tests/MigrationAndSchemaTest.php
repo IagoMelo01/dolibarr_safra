@@ -40,6 +40,8 @@ $assert($mysqlSchema !== false && $llxSchema !== false, 'Unable to read canonica
 $assert(stripos($mysqlSchema, 'safra_aplicacao') === false, 'Canonical mysql schema must not depend on safra_aplicacao');
 $assert(stripos($llxSchema, 'fk_task') !== false, 'Canonical llx schema must expose fk_task');
 $assert(stripos($llxSchema, 'season') !== false, 'Canonical llx schema must expose season');
+$assert(stripos($llxSchema, 'mixture_tank_capacity') !== false, 'Canonical llx schema must expose persistent mixture fields');
 $assert(stripos($mysqlSchema, 'fk_stock_movement') !== false, 'Canonical mysql schema must expose line stock movement tracking');
+$assert(stripos($mysqlSchema, 'mixture_total_volume') !== false, 'Canonical mysql schema must expose mixture calculation totals');
 
 return true;

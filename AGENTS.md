@@ -23,6 +23,7 @@ For the current requirements backlog and deployment plan, read `plan.html` first
   - `activity/activity_card.php`
   - `activity/activity_edit.php`
   - `activity/activity_card.php` uses Dolibarr-style tabs for General, Inputs, Spray mixture, Team, Vehicles and Implements.
+  - Operational tabs are read-only lists with add/edit modals; do not reintroduce inline cloned rows.
 - Activity domain:
   - `class/FvActivity.class.php`
   - `class/FvActivityLine.class.php`
@@ -171,6 +172,8 @@ For the current requirements backlog and deployment plan, read `plan.html` first
   - Add/edit/remove input lines and confirm stock movement/reversal in `llx_stock_mouvement`.
   - Project selection fills field plot/area/crop/cultivar from project extrafields.
   - Activity tabs save independently: General, Inputs, Spray mixture, Team, Vehicles and Implements.
+  - Add/edit modals open with clean/default data and edit modals open with persisted row data.
+  - Spray mixture calculation persists after clicking update.
   - Optional task extrafield link only when `fk_task` is explicitly set.
   - API smoke calls.
   - Satellite map, chart and cache behavior.

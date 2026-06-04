@@ -17,7 +17,7 @@ The official Activity schema is defined by:
 - `sql/migrations/20260504_rebuild_activity_schema.sql`
 
 ## Main Tables
-- `llx_safra_activity`: header, operation type, status, priority, season, crop, field plot, planned/executed area and dates.
+- `llx_safra_activity`: header, operation type, status, priority, season, crop, field plot, planned/executed area, dates and persistent spray mixture calculation fields.
 - `llx_safra_activity_line`: products/inputs with planned and executed dose/quantity. Each line tracks its active stock movement in `fk_stock_movement` and `stock_movement_qty`.
 - `llx_safra_activity_user`: employee/user links with role and planned/executed hours.
 - `llx_safra_activity_vehicle`: links to the Fleet module `Veiculo` class by id.

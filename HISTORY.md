@@ -7,11 +7,14 @@
 - Changed input save behavior so adding an input posts stock immediately with the logged-in Dolibarr user.
 - Changed input edit behavior so product, warehouse, movement type, dose or quantity changes reverse the previous movement and post a new one.
 - Changed input removal behavior so the active line movement is reversed before the line is deleted.
+- Fixed stock reversal on Dolibarr 23 by reading movement quantity from `llx_stock_mouvement.value`.
 - Kept Dolibarr REST API documentation as a reference, but selected internal `MouvementStock` integration for transactional consistency and to avoid local API credential handling.
 - Decoupled Safra activity workflow from Dolibarr project task lifecycle; optional task extrafield linking remains supported when a task id is explicitly provided.
 - Reduced hard module dependencies to Product, Stock and Cron.
 - Realigned the agricultural activity card with standard Dolibarr visual patterns: `fichecenter`, `tableforfield`, `liste`, native buttons and only small custom CSS for readability.
 - Reworked the activity card into Dolibarr-style tabs: main data, inputs, spray mixture calculation, team, vehicles and implements.
+- Replaced inline editable tables in operational tabs with read-only lists and add/edit modals for inputs, team, vehicles and implements.
 - Changed project selection to force-fill field plot, planned area, crop and cultivar from project extrafields, following the rule that a project represents one season for one field plot.
+- Added persistent spray mixture fields on the activity header and an update button to store area, rate, tank capacity, total volume, tank count and area per tank.
 - Added the spray mixture tab to calculate total spray volume, tank count, area per tank and input quantity per tank from saved input lines.
 - Documented that destructive activity migrations are acceptable during development and must become preservative only after a client production database exists.

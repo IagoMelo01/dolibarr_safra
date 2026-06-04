@@ -32,6 +32,8 @@ Gate 1: **CONCLUIDO**.
 - [x] Sincronizacao automatica com tarefas de projeto removida; resta apenas vinculo opcional por extrafield quando `fk_task` for informado.
 - [x] Politica de desenvolvimento definida: migracoes destrutivas sao aceitaveis ate existir base produtiva com cliente ativo.
 - [x] Card de Atividade reorganizado em abas Dolibarr para dados gerais, insumos, calda, equipe, veiculos e implementos.
+- [x] Abas operacionais alteradas para lista + modal, sem clonagem de linhas inline.
+- [x] Calculo de calda persistido no cabecalho da atividade.
 
 Gate 2: **CONCLUIDO (validacao funcional local)**.
 

@@ -27,13 +27,14 @@ Procedure:
 
 Acceptance checks:
 - Create, save, start, complete, cancel and delete still behave coherently.
-- Existing activities use Dolibarr-style tabs, and each tab saves only its own data.
+- Existing activities use Dolibarr-style tabs; operational tabs show lists and use add/edit modals instead of inline editable rows.
+- Each modal save touches only one input/resource row and redirects back to its tab.
 - Selecting a project fills field plot, planned area, crop and cultivar from project extrafields when present.
 - Saving an input line with product, warehouse and used quantity creates a stock movement.
 - Editing product, warehouse, dose or quantity reverses the old line movement and posts a new one.
 - Removing an input line reverses its active movement and deletes the line.
 - Stock movements use `origintype = 'safra_activity'` and line `fk_stock_movement` tracks the current movement.
-- The spray mixture tab calculates total spray volume, required tanks, area per tank and quantity per tank from saved inputs.
+- The spray mixture tab persists area, rate, tank capacity, total volume, tank count and area per tank, and calculates quantity per tank from saved inputs.
 - Cancellation reverses active line movements without duplicate posting.
 - Project task workflow is not synchronized; only the optional task extrafield link may be maintained.
 

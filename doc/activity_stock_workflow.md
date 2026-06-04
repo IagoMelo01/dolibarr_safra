@@ -21,9 +21,9 @@ When product, warehouse, movement type, dose or quantity changes, the previous m
 The activity card follows the standard Dolibarr tab pattern:
 
 - `Geral`: stores the activity header, project, field plot, dates, crop, cultivar and area.
-- `Insumos`: stores product, warehouse, movement type, executed area, dose and executed quantity. This tab is the stock posting surface.
-- `Calculo de calda`: reads the saved input lines and calculates spray volume, required tanks, area per tank and input quantity per tank.
-- `Equipe`, `Veiculos` and `Implementos`: store optional operational resources without forcing the producer to fill them during activity creation.
+- `Insumos`: shows a read-only list. Add/edit opens a modal for product, warehouse, movement type, executed area, dose and executed quantity. Saving the modal is the stock posting surface.
+- `Calculo de calda`: reads the saved input lines, calculates spray volume, required tanks, area per tank and input quantity per tank, and persists the calculation on the activity header when the producer clicks update.
+- `Equipe`, `Veiculos` and `Implementos`: show read-only lists and use add/edit modals, so optional resources do not increase the first-screen workload.
 
 Selecting a project fills the activity field plot and area from project extrafields when available. The business rule is that one project represents one season for one field plot.
 

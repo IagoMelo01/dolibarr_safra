@@ -539,6 +539,8 @@ QuantityPerTank = Quantity per tank
 PerTankSuffix = per tank
 SaveAsNote = Save as note
 NoProductForMixture = Add products to calculate the mixture
+SafraUpdateMixture = Update calculation
+SafraMixtureUpdated = Mixture calculation updated
 SafraCaldaNoteHeader = Mixture calculation:
 SafraCaldaNoteRate = - Rate: %s L/ha
 SafraCaldaNoteTank = - Tank: %s L
@@ -547,6 +549,14 @@ SafraCaldaNoteItemsHeader = - Inputs per tank:
 SafraCaldaNoteItem =   * %s: %s
 SafraCaldaNoteItemPerTank =   * %s: %s
 KeepYourActivityDetailsOrganized = Keep your activity details organized
+SafraInputAdd = Add input
+SafraInputEdit = Edit input
+SafraTeamAdd = Add team member
+SafraTeamEdit = Edit team member
+SafraVehicleAdd = Add vehicle
+SafraVehicleEdit = Edit vehicle
+SafraImplementAdd = Add implement
+SafraImplementEdit = Edit implement
 
 # Rebuilt agricultural activity workflow
 SafraActivity = Agricultural activity

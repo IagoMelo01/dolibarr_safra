@@ -558,6 +558,8 @@ QuantityPerTank = Quantidade por tanque
 PerTankSuffix = por tanque
 SaveAsNote = Salvar como observação
 NoProductForMixture = Adicione produtos para calcular a calda
+SafraUpdateMixture = Atualizar cálculo
+SafraMixtureUpdated = Cálculo de calda atualizado
 SafraCaldaNoteHeader = Cálculo de calda:
 SafraCaldaNoteRate = - Taxa: %s L/ha
 SafraCaldaNoteTank = - Tanque: %s L
@@ -566,6 +568,14 @@ SafraCaldaNoteItemsHeader = - Insumos por tanque:
 SafraCaldaNoteItem =   * %s: %s
 SafraCaldaNoteItemPerTank =   * %s: %s
 KeepYourActivityDetailsOrganized = Mantenha os detalhes da atividade organizados
+SafraInputAdd = Adicionar insumo
+SafraInputEdit = Editar insumo
+SafraTeamAdd = Adicionar membro da equipe
+SafraTeamEdit = Editar membro da equipe
+SafraVehicleAdd = Adicionar veículo
+SafraVehicleEdit = Editar veículo
+SafraImplementAdd = Adicionar implemento
+SafraImplementEdit = Editar implemento
 
 # Rebuilt agricultural activity workflow
 SafraActivity = Atividade agricola

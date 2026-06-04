@@ -274,7 +274,7 @@ class ActivityStockService
             return -1;
         }
 
-        $sql = 'SELECT rowid, fk_product, fk_entrepot, qty FROM ' . MAIN_DB_PREFIX . 'stock_mouvement'
+        $sql = 'SELECT rowid, fk_product, fk_entrepot, value as qty FROM ' . MAIN_DB_PREFIX . 'stock_mouvement'
             . ' WHERE fk_origin = ' . ((int) $activity->id)
             . " AND origintype = '" . $this->db->escape(self::ORIGIN_TYPE) . "'";
         $resql = $this->db->query($sql);
@@ -416,7 +416,7 @@ class ActivityStockService
             );
         }
 
-        $sql = 'SELECT rowid, fk_product, fk_entrepot, qty FROM ' . MAIN_DB_PREFIX . 'stock_mouvement'
+        $sql = 'SELECT rowid, fk_product, fk_entrepot, value as qty FROM ' . MAIN_DB_PREFIX . 'stock_mouvement'
             . ' WHERE rowid = ' . $movementId
             . " AND origintype = '" . $this->db->escape(self::ORIGIN_TYPE) . "'";
         $resql = $this->db->query($sql);

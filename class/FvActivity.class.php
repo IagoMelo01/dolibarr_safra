@@ -93,17 +93,24 @@ class FvActivity extends CommonObject
         'area_planned' => array('type' => 'double(24,8)', 'label' => 'SafraActivityAreaPlanned', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'default' => '0', 'position' => 160),
         'area_done' => array('type' => 'double(24,8)', 'label' => 'SafraActivityAreaDone', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'default' => '0', 'position' => 170),
         'area_total' => array('type' => 'double(24,8)', 'label' => 'AreaTotal', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 180),
-        'date_planned_start' => array('type' => 'datetime', 'label' => 'SafraActivityDatePlannedStart', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 190),
-        'date_planned_end' => array('type' => 'datetime', 'label' => 'SafraActivityDatePlannedEnd', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 200),
-        'date_start' => array('type' => 'datetime', 'label' => 'DateStart', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 210),
-        'date_end' => array('type' => 'datetime', 'label' => 'DateEnd', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 220),
-        'weather' => array('type' => 'varchar(255)', 'label' => 'SafraActivityWeather', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 230),
-        'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'visible' => 1, 'position' => 240),
-        'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'visible' => 0, 'position' => 250),
-        'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 260),
-        'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 270),
-        'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 280),
-        'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 290),
+        'mixture_area' => array('type' => 'double(24,8)', 'label' => 'SafraMixtureArea', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 185),
+        'mixture_rate' => array('type' => 'double(24,8)', 'label' => 'ApplicationRate', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 186),
+        'mixture_tank_capacity' => array('type' => 'double(24,8)', 'label' => 'TankCapacity', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 187),
+        'mixture_total_volume' => array('type' => 'double(24,8)', 'label' => 'SafraMixtureTotalVolume', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 188),
+        'mixture_tank_count' => array('type' => 'integer', 'label' => 'SafraMixtureTankCount', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 189),
+        'mixture_area_per_tank' => array('type' => 'double(24,8)', 'label' => 'AppliedAreaPerTank', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'default' => '0', 'position' => 190),
+        'mixture_updated_at' => array('type' => 'datetime', 'label' => 'DateModification', 'enabled' => '1', 'visible' => 0, 'notnull' => 0, 'position' => 191),
+        'date_planned_start' => array('type' => 'datetime', 'label' => 'SafraActivityDatePlannedStart', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 200),
+        'date_planned_end' => array('type' => 'datetime', 'label' => 'SafraActivityDatePlannedEnd', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 210),
+        'date_start' => array('type' => 'datetime', 'label' => 'DateStart', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 220),
+        'date_end' => array('type' => 'datetime', 'label' => 'DateEnd', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 230),
+        'weather' => array('type' => 'varchar(255)', 'label' => 'SafraActivityWeather', 'enabled' => '1', 'visible' => 1, 'notnull' => 0, 'position' => 240),
+        'note_public' => array('type' => 'html', 'label' => 'NotePublic', 'enabled' => '1', 'visible' => 1, 'position' => 250),
+        'note_private' => array('type' => 'html', 'label' => 'NotePrivate', 'enabled' => '1', 'visible' => 0, 'position' => 260),
+        'date_creation' => array('type' => 'datetime', 'label' => 'DateCreation', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 270),
+        'tms' => array('type' => 'timestamp', 'label' => 'DateModification', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 280),
+        'fk_user_creat' => array('type' => 'integer', 'label' => 'UserAuthor', 'enabled' => '1', 'visible' => -2, 'notnull' => 1, 'position' => 290),
+        'fk_user_modif' => array('type' => 'integer', 'label' => 'UserModif', 'enabled' => '1', 'visible' => -2, 'notnull' => 0, 'position' => 300),
     );
 
     public function __construct(DoliDB $db)
@@ -525,6 +532,239 @@ class FvActivity extends CommonObject
     }
 
     /**
+     * Create or update one input line and synchronize its stock movement.
+     *
+     * @param FvActivityLine $line
+     * @param User           $user
+     * @param bool           $useTransaction
+     * @return int
+     */
+    public function saveInputLine(FvActivityLine $line, User $user, $useTransaction = true)
+    {
+        if (empty($this->id)) {
+            $this->error = 'ErrorSafraActivityInvalidIdentifier';
+            return -1;
+        }
+
+        dol_include_once('/safra/class/ActivityStockService.class.php');
+
+        $lineId = !empty($line->id) ? (int) $line->id : (!empty($line->rowid) ? (int) $line->rowid : 0);
+        $existingLine = null;
+        if ($lineId > 0) {
+            $existingLine = new FvActivityLine($this->db);
+            if ($existingLine->fetch($lineId) <= 0 || (int) $existingLine->fk_activity !== (int) $this->id) {
+                $this->error = 'ErrorSafraActivityInvalidLine';
+                return -1;
+            }
+        }
+
+        $line->fk_activity = (int) $this->id;
+        $line->position = $line->position ?: ($lineId > 0 ? $existingLine->position : $this->getNextLinePosition());
+        $line->prepareForSave();
+
+        if ((int) $line->fk_product <= 0) {
+            $this->error = 'ErrorFieldRequired';
+            return -1;
+        }
+
+        if ($existingLine) {
+            $line->id = $lineId;
+            $line->rowid = $lineId;
+            $line->fk_stock_movement = isset($existingLine->fk_stock_movement) ? (int) $existingLine->fk_stock_movement : 0;
+            $line->stock_movement_qty = isset($existingLine->stock_movement_qty) ? (float) $existingLine->stock_movement_qty : 0;
+        } else {
+            $line->id = 0;
+            $line->rowid = 0;
+            $line->fk_stock_movement = 0;
+            $line->stock_movement_qty = 0;
+        }
+
+        $service = new ActivityStockService($this->db);
+        $useLocalTransaction = $useTransaction && empty($this->db->transaction_opened);
+        if ($useLocalTransaction) {
+            $this->db->begin();
+        }
+
+        $result = $existingLine ? $line->update($user) : $line->create($user);
+        if ($result <= 0) {
+            if ($useLocalTransaction) {
+                $this->db->rollback();
+            }
+            $this->error = $line->error ?: $line->errorsToString();
+            return -1;
+        }
+        if (!$existingLine && empty($line->id)) {
+            $line->id = (int) $result;
+            $line->rowid = (int) $result;
+        }
+
+        $stockResult = $service->syncLineMovement($this, $line, $user, false);
+        if ($stockResult < 0) {
+            if ($useLocalTransaction) {
+                $this->db->rollback();
+            }
+            $this->error = $service->error ?: 'ErrorSafraActivityStockMovement';
+            return -1;
+        }
+
+        if ($useLocalTransaction) {
+            $this->db->commit();
+        }
+
+        $this->fetchLines();
+
+        return (int) $line->id;
+    }
+
+    /**
+     * Delete one input line and reverse its active stock movement first.
+     *
+     * @param int  $lineId
+     * @param User $user
+     * @param bool $useTransaction
+     * @return int
+     */
+    public function deleteInputLine($lineId, User $user, $useTransaction = true)
+    {
+        if (empty($this->id)) {
+            $this->error = 'ErrorSafraActivityInvalidIdentifier';
+            return -1;
+        }
+
+        $lineId = (int) $lineId;
+        if ($lineId <= 0) {
+            return 0;
+        }
+
+        $line = new FvActivityLine($this->db);
+        if ($line->fetch($lineId) <= 0 || (int) $line->fk_activity !== (int) $this->id) {
+            $this->error = 'ErrorSafraActivityInvalidLine';
+            return -1;
+        }
+
+        dol_include_once('/safra/class/ActivityStockService.class.php');
+        $service = new ActivityStockService($this->db);
+
+        $useLocalTransaction = $useTransaction && empty($this->db->transaction_opened);
+        if ($useLocalTransaction) {
+            $this->db->begin();
+        }
+
+        if ($service->removeLineMovement($this, $line, $user, false) < 0) {
+            if ($useLocalTransaction) {
+                $this->db->rollback();
+            }
+            $this->error = $service->error ?: 'ErrorSafraActivityStockMovement';
+            return -1;
+        }
+
+        if (FvActivityLine::deleteById($this->db, $lineId, (int) $this->id) < 0) {
+            if ($useLocalTransaction) {
+                $this->db->rollback();
+            }
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
+
+        if ($useLocalTransaction) {
+            $this->db->commit();
+        }
+
+        $this->fetchLines();
+
+        return 1;
+    }
+
+    /**
+     * Save one user resource row.
+     *
+     * @param array $row
+     * @return int
+     */
+    public function saveUserLink(array $row)
+    {
+        return $this->saveRelationRow('safra_activity_user', 'fk_user', $row, array(
+            'role' => 'varchar',
+            'planned_hours' => 'number',
+            'done_hours' => 'number',
+            'note' => 'text',
+        ));
+    }
+
+    /**
+     * Delete one user resource row.
+     *
+     * @param int $rowid
+     * @return int
+     */
+    public function deleteUserLink($rowid)
+    {
+        return $this->deleteRelationRow('safra_activity_user', $rowid);
+    }
+
+    /**
+     * Save one vehicle resource row.
+     *
+     * @param array $row
+     * @return int
+     */
+    public function saveVehicleLink(array $row)
+    {
+        if (empty($row['vehicle_class'])) {
+            $row['vehicle_class'] = 'Veiculo';
+        }
+
+        return $this->saveRelationRow('safra_activity_vehicle', 'fk_vehicle', $row, array(
+            'vehicle_class' => 'varchar',
+            'planned_hours' => 'number',
+            'done_hours' => 'number',
+            'note' => 'text',
+        ));
+    }
+
+    /**
+     * Delete one vehicle resource row.
+     *
+     * @param int $rowid
+     * @return int
+     */
+    public function deleteVehicleLink($rowid)
+    {
+        return $this->deleteRelationRow('safra_activity_vehicle', $rowid);
+    }
+
+    /**
+     * Save one implement resource row.
+     *
+     * @param array $row
+     * @return int
+     */
+    public function saveImplementLink(array $row)
+    {
+        if (empty($row['implement_class'])) {
+            $row['implement_class'] = 'Implemento';
+        }
+
+        return $this->saveRelationRow('safra_activity_implement', 'fk_implement', $row, array(
+            'implement_class' => 'varchar',
+            'planned_hours' => 'number',
+            'done_hours' => 'number',
+            'note' => 'text',
+        ));
+    }
+
+    /**
+     * Delete one implement resource row.
+     *
+     * @param int $rowid
+     * @return int
+     */
+    public function deleteImplementLink($rowid)
+    {
+        return $this->deleteRelationRow('safra_activity_implement', $rowid);
+    }
+
+    /**
      * Fetch user rows linked to this activity.
      *
      * @return array
@@ -936,6 +1176,13 @@ class FvActivity extends CommonObject
         $this->area_total = self::asNumber($this->area_total);
         $this->syncLegacyAreaAliases();
 
+        $this->mixture_area = self::asNumber($this->mixture_area);
+        $this->mixture_rate = self::asNumber($this->mixture_rate);
+        $this->mixture_tank_capacity = self::asNumber($this->mixture_tank_capacity);
+        $this->mixture_total_volume = ($this->mixture_area > 0 && $this->mixture_rate > 0) ? ($this->mixture_area * $this->mixture_rate) : 0;
+        $this->mixture_tank_count = ($this->mixture_total_volume > 0 && $this->mixture_tank_capacity > 0) ? (int) ceil($this->mixture_total_volume / $this->mixture_tank_capacity) : 0;
+        $this->mixture_area_per_tank = ($this->mixture_tank_capacity > 0 && $this->mixture_rate > 0) ? min($this->mixture_area, $this->mixture_tank_capacity / $this->mixture_rate) : 0;
+
         if ($this->isCompleted()) {
             $this->progress = 100;
         } elseif ($this->isCanceled()) {
@@ -1309,6 +1556,29 @@ class FvActivity extends CommonObject
     }
 
     /**
+     * Return next input line position.
+     *
+     * @return int
+     */
+    protected function getNextLinePosition()
+    {
+        if (empty($this->id)) {
+            return 1;
+        }
+
+        $sql = 'SELECT MAX(position) as max_position FROM ' . MAIN_DB_PREFIX . $this->table_element_line
+            . ' WHERE fk_activity = ' . ((int) $this->id);
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            return 1;
+        }
+
+        $obj = $this->db->fetch_object($resql);
+
+        return $obj ? ((int) $obj->max_position + 1) : 1;
+    }
+
+    /**
      * Fetch current line objects indexed by id.
      *
      * @return FvActivityLine[]
@@ -1438,6 +1708,170 @@ class FvActivity extends CommonObject
         }
 
         return count($normalized);
+    }
+
+    /**
+     * Insert or update one relation row.
+     *
+     * @param string $table
+     * @param string $targetField
+     * @param array  $row
+     * @param array  $extraFields
+     * @return int
+     */
+    protected function saveRelationRow($table, $targetField, array $row, array $extraFields)
+    {
+        global $conf;
+
+        if (empty($this->id)) {
+            $this->error = 'MissingActivityIdentifier';
+            return -1;
+        }
+
+        $rowid = isset($row['rowid']) ? (int) $row['rowid'] : (isset($row['id']) ? (int) $row['id'] : 0);
+        $targetId = 0;
+        foreach (array($targetField, 'fk_machine') as $field) {
+            if (!empty($row[$field])) {
+                $targetId = (int) $row[$field];
+                break;
+            }
+        }
+        if ($targetId <= 0) {
+            $this->error = 'ErrorFieldRequired';
+            return -1;
+        }
+
+        if ($rowid > 0 && !$this->relationRowBelongsToActivity($table, $rowid)) {
+            $this->error = 'ErrorSafraActivityInvalidLine';
+            return -1;
+        }
+
+        $values = array($targetField => (int) $targetId);
+        foreach ($extraFields as $field => $type) {
+            if ($type === 'number') {
+                $values[$field] = self::asNumber(isset($row[$field]) ? $row[$field] : 0);
+            } else {
+                $values[$field] = isset($row[$field]) ? (string) $row[$field] : '';
+            }
+        }
+
+        if ($rowid > 0) {
+            $sets = array();
+            foreach ($values as $field => $value) {
+                $type = ($field === $targetField) ? 'integer' : (isset($extraFields[$field]) ? $extraFields[$field] : 'varchar');
+                $sets[] = $field . ' = ' . (($type === 'number' || $type === 'integer') ? (0 + $value) : $this->sqlNullableString($value));
+            }
+            $sql = 'UPDATE ' . MAIN_DB_PREFIX . $table
+                . ' SET ' . implode(', ', $sets)
+                . ' WHERE rowid = ' . ((int) $rowid)
+                . ' AND fk_activity = ' . ((int) $this->id);
+            if (!$this->db->query($sql)) {
+                $this->error = $this->db->lasterror();
+                return -1;
+            }
+
+            return $rowid;
+        }
+
+        $columns = array('entity', 'fk_activity', $targetField, 'date_creation');
+        $insertValues = array((int) $conf->entity, (int) $this->id, (int) $targetId, "'" . $this->db->idate(dol_now()) . "'");
+        $updates = array($targetField . ' = VALUES(' . $targetField . ')');
+        foreach ($extraFields as $field => $type) {
+            $columns[] = $field;
+            if ($type === 'number') {
+                $insertValues[] = self::asNumber(isset($row[$field]) ? $row[$field] : 0);
+            } else {
+                $insertValues[] = $this->sqlNullableString(isset($row[$field]) ? $row[$field] : '');
+            }
+            $updates[] = $field . ' = VALUES(' . $field . ')';
+        }
+
+        $sql = 'INSERT INTO ' . MAIN_DB_PREFIX . $table
+            . ' (' . implode(', ', $columns) . ') VALUES (' . implode(', ', $insertValues) . ')'
+            . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
+        if (!$this->db->query($sql)) {
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
+
+        $insertId = (int) $this->db->last_insert_id(MAIN_DB_PREFIX . $table);
+        if ($insertId > 0) {
+            return $insertId;
+        }
+
+        return $this->findRelationRowId($table, $targetField, $targetId);
+    }
+
+    /**
+     * Delete one relation row.
+     *
+     * @param string $table
+     * @param int    $rowid
+     * @return int
+     */
+    protected function deleteRelationRow($table, $rowid)
+    {
+        if (empty($this->id)) {
+            $this->error = 'MissingActivityIdentifier';
+            return -1;
+        }
+
+        $rowid = (int) $rowid;
+        if ($rowid <= 0) {
+            return 0;
+        }
+
+        $sql = 'DELETE FROM ' . MAIN_DB_PREFIX . $table
+            . ' WHERE rowid = ' . ((int) $rowid)
+            . ' AND fk_activity = ' . ((int) $this->id);
+        if (!$this->db->query($sql)) {
+            $this->error = $this->db->lasterror();
+            return -1;
+        }
+
+        return 1;
+    }
+
+    /**
+     * Check relation row ownership.
+     *
+     * @param string $table
+     * @param int    $rowid
+     * @return bool
+     */
+    protected function relationRowBelongsToActivity($table, $rowid)
+    {
+        $sql = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . $table
+            . ' WHERE rowid = ' . ((int) $rowid)
+            . ' AND fk_activity = ' . ((int) $this->id)
+            . ' LIMIT 1';
+        $resql = $this->db->query($sql);
+
+        return (bool) ($resql && $this->db->fetch_object($resql));
+    }
+
+    /**
+     * Find a relation row by target identifier.
+     *
+     * @param string $table
+     * @param string $targetField
+     * @param int    $targetId
+     * @return int
+     */
+    protected function findRelationRowId($table, $targetField, $targetId)
+    {
+        $sql = 'SELECT rowid FROM ' . MAIN_DB_PREFIX . $table
+            . ' WHERE fk_activity = ' . ((int) $this->id)
+            . ' AND ' . $targetField . ' = ' . ((int) $targetId)
+            . ' LIMIT 1';
+        $resql = $this->db->query($sql);
+        if (!$resql) {
+            return 0;
+        }
+
+        $obj = $this->db->fetch_object($resql);
+
+        return $obj ? (int) $obj->rowid : 0;
     }
 
     /**
