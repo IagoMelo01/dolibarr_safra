@@ -81,6 +81,9 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formcompany.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formprojet.class.php';
 dol_include_once('/safra/class/recomendacaoadubo.class.php');
+dol_include_once('/safra/class/analisesolo.class.php');
+dol_include_once('/safra/class/talhao.class.php');
+dol_include_once('/safra/class/safra_recommendation_ai.class.php');
 dol_include_once('/safra/lib/safra_recomendacaoadubo.lib.php');
 
 // Load translation files required by the page
@@ -163,6 +166,198 @@ if (!$permissiontoread) {
 	accessforbidden();
 }
 
+/**
+ * Fetch the soil analysis linked to a recommendation.
+ *
+ * @param DoliDB             $db
+ * @param RecomendacaoAdubo  $recommendation
+ * @return AnaliseSolo|null
+ */
+function safraRecommendationFetchAnalysis($db, $recommendation)
+{
+	if (empty($recommendation->analise_solo)) {
+		return null;
+	}
+
+	$analysis = new AnaliseSolo($db);
+	if ($analysis->fetch((int) $recommendation->analise_solo) > 0) {
+		return $analysis;
+	}
+
+	return null;
+}
+
+/**
+ * Fetch the field plot linked to an analysis.
+ *
+ * @param DoliDB           $db
+ * @param AnaliseSolo|null $analysis
+ * @return Talhao|null
+ */
+function safraRecommendationFetchTalhao($db, $analysis)
+{
+	if (empty($analysis) || empty($analysis->fk_talhao)) {
+		return null;
+	}
+
+	$talhao = new Talhao($db);
+	if ($talhao->fetch((int) $analysis->fk_talhao) > 0) {
+		return $talhao;
+	}
+
+	return null;
+}
+
+/**
+ * Build context labels for the AI prompt.
+ *
+ * @param RecomendacaoAdubo $recommendation
+ * @param Talhao|null       $talhao
+ * @return array
+ */
+function safraRecommendationBuildAiContext($recommendation, $talhao)
+{
+	$talhaoLabel = '';
+	if (!empty($talhao)) {
+		$talhaoLabel = trim($talhao->ref . (!empty($talhao->label) ? ' - ' . $talhao->label : ''));
+	}
+
+	return array(
+		'culture' => !empty($recommendation->cultura) ? $recommendation->cultura : '',
+		'talhao' => $talhaoLabel,
+	);
+}
+
+/**
+ * Escape text and render the small Markdown subset accepted for AI output.
+ *
+ * @param string $text
+ * @return string
+ */
+function safraRecommendationRenderInlineMarkdown($text)
+{
+	$html = dol_escape_htmltag((string) $text);
+
+	return preg_replace_callback('/\*\*([^*]+)\*\*/', function ($matches) {
+		return '<strong>'.$matches[1].'</strong>';
+	}, $html);
+}
+
+/**
+ * Convert stored recommendation text or legacy HTML into safe readable HTML.
+ *
+ * @param string $raw
+ * @return string
+ */
+function safraRecommendationRenderText($raw)
+{
+	$raw = trim((string) $raw);
+	if ($raw === '') {
+		return '<div class="opacitymedium">Sem recomendacao gerada.</div>';
+	}
+
+	$text = preg_replace('/<\s*li[^>]*>/i', "\n- ", $raw);
+	$text = preg_replace('/<\s*\/?(h[1-6]|p|ul|ol|div)[^>]*>/i', "\n", $text);
+	$text = preg_replace('/<\s*br\s*\/?>/i', "\n", $text);
+	$text = html_entity_decode(strip_tags($text), ENT_QUOTES, 'UTF-8');
+
+	$lines = preg_split('/\r\n|\r|\n/', $text);
+	$html = '';
+	$inList = false;
+
+	foreach ($lines as $line) {
+		$line = trim($line);
+		if ($line === '') {
+			continue;
+		}
+
+		if (strpos($line, '## ') === 0) {
+			if ($inList) {
+				$html .= '</ul>';
+				$inList = false;
+			}
+			$html .= '<h3>'.safraRecommendationRenderInlineMarkdown(trim(substr($line, 3))).'</h3>';
+			continue;
+		}
+
+		if (strpos($line, '- ') === 0) {
+			if (!$inList) {
+				$html .= '<ul>';
+				$inList = true;
+			}
+			$html .= '<li>'.safraRecommendationRenderInlineMarkdown(trim(substr($line, 2))).'</li>';
+			continue;
+		}
+
+		if ($inList) {
+			$html .= '</ul>';
+			$inList = false;
+		}
+		$html .= '<p>'.safraRecommendationRenderInlineMarkdown($line).'</p>';
+	}
+
+	if ($inList) {
+		$html .= '</ul>';
+	}
+
+	return $html;
+}
+
+/**
+ * Print custom recommendation detail.
+ *
+ * @param RecomendacaoAdubo $recommendation
+ * @param AnaliseSolo|null  $analysis
+ * @param Talhao|null       $talhao
+ * @return void
+ */
+function safraRecommendationPrintDetail($recommendation, $analysis, $talhao)
+{
+	global $langs;
+
+	static $cssPrinted = false;
+	if (!$cssPrinted) {
+		print '<style>
+		.safra-rec-detail{margin:16px 0 18px;}
+		.safra-rec-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+		.safra-rec-metric{border:1px solid #d8dee4;background:#fff;border-radius:6px;padding:10px 12px;min-height:72px;}
+		.safra-rec-metric-label{font-size:12px;color:#667085;margin-bottom:6px;}
+		.safra-rec-metric-value{font-size:15px;font-weight:600;color:#17202a;word-break:break-word;}
+		.safra-rec-output{border:1px solid #d8dee4;background:#fff;border-radius:6px;padding:18px 20px;line-height:1.5;}
+		.safra-rec-output h3{margin:14px 0 8px;font-size:17px;color:#12372c;}
+		.safra-rec-output h3:first-child{margin-top:0;}
+		.safra-rec-output ul{margin:6px 0 12px 20px;padding:0;}
+		.safra-rec-output li{margin:4px 0;}
+		.safra-rec-empty{border:1px dashed #b8c2cc;background:#f8fafb;border-radius:6px;padding:18px;color:#586069;}
+		@media (max-width: 980px){.safra-rec-grid{grid-template-columns:repeat(2,minmax(150px,1fr));}}
+		@media (max-width: 620px){.safra-rec-grid{grid-template-columns:1fr;}}
+		</style>';
+		$cssPrinted = true;
+	}
+
+	$analysisLabel = !empty($analysis) ? trim($analysis->ref . (!empty($analysis->label) ? ' - ' . $analysis->label : '')) : $langs->trans('NotAvailable');
+	$talhaoLabel = !empty($talhao) ? trim($talhao->ref . (!empty($talhao->label) ? ' - ' . $talhao->label : '')) : $langs->trans('NotAvailable');
+	$generatedAt = $langs->trans('NotAvailable');
+	if (!empty($recommendation->ai_generated_at)) {
+		$generatedAt = function_exists('dol_stringtotime') ? dol_print_date(dol_stringtotime($recommendation->ai_generated_at), 'dayhour') : (string) $recommendation->ai_generated_at;
+	}
+
+	print '<div class="safra-rec-detail">';
+	print '<div class="safra-rec-grid">';
+	print '<div class="safra-rec-metric"><div class="safra-rec-metric-label">'.dol_escape_htmltag($langs->trans('SafraRecommendationCrop')).'</div><div class="safra-rec-metric-value">'.dol_escape_htmltag(!empty($recommendation->cultura) ? $recommendation->cultura : $langs->trans('NotAvailable')).'</div></div>';
+	print '<div class="safra-rec-metric"><div class="safra-rec-metric-label">'.dol_escape_htmltag($langs->trans('SafraRecommendationSoilAnalysis')).'</div><div class="safra-rec-metric-value">'.dol_escape_htmltag($analysisLabel).'</div></div>';
+	print '<div class="safra-rec-metric"><div class="safra-rec-metric-label">'.dol_escape_htmltag($langs->trans('SafraAnaliseSoloTalhao')).'</div><div class="safra-rec-metric-value">'.dol_escape_htmltag($talhaoLabel).'</div></div>';
+	print '<div class="safra-rec-metric"><div class="safra-rec-metric-label">'.dol_escape_htmltag($langs->trans('SafraRecommendationAiGeneratedAt')).'</div><div class="safra-rec-metric-value">'.dol_escape_htmltag($generatedAt).'</div></div>';
+	print '</div>';
+
+	if (!empty($recommendation->recomendacao)) {
+		print '<div class="safra-rec-output">'.safraRecommendationRenderText($recommendation->recomendacao).'</div>';
+	} else {
+		print '<div class="safra-rec-empty">'.dol_escape_htmltag($langs->trans('SafraRecommendationEmptyAi')).'</div>';
+	}
+	print '</div>';
+}
+
 
 /*
  * Actions
@@ -205,6 +400,35 @@ if (empty($reshook)) {
 
 	// Action to build doc
 	include DOL_DOCUMENT_ROOT.'/core/actions_builddoc.inc.php';
+
+	if ($action == 'generate_ai' && $permissiontoadd && $object->id > 0) {
+		$analysis = safraRecommendationFetchAnalysis($db, $object);
+		$talhao = safraRecommendationFetchTalhao($db, $analysis);
+
+		if (empty($analysis)) {
+			setEventMessages($langs->trans('SafraRecommendationMissingAnalysis'), null, 'errors');
+		} else {
+			$ai = new SafraRecommendationAi($db);
+			$result = $ai->generate($object, $analysis, safraRecommendationBuildAiContext($object, $talhao));
+			if (!empty($result['success'])) {
+				$object->recomendacao = $result['content'];
+				$object->ai_model = $result['model'];
+				$object->ai_generated_at = dol_now();
+				$updateResult = $object->update($user, true);
+				if ($updateResult > 0) {
+					setEventMessages($langs->trans('SafraRecommendationAiGenerated'), null, 'mesgs');
+				} else {
+					setEventMessages($object->error, $object->errors, 'errors');
+				}
+			} else {
+				$errorMessage = !empty($result['error']) ? $result['error'] : 'Error';
+				setEventMessages($langs->trans($errorMessage), null, 'errors');
+			}
+		}
+
+		$object->fetch($object->id);
+		$action = 'view';
+	}
 
 	if ($action == 'set_thirdparty' && $permissiontoadd) {
 		$object->setValueFrom('fk_soc', GETPOST('fk_soc', 'int'), '', '', 'date', '', $user, $triggermodname);
@@ -442,6 +666,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
 
+	$safraAnalysis = safraRecommendationFetchAnalysis($db, $object);
+	$safraTalhao = safraRecommendationFetchTalhao($db, $safraAnalysis);
 
 	print '<div class="fichecenter">';
 	print '<div class="fichehalfleft">';
@@ -452,7 +678,18 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	//$keyforbreak='fieldkeytoswitchonsecondcolumn';	// We change column just before this field
 	//unset($object->fields['fk_project']);				// Hide field already shown in banner
 	//unset($object->fields['fk_soc']);					// Hide field already shown in banner
+	$safraHiddenFields = array('recomendacao', 'ai_model', 'ai_generated_at');
+	$safraSavedVisibility = array();
+	foreach ($safraHiddenFields as $safraHiddenField) {
+		if (isset($object->fields[$safraHiddenField])) {
+			$safraSavedVisibility[$safraHiddenField] = $object->fields[$safraHiddenField]['visible'];
+			$object->fields[$safraHiddenField]['visible'] = 0;
+		}
+	}
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_view.tpl.php';
+	foreach ($safraSavedVisibility as $safraHiddenField => $safraVisible) {
+		$object->fields[$safraHiddenField]['visible'] = $safraVisible;
+	}
 
 	// Other attributes. Fields from hook formObjectOptions and Extrafields.
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_view.tpl.php';
@@ -462,6 +699,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</div>';
 
 	print '<div class="clearboth"></div>';
+
+	safraRecommendationPrintDetail($object, $safraAnalysis, $safraTalhao);
 
 	print dol_get_fiche_end();
 
@@ -540,6 +779,9 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 			if ($object->status == $object::STATUS_VALIDATED) {
 				print dolGetButtonAction('', $langs->trans('SetToDraft'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=confirm_setdraft&confirm=yes&token='.newToken(), '', $permissiontoadd);
 			}
+
+			// Generate recommendation with OpenAI
+			print dolGetButtonAction('', $langs->trans(empty($object->recomendacao) ? 'SafraRecommendationGenerateAi' : 'SafraRecommendationRegenerateAi'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=generate_ai&token='.newToken(), '', $permissiontoadd);
 
 			// Modify
 			print dolGetButtonAction('', $langs->trans('Modify'), 'default', $_SERVER["PHP_SELF"].'?id='.$object->id.'&action=edit&token='.newToken(), '', $permissiontoadd);

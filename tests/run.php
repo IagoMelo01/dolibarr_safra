@@ -7,6 +7,7 @@ $tests = array(
     __DIR__ . '/MigrationAndSchemaTest.php',
     __DIR__ . '/ApiSfactivitiesTest.php',
     __DIR__ . '/SafraStorageTest.php',
+    __DIR__ . '/SoilRecommendationAiTest.php',
 );
 
 $failed = 0;

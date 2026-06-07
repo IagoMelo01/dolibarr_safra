@@ -129,7 +129,12 @@ class RecomendacaoAdubo extends CommonObject
 		"model_pdf" => array("type"=>"varchar(255)", "label"=>"Model pdf", "enabled"=>"1", 'position'=>1010, 'notnull'=>-1, "visible"=>"0",),
 		"status" => array("type"=>"integer", "label"=>"Status", "enabled"=>"1", 'position'=>2000, 'notnull'=>1, "visible"=>"1", "index"=>"1", "arrayofkeyval"=>array("0" => "Rascunho", "1" => "Validado", "9" => "Cancelado"), "validate"=>"1",),
 		"analise_solo" => array("type"=>"integer:analisesolo:safra/class/analisesolo.class.php:1", "label"=>"Análise de Solo", "enabled"=>"1", 'position'=>50, 'notnull'=>1, "visible"=>"1",),
-		"recomendacao" => array("type"=>"html", "label"=>"Recomendação", "enabled"=>"1", 'position'=>50, 'notnull'=>0, "visible"=>"5",),
+		"recomendacao" => array("type"=>"html", "label"=>"Recomendação", "enabled"=>"1", 'position'=>60, 'notnull'=>0, "visible"=>"5",),
+		"cultura" => array("type"=>"varchar(128)", "label"=>"SafraRecommendationCrop", "enabled"=>"1", 'position'=>51, 'notnull'=>-1, "visible"=>"1", "css"=>"minwidth200", "csslist"=>"tdoverflowmax150", "validate"=>"1",),
+		"produtividade_alvo" => array("type"=>"double(28,4)", "label"=>"SafraRecommendationYieldTarget", "enabled"=>"1", 'position'=>52, 'notnull'=>-1, "visible"=>"1", "css"=>"maxwidth100", "validate"=>"1",),
+		"area_ha" => array("type"=>"double(28,4)", "label"=>"SafraRecommendationAreaHa", "enabled"=>"1", 'position'=>53, 'notnull'=>-1, "visible"=>"1", "css"=>"maxwidth100", "validate"=>"1",),
+		"ai_model" => array("type"=>"varchar(128)", "label"=>"SafraRecommendationAiModel", "enabled"=>"1", 'position'=>61, 'notnull'=>-1, "visible"=>"5", "noteditable"=>"1", "csslist"=>"tdoverflowmax150",),
+		"ai_generated_at" => array("type"=>"datetime", "label"=>"SafraRecommendationAiGeneratedAt", "enabled"=>"1", 'position'=>62, 'notnull'=>-1, "visible"=>"5", "noteditable"=>"1",),
 	);
 	public $rowid;
 	public $ref;
@@ -147,7 +152,12 @@ class RecomendacaoAdubo extends CommonObject
 	public $model_pdf;
 	public $status;
 	public $analise_solo;
+	public $cultura;
+	public $produtividade_alvo;
+	public $area_ha;
 	public $recomendacao;
+	public $ai_model;
+	public $ai_generated_at;
 	// END MODULEBUILDER PROPERTIES
 
 

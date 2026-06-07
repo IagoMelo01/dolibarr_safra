@@ -32,6 +32,11 @@ CREATE TABLE llx_safra_recomendacaoadubo(
 	model_pdf varchar(255), 
 	status integer NOT NULL, 
 	analise_solo integer NOT NULL, 
-	recomendacao text
+	cultura varchar(128),
+	produtividade_alvo double(28,4),
+	area_ha double(28,4),
+	recomendacao text,
+	ai_model varchar(128),
+	ai_generated_at datetime
 	-- END MODULEBUILDER FIELDS
 ) ENGINE=innodb;

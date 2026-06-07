@@ -112,6 +112,16 @@ $formSetup->newItem('SAFRA_API_EMBRAPA_PRODUTIVIDADE_URL')->setAsString();
 $formSetup->newItem('SAFRA_API_SENTINELHUB_CLIENT_ID')->setAsString();
 $formSetup->newItem('SAFRA_API_SENTINELHUB_CLIENT_SECRET')->setAsString();
 
+$formSetup->newItem('SafraAISection')->setAsTitle();
+$item = $formSetup->newItem('SAFRA_OPENAI_API_KEY');
+if (method_exists($item, 'setAsSecureKey')) {
+	$item->setAsSecureKey();
+} else {
+	$item->setAsString();
+}
+$item = $formSetup->newItem('SAFRA_OPENAI_MODEL')->setAsString();
+$item->defaultFieldValue = 'gpt-5.2';
+
 require_once DOL_DOCUMENT_ROOT.'/custom/safra/class/municipio.class.php';
 
 $obj_municipio = new Municipio($db);

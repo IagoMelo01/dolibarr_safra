@@ -557,6 +557,8 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 dol_include_once('/safra/class/recomendacaoadubo.class.php');
                 dol_include_once('/safra/class/cultura.class.php');
                 dol_include_once('/safra/class/analisesolo.class.php');
+                dol_include_once('/safra/class/talhao.class.php');
+                dol_include_once('/safra/class/safra_recommendation_ai.class.php');
 
                 $recommendation = new RecomendacaoAdubo($object->db);
                 if ($recommendation->fetch($object->id) <= 0) {
@@ -595,7 +597,34 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                         return 1;
                 }
 
-                $recommendation->recomendacao = $this->generateFertilizationRecommendation($guide, $analysis);
+                $context = array(
+                        'culture' => !empty($guide['display']) ? $guide['display'] : '',
+                        'project' => '',
+                        'talhao' => '',
+                );
+
+                if (!empty($recommendation->fk_project) && !empty($project) && !empty($project->ref)) {
+                        $context['project'] = trim($project->ref . (!empty($project->title) ? ' - ' . $project->title : ''));
+                }
+
+                if (!empty($analysis->fk_talhao)) {
+                        $talhao = new Talhao($object->db);
+                        if ($talhao->fetch((int) $analysis->fk_talhao) > 0) {
+                                $context['talhao'] = trim($talhao->ref . (!empty($talhao->label) ? ' - ' . $talhao->label : ''));
+                        }
+                }
+
+                $ai = new SafraRecommendationAi($object->db);
+                $result = $ai->generate($recommendation, $analysis, $context);
+                if (!empty($result['success'])) {
+                        $recommendation->recomendacao = $result['content'];
+                        $recommendation->ai_model = $result['model'];
+                        $recommendation->ai_generated_at = dol_now();
+                } else {
+                        $recommendation->recomendacao = $this->renderAiUnavailableMessage(!empty($result['error']) ? $result['error'] : '');
+                        $recommendation->ai_model = $ai->getModel();
+                        $recommendation->ai_generated_at = null;
+                }
                 $recommendation->update($user, true);
 
                 return 1;
@@ -726,6 +755,27 @@ class InterfaceSafraTriggers extends DolibarrTriggers
                 $html = '<h3>RecomendaÃ§Ã£o de adubaÃ§Ã£o para ' . dol_escape_htmltag($guide['display']) . '</h3>';
                 $html .= '<p>Associe uma anÃ¡lise de solo vÃ¡lida para gerar recomendaÃ§Ãµes automÃ¡ticas de adubaÃ§Ã£o e calagem.</p>';
                 $html .= '<p>Utilize anÃ¡lises realizadas preferencialmente nos Ãºltimos 12 meses para garantir um diagnÃ³stico preciso.</p>';
+
+                return $html;
+        }
+
+        /**
+         * Message displayed when OpenAI cannot generate a recommendation.
+         *
+         * @param string $reason
+         * @return string
+         */
+        private function renderAiUnavailableMessage($reason = '')
+        {
+                global $langs;
+
+                $html = '<h3>Recomendacao de adubacao e calagem</h3>';
+                $html .= '<p>A recomendacao por IA ainda nao foi gerada.</p>';
+                $html .= '<p>Verifique a chave da OpenAI e o modelo em Configuracao do Safra, depois use o botao Gerar com IA na recomendacao.</p>';
+                if ($reason !== '') {
+                        $displayReason = is_object($langs) ? $langs->trans($reason) : $reason;
+                        $html .= '<p><strong>Motivo:</strong> ' . dol_escape_htmltag($displayReason) . '</p>';
+                }
 
                 return $html;
         }
