@@ -26,7 +26,7 @@ $token = GETPOST('token', 'alphanohtml');
 $messages = array();
 $errors = array();
 
-$targetVersion = '2.0.0';
+$targetVersion = '2.1.0';
 $currentVersion = '1.0.0';
 if (!empty($conf->global->SAFRA_VERSION)) {
     $currentVersion = $conf->global->SAFRA_VERSION;
@@ -47,7 +47,8 @@ $upgradeSteps = array(
         'checks' => array(
             'Confirm `SHOW COLUMNS FROM llx_safra_activity` includes season, crop_name, progress and date_planned_start.',
             'Confirm `SHOW TABLES LIKE "llx_safra_activity_vehicle"` returns one table.',
-            'Confirm activity completion creates movements in `llx_stock_mouvement` with `origintype = "safra_activity"`.',
+            'Confirm `SHOW COLUMNS FROM llx_safra_activity_line` includes fk_stock_movement and stock_movement_qty.',
+            'Confirm saving an activity input line immediately creates a movement in `llx_stock_mouvement` with `origintype = "safra_activity"`.',
         ),
         'rollback' => array(
             'Restore the database backup taken before this destructive rebuild.',
@@ -135,7 +136,7 @@ foreach ($upgradeSteps as $index => $step) {
 print '<h3>Post-deployment actions</h3>';
 print '<ol>';
 print '<li>Flush Dolibarr caches and restart queue workers or cron jobs.</li>';
-print '<li>Run smoke tests in UI: list, card, save, start, complete with stock movement, cancel with reversal.</li>';
+print '<li>Run smoke tests in UI: list, card, save input with stock movement, edit input quantity with reversal and repost, cancel with reversal.</li>';
 print '<li>Run API smoke tests: <code>GET /api/index.php/sfactivities?limit=5</code>.</li>';
 print '</ol>';
 

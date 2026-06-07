@@ -12,8 +12,6 @@ classDiagram
         }
         class InterfaceModSafraActivityTrigger {
             +runTrigger(action, object, user, langs, conf) int
-            -handleTaskUpdate(task, user) int
-            -handleTaskDelete(task, user) int
         }
         class InterfaceSafraTriggers
     }
@@ -32,6 +30,5 @@ classDiagram
     DolibarrTriggers <|-- InterfaceSafraTriggers
 
     ActionsSafra ..> SafraProductLink : hooks productcard/productdao
-    InterfaceModSafraActivityTrigger ..> FvActivity : sync status/delete
-    InterfaceModSafraActivityTrigger ..> Task : TASK_* events
-    modSafra ..> ActivityStockService : service wiring
+    InterfaceModSafraActivityTrigger ..> Task : no lifecycle sync
+    modSafra ..> ActivityStockService : per-line stock sync

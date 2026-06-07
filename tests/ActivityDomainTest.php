@@ -28,5 +28,7 @@ $assert(isset($line->fields['fk_activity']), 'Activity line field fk_activity mi
 $assert(isset($line->fields['qty_done']), 'Activity line field qty_done missing');
 $assert(isset($line->fields['total']), 'Activity line field total missing');
 $assert(isset($line->fields['movement_type']), 'Activity line field movement_type missing');
+$assert(isset($line->fields['fk_stock_movement']), 'Activity line field fk_stock_movement missing');
+$assert(isset($line->fields['stock_movement_qty']), 'Activity line field stock_movement_qty missing');
 
 return true;

@@ -1286,6 +1286,16 @@ class NDVI extends CommonObject
 		$cont = 0;
 
 		foreach($talhao as $key){
+			$geometry = safra_satellite_talhao_wkt($key);
+			if ($geometry === '') {
+				dol_syslog(__METHOD__.' missing valid WKT geometry for talhao '.(isset($key->id) ? (int) $key->id : 0), LOG_WARNING);
+				if ($cont == 0) {
+					setEventMessages('Talhao sem geometria valida para consulta de satelite.', null, 'warnings');
+					$cont++;
+				}
+				continue;
+			}
+
 			// ConfiguraÃ§Ã£o inicial do cURL
 			$ch = curl_init($url);
 	
@@ -1309,7 +1319,7 @@ class NDVI extends CommonObject
 				'RESY' => '10m',          // Largura da imagem
 				'CRS' => 'CRS:84',      // Sistema de referÃªncia coordenado
 				'TIME' => $time,  // Intervalo de tempo para dados de satÃ©lite
-				'GEOMETRY' => $key->wkt,
+				'GEOMETRY' => $geometry,
 				'SHOWLOGO' => 'false',
 				'MAXCC' => '100'
 			);

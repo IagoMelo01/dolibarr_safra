@@ -675,6 +675,6 @@ class SafraSatelliteStatistics
             return;
         }
 
-        dol_mkdir($dir);
+        safra_ensure_dir($dir);
     }
 }

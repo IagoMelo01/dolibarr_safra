@@ -10,6 +10,13 @@ CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity (
     fk_thirdparty INTEGER,
     fk_fieldplot INTEGER,
     area_total DOUBLE DEFAULT 0,
+    mixture_area DOUBLE(24,8) DEFAULT 0,
+    mixture_rate DOUBLE(24,8) DEFAULT 0,
+    mixture_tank_capacity DOUBLE(24,8) DEFAULT 0,
+    mixture_total_volume DOUBLE(24,8) DEFAULT 0,
+    mixture_tank_count INTEGER DEFAULT 0,
+    mixture_area_per_tank DOUBLE(24,8) DEFAULT 0,
+    mixture_updated_at DATETIME,
     type VARCHAR(32) NOT NULL,
     status INTEGER NOT NULL DEFAULT 0,
     note_public TEXT,
@@ -39,6 +46,8 @@ CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_line (
     total DOUBLE DEFAULT 0,
     movement_type VARCHAR(16) DEFAULT 'consume',
     fk_warehouse INTEGER,
+    fk_stock_movement INTEGER,
+    stock_movement_qty DOUBLE DEFAULT 0,
     date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     fk_user_creat INTEGER,
@@ -46,7 +55,8 @@ CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_line (
     INDEX idx_safra_activity_line_entity (entity),
     INDEX idx_safra_activity_line_fk_activity (fk_activity),
     INDEX idx_safra_activity_line_fk_product (fk_product),
-    INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse)
+    INDEX idx_safra_activity_line_fk_warehouse (fk_warehouse),
+    INDEX idx_safra_activity_line_fk_stock_movement (fk_stock_movement)
 ) ENGINE=innodb;
 
 CREATE TABLE IF NOT EXISTS __MAIN_DB_PREFIX__safra_activity_machine (

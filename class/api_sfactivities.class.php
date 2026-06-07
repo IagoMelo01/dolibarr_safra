@@ -271,13 +271,13 @@ class Sfactivities extends DolibarrApi
             $activity->{$target} = $this->asNullableInt($data[$field]);
         }
 
-        foreach (array('progress', 'area_planned', 'area_done', 'area_total') as $field) {
+        foreach (array('progress', 'area_planned', 'area_done', 'area_total', 'mixture_area', 'mixture_rate', 'mixture_tank_capacity') as $field) {
             if (array_key_exists($field, $data)) {
                 $activity->{$field} = price2num($data[$field], 'MT');
             }
         }
 
-        foreach (array('date_planned_start', 'date_planned_end', 'date_start', 'date_end') as $field) {
+        foreach (array('date_planned_start', 'date_planned_end', 'date_start', 'date_end', 'mixture_updated_at') as $field) {
             if (array_key_exists($field, $data)) {
                 $activity->{$field} = $this->asTimestamp($data[$field]);
             }
@@ -300,11 +300,8 @@ class Sfactivities extends DolibarrApi
                 $activity->error = 'Invalid lines payload.';
                 return -1;
             }
-            if (FvActivityLine::deleteForActivity($this->db, $activity->id) < 0) {
-                $activity->error = $this->db->lasterror();
-                return -1;
-            }
 
+            $lines = array();
             foreach ($data['lines'] as $position => $lineData) {
                 if (!is_array($lineData)) {
                     continue;
@@ -315,6 +312,11 @@ class Sfactivities extends DolibarrApi
                 }
 
                 $line = new FvActivityLine($this->db);
+                $lineId = isset($lineData['id']) ? $this->asNullableInt($lineData['id']) : (isset($lineData['rowid']) ? $this->asNullableInt($lineData['rowid']) : null);
+                if (!empty($lineId)) {
+                    $line->id = (int) $lineId;
+                    $line->rowid = (int) $lineId;
+                }
                 $line->fk_activity = (int) $activity->id;
                 $line->position = (int) $position + 1;
                 $line->fk_product = $productId;
@@ -337,10 +339,11 @@ class Sfactivities extends DolibarrApi
                 $line->dose_unit = isset($lineData['dose_unit']) ? (string) $lineData['dose_unit'] : '';
                 $line->note = isset($lineData['note']) ? (string) $lineData['note'] : '';
 
-                if ($line->create(DolibarrApiAccess::$user) < 0) {
-                    $activity->error = $line->error ?: $line->errorsToString();
-                    return -1;
-                }
+                $lines[] = $line;
+            }
+
+            if ($activity->replaceInputLines($lines, DolibarrApiAccess::$user, false) < 0) {
+                return -1;
             }
         }
 
@@ -410,6 +413,13 @@ class Sfactivities extends DolibarrApi
             'area_planned' => (float) $activity->area_planned,
             'area_done' => (float) $activity->area_done,
             'area_total' => (float) $activity->area_total,
+            'mixture_area' => (float) $activity->mixture_area,
+            'mixture_rate' => (float) $activity->mixture_rate,
+            'mixture_tank_capacity' => (float) $activity->mixture_tank_capacity,
+            'mixture_total_volume' => (float) $activity->mixture_total_volume,
+            'mixture_tank_count' => (int) $activity->mixture_tank_count,
+            'mixture_area_per_tank' => (float) $activity->mixture_area_per_tank,
+            'mixture_updated_at' => $activity->mixture_updated_at,
             'date_planned_start' => $activity->date_planned_start,
             'date_planned_end' => $activity->date_planned_end,
             'date_start' => $activity->date_start,
@@ -446,6 +456,8 @@ class Sfactivities extends DolibarrApi
                     'qty_done' => (float) $line->qty_done,
                     'total' => (float) $line->total,
                     'unit_cost' => (float) $line->unit_cost,
+                    'fk_stock_movement' => $this->asNullableInt($line->fk_stock_movement),
+                    'stock_movement_qty' => (float) $line->stock_movement_qty,
                     'note' => (string) $line->note,
                 );
             }

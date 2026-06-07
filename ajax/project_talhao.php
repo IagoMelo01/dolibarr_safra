@@ -154,9 +154,9 @@ if ($projectId <= 0) {
     exit;
 }
 
-$talhaoId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_talhao', 'options_fk_talhao'));
-$culturaId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_cultura', 'options_fk_cultura'));
-$cultivarId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_cultivar', 'options_fk_cultivar'));
+$talhaoId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_talhao', 'options_fk_talhao', 'fk_fieldplot', 'options_fk_fieldplot', 'talhao', 'options_talhao', 'fieldplot', 'options_fieldplot'));
+$culturaId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_cultura', 'options_fk_cultura', 'fk_crop', 'options_fk_crop', 'cultura', 'options_cultura', 'crop', 'options_crop'));
+$cultivarId = safraAjaxExtraValue($db, 'projet_extrafields', $projectId, array('fk_cultivar', 'options_fk_cultivar', 'cultivar', 'options_cultivar'));
 
 $talhao = $talhaoId > 0 ? safraAjaxReference($db, 'safra_talhao', $talhaoId, array('area')) : null;
 $cultura = $culturaId > 0 ? safraAjaxReference($db, 'safra_cultura', $culturaId) : null;
