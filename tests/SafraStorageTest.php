@@ -5,6 +5,7 @@ require_once __DIR__.'/bootstrap.php';
 require_once dirname(__DIR__).'/lib/safra_storage.lib.php';
 
 $previousOutput = $conf->safra->dir_output;
+$previousEnvRoot = getenv('SAFRA_STORAGE_ROOT');
 $testRoot = rtrim(str_replace('\\', '/', sys_get_temp_dir()), '/').'/safra_storage_test_'.uniqid();
 $conf->safra->dir_output = $testRoot;
 
@@ -12,6 +13,13 @@ $expectedRoot = $testRoot;
 if (safra_storage_root() !== $expectedRoot) {
     throw new RuntimeException('Safra storage root must use conf->safra->dir_output.');
 }
+
+$envRoot = $testRoot.'/env_override';
+putenv('SAFRA_STORAGE_ROOT='.$envRoot);
+if (safra_storage_root() !== $envRoot) {
+    throw new RuntimeException('Safra storage root must support SAFRA_STORAGE_ROOT override.');
+}
+putenv('SAFRA_STORAGE_ROOT=');
 
 $jsonPath = safra_json_path('cache/token.json');
 if ($jsonPath !== $expectedRoot.'/json/cache/token.json') {
@@ -77,6 +85,10 @@ $writtenPath = safra_write_satellite_json_file('ndvi', '2026-05-24_2026-05-30_1'
 if ($writtenPath === false || !safra_satellite_json_is_valid_file($writtenPath)) {
     throw new RuntimeException('Valid satellite JSON payload must be written under documents storage.');
 }
+$status = safra_satellite_json_file_status('ndvi', '2026-05-24_2026-05-30_1');
+if (empty($status['fileExists']) || empty($status['fileValid']) || empty($status['dirWritable'])) {
+    throw new RuntimeException('Satellite JSON diagnostics must report existing valid writable files.');
+}
 
 $legacyBase = '2026-05-31_2026-06-06_1';
 $emptyDocumentsPath = safra_satellite_json_path('ndvi', $legacyBase);
@@ -104,5 +116,10 @@ if ($resolvedPath !== $emptyDocumentsPath || !safra_satellite_json_is_valid_file
 @rmdir($expectedRoot);
 
 $conf->safra->dir_output = $previousOutput;
+if ($previousEnvRoot === false) {
+    putenv('SAFRA_STORAGE_ROOT');
+} else {
+    putenv('SAFRA_STORAGE_ROOT='.$previousEnvRoot);
+}
 
 return true;

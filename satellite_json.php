@@ -68,6 +68,13 @@ if (!$user->admin && !$hasReadRight) {
 }
 
 $path = safra_resolve_satellite_json_path($folders[$index], $fileBase);
+$debug = (int) GETPOST('debug', 'int');
+if ($debug && !empty($user->admin)) {
+    top_httphead('application/json; charset=utf-8');
+    echo json_encode(safra_satellite_json_file_status($folders[$index], $fileBase), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+
 if (!safra_satellite_json_is_valid_file($path)) {
     http_response_code(404);
     exit('Satellite JSON not found or invalid');

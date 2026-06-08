@@ -12,6 +12,20 @@ function safra_storage_root()
 {
     global $conf;
 
+    $configuredRoot = '';
+    if (function_exists('getDolGlobalString')) {
+        $configuredRoot = getDolGlobalString('SAFRA_STORAGE_ROOT', '');
+    }
+    if ($configuredRoot === '') {
+        $envRoot = getenv('SAFRA_STORAGE_ROOT');
+        if ($envRoot !== false) {
+            $configuredRoot = (string) $envRoot;
+        }
+    }
+    if ($configuredRoot !== '') {
+        return rtrim(str_replace('\\', '/', $configuredRoot), '/');
+    }
+
     if (!empty($conf->safra->dir_output)) {
         return rtrim(str_replace('\\', '/', $conf->safra->dir_output), '/');
     }
@@ -57,18 +71,18 @@ function safra_json_path($relativePath = '')
  *
  * @param string $dir Absolute directory path.
  *
- * @return void
+ * @return bool
  */
 function safra_ensure_dir($dir)
 {
     if (empty($dir) || is_dir($dir)) {
-        return;
+        return !empty($dir) && is_dir($dir);
     }
 
     if (function_exists('dol_mkdir')) {
         dol_mkdir($dir);
         if (is_dir($dir)) {
-            return;
+            return true;
         }
     }
 
@@ -76,6 +90,8 @@ function safra_ensure_dir($dir)
     if (!is_dir($dir) && function_exists('dol_syslog')) {
         dol_syslog(__FUNCTION__ . ' failed to create directory ' . $dir, LOG_ERR);
     }
+
+    return is_dir($dir);
 }
 
 /**
@@ -228,6 +244,44 @@ function safra_satellite_json_is_valid_file($path)
 }
 
 /**
+ * Return safe filesystem diagnostics for one satellite JSON file.
+ *
+ * @param string $folder   Satellite folder name.
+ * @param string $fileBase Filename without extension.
+ *
+ * @return array
+ */
+function safra_satellite_json_file_status($folder, $fileBase)
+{
+    global $conf;
+
+    $path = safra_satellite_json_path($folder, $fileBase);
+    $legacyPath = safra_legacy_satellite_json_path($folder, $fileBase);
+    $root = safra_storage_root();
+    $dir = dirname($path);
+
+    return array(
+        'storageRoot' => $root,
+        'configuredSafraDirOutput' => !empty($conf->safra->dir_output) ? rtrim(str_replace('\\', '/', $conf->safra->dir_output), '/') : '',
+        'dolDataRoot' => defined('DOL_DATA_ROOT') ? rtrim(str_replace('\\', '/', DOL_DATA_ROOT), '/') : '',
+        'dolDocumentRoot' => defined('DOL_DOCUMENT_ROOT') ? rtrim(str_replace('\\', '/', DOL_DOCUMENT_ROOT), '/') : '',
+        'expectedPath' => $path,
+        'expectedDir' => $dir,
+        'rootExists' => is_dir($root),
+        'rootWritable' => is_dir($root) && is_writable($root),
+        'dirExists' => is_dir($dir),
+        'dirWritable' => is_dir($dir) && is_writable($dir),
+        'fileExists' => is_file($path),
+        'fileReadable' => is_file($path) && is_readable($path),
+        'fileSize' => is_file($path) ? (int) @filesize($path) : null,
+        'fileValid' => safra_satellite_json_is_valid_file($path),
+        'legacyPath' => $legacyPath,
+        'legacyFileExists' => is_file($legacyPath),
+        'legacyFileValid' => safra_satellite_json_is_valid_file($legacyPath),
+    );
+}
+
+/**
  * Write a validated satellite JSON file.
  *
  * @param string $folder       Satellite folder name.
@@ -247,7 +301,23 @@ function safra_write_satellite_json_file($folder, $fileBase, $payload, &$errorMe
     }
 
     $path = safra_satellite_json_path($folder, $fileBase);
-    safra_ensure_dir(dirname($path));
+    $dir = dirname($path);
+    safra_ensure_dir($dir);
+
+    if (!is_dir($dir)) {
+        $errorMessage = 'directory_missing';
+        if (function_exists('dol_syslog')) {
+            dol_syslog(__FUNCTION__ . ' failed to create satellite JSON directory ' . $dir, LOG_ERR);
+        }
+        return false;
+    }
+    if (!is_writable($dir)) {
+        $errorMessage = 'directory_not_writable';
+        if (function_exists('dol_syslog')) {
+            dol_syslog(__FUNCTION__ . ' satellite JSON directory is not writable ' . $dir, LOG_ERR);
+        }
+        return false;
+    }
 
     if (@file_put_contents($path, $payload, LOCK_EX) === false) {
         $errorMessage = 'write_failed';
