@@ -10,7 +10,8 @@ dol_include_once('/safra/lib/safra_storage.lib.php');
 class SafraSatelliteStatistics
 {
     private const TOKEN_FILENAME = 'token.json';
-    private const CACHE_VERSION = 'v2';
+    private const CACHE_VERSION = 'v3';
+    private const SPATIAL_RESOLUTION_METERS = 10;
     private static $lastCredentialError = '';
 
     private static $indexConfig = array(
@@ -90,6 +91,16 @@ class SafraSatelliteStatistics
             );
         }
 
+        $metricBounds = self::buildMetricBounds($geometry);
+        if (empty($metricBounds)) {
+            return array(
+                'points' => array(),
+                'message' => 'missing_geometry',
+                'index' => $index,
+                'talhaoId' => (int) $talhaoId,
+            );
+        }
+
         $cacheFile = self::getCacheFilePath($index, (int) $talhaoId, $weeks);
         $cacheData = self::readJson($cacheFile);
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -115,37 +126,7 @@ class SafraSatelliteStatistics
         $from = $now->sub(new DateInterval('P' . $weeks . 'W'))->setTime(0, 0, 0);
 
         $config = self::$indexConfig[$index];
-        $body = array(
-            'input' => array(
-                'bounds' => array(
-                    'geometry' => $geometry,
-                    'properties' => array('crs' => 'http://www.opengis.net/def/crs/EPSG/0/4326'),
-                ),
-                'data' => array(
-                    array(
-                        'type' => 'sentinel-2-l2a',
-                        'dataFilter' => array(
-                            'timeRange' => array(
-                                'from' => $from->format('Y-m-d\T00:00:00\Z'),
-                                'to' => $to->format('Y-m-d\T23:59:59\Z'),
-                            ),
-                            'maxCloudCoverage' => 100,
-                        ),
-                    ),
-                ),
-            ),
-            'aggregation' => array(
-                'timeRange' => array(
-                    'from' => $from->format('Y-m-d\T00:00:00\Z'),
-                    'to' => $to->format('Y-m-d\T23:59:59\Z'),
-                ),
-                'aggregationInterval' => array('of' => 'P1W'),
-                'resx' => 20,
-                'resy' => 20,
-                'evalscript' => self::buildEvalscript($config),
-            ),
-            'calculations' => array('default' => new stdClass()),
-        );
+        $body = self::buildRequestBody($metricBounds, $from, $to, $config);
 
         $response = self::requestStatistics($token, $body);
         if (!is_array($response)) {
@@ -291,6 +272,265 @@ class SafraSatelliteStatistics
         $script .= "}\n";
 
         return $script;
+    }
+
+    /**
+     * Build a Statistical API request using a fixed metric resolution.
+     *
+     * @param array             $metricBounds
+     * @param DateTimeImmutable $from
+     * @param DateTimeImmutable $to
+     * @param array             $config
+     *
+     * @return array
+     */
+    private static function buildRequestBody(array $metricBounds, DateTimeImmutable $from, DateTimeImmutable $to, array $config)
+    {
+        $timeRange = array(
+            'from' => $from->format('Y-m-d\T00:00:00\Z'),
+            'to' => $to->format('Y-m-d\T23:59:59\Z'),
+        );
+
+        return array(
+            'input' => array(
+                'bounds' => $metricBounds,
+                'data' => array(
+                    array(
+                        'type' => 'sentinel-2-l2a',
+                        'dataFilter' => array(
+                            'timeRange' => $timeRange,
+                            'maxCloudCoverage' => 100,
+                        ),
+                    ),
+                ),
+            ),
+            'aggregation' => array(
+                'timeRange' => $timeRange,
+                'aggregationInterval' => array('of' => 'P1W'),
+                'resx' => self::SPATIAL_RESOLUTION_METERS,
+                'resy' => self::SPATIAL_RESOLUTION_METERS,
+                'evalscript' => self::buildEvalscript($config),
+            ),
+            'calculations' => array('default' => new stdClass()),
+        );
+    }
+
+    /**
+     * Project WGS84 GeoJSON geometry to the local UTM zone.
+     *
+     * Statistical API resx/resy values use the units of the bounds CRS. Using
+     * UTM allows the request to send a literal fixed resolution in meters.
+     *
+     * @param array $geometry
+     *
+     * @return array|null
+     */
+    private static function buildMetricBounds(array $geometry)
+    {
+        if (empty($geometry['type']) || !in_array($geometry['type'], array('Polygon', 'MultiPolygon'), true) || empty($geometry['coordinates'])) {
+            return null;
+        }
+
+        $positions = array();
+        self::collectPositions($geometry['coordinates'], $positions);
+        if (empty($positions)) {
+            return null;
+        }
+
+        $longitudeTotal = 0.0;
+        $latitudeTotal = 0.0;
+        foreach ($positions as $position) {
+            $longitudeTotal += (float) $position[0];
+            $latitudeTotal += (float) $position[1];
+        }
+
+        $longitude = $longitudeTotal / count($positions);
+        $latitude = $latitudeTotal / count($positions);
+        if ($longitude < -180 || $longitude > 180 || $latitude < -80 || $latitude > 84) {
+            return null;
+        }
+
+        $zone = self::resolveUtmZone($longitude, $latitude);
+        $south = $latitude < 0;
+        $projectedCoordinates = self::projectCoordinatesToUtm($geometry['coordinates'], $zone, $south);
+        if (empty($projectedCoordinates)) {
+            return null;
+        }
+
+        $epsg = ($south ? 32700 : 32600) + $zone;
+
+        return array(
+            'geometry' => array(
+                'type' => $geometry['type'],
+                'coordinates' => $projectedCoordinates,
+            ),
+            'properties' => array(
+                'crs' => 'http://www.opengis.net/def/crs/EPSG/0/' . $epsg,
+            ),
+        );
+    }
+
+    /**
+     * Collect valid [longitude, latitude] positions recursively.
+     *
+     * @param array $coordinates
+     * @param array $positions
+     *
+     * @return void
+     */
+    private static function collectPositions(array $coordinates, array &$positions)
+    {
+        if (self::isCoordinatePosition($coordinates)) {
+            $positions[] = $coordinates;
+
+            return;
+        }
+
+        foreach ($coordinates as $child) {
+            if (is_array($child)) {
+                self::collectPositions($child, $positions);
+            }
+        }
+    }
+
+    /**
+     * Resolve the standard UTM zone for a WGS84 coordinate.
+     *
+     * @param float $longitude
+     * @param float $latitude
+     *
+     * @return int
+     */
+    private static function resolveUtmZone($longitude, $latitude)
+    {
+        $zone = (int) floor(((float) $longitude + 180) / 6) + 1;
+        $zone = max(1, min(60, $zone));
+
+        // Standard UTM exceptions for Norway and Svalbard.
+        if ($latitude >= 56 && $latitude < 64 && $longitude >= 3 && $longitude < 12) {
+            return 32;
+        }
+        if ($latitude >= 72 && $latitude < 84) {
+            if ($longitude >= 0 && $longitude < 9) {
+                return 31;
+            }
+            if ($longitude >= 9 && $longitude < 21) {
+                return 33;
+            }
+            if ($longitude >= 21 && $longitude < 33) {
+                return 35;
+            }
+            if ($longitude >= 33 && $longitude < 42) {
+                return 37;
+            }
+        }
+
+        return $zone;
+    }
+
+    /**
+     * Project nested GeoJSON coordinates to UTM.
+     *
+     * @param array $coordinates
+     * @param int   $zone
+     * @param bool  $south
+     *
+     * @return array
+     */
+    private static function projectCoordinatesToUtm(array $coordinates, $zone, $south)
+    {
+        if (self::isCoordinatePosition($coordinates)) {
+            return self::projectPositionToUtm($coordinates, (int) $zone, (bool) $south);
+        }
+
+        $projected = array();
+        foreach ($coordinates as $child) {
+            if (!is_array($child)) {
+                continue;
+            }
+            $projected[] = self::projectCoordinatesToUtm($child, (int) $zone, (bool) $south);
+        }
+
+        return $projected;
+    }
+
+    /**
+     * Check whether an array is a GeoJSON coordinate position.
+     *
+     * @param array $position
+     *
+     * @return bool
+     */
+    private static function isCoordinatePosition(array $position)
+    {
+        return count($position) >= 2 && is_numeric($position[0]) && is_numeric($position[1]);
+    }
+
+    /**
+     * Project one WGS84 position to UTM using the WGS84 ellipsoid.
+     *
+     * @param array $position
+     * @param int   $zone
+     * @param bool  $south
+     *
+     * @return array
+     */
+    private static function projectPositionToUtm(array $position, $zone, $south)
+    {
+        $longitude = (float) $position[0];
+        $latitude = (float) $position[1];
+        $semiMajorAxis = 6378137.0;
+        $eccentricitySquared = 0.00669438;
+        $scaleFactor = 0.9996;
+
+        $latitudeRad = deg2rad($latitude);
+        $longitudeRad = deg2rad($longitude);
+        $longitudeOrigin = (($zone - 1) * 6) - 180 + 3;
+        $longitudeOriginRad = deg2rad($longitudeOrigin);
+
+        $eccentricityPrimeSquared = $eccentricitySquared / (1 - $eccentricitySquared);
+        $sinLatitude = sin($latitudeRad);
+        $cosLatitude = cos($latitudeRad);
+        $tanLatitude = tan($latitudeRad);
+
+        $n = $semiMajorAxis / sqrt(1 - $eccentricitySquared * $sinLatitude * $sinLatitude);
+        $t = $tanLatitude * $tanLatitude;
+        $c = $eccentricityPrimeSquared * $cosLatitude * $cosLatitude;
+        $a = $cosLatitude * ($longitudeRad - $longitudeOriginRad);
+
+        $eccentricityFourth = $eccentricitySquared * $eccentricitySquared;
+        $eccentricitySixth = $eccentricityFourth * $eccentricitySquared;
+        $m = $semiMajorAxis * (
+            (1 - $eccentricitySquared / 4 - 3 * $eccentricityFourth / 64 - 5 * $eccentricitySixth / 256) * $latitudeRad
+            - (3 * $eccentricitySquared / 8 + 3 * $eccentricityFourth / 32 + 45 * $eccentricitySixth / 1024) * sin(2 * $latitudeRad)
+            + (15 * $eccentricityFourth / 256 + 45 * $eccentricitySixth / 1024) * sin(4 * $latitudeRad)
+            - (35 * $eccentricitySixth / 3072) * sin(6 * $latitudeRad)
+        );
+
+        $easting = $scaleFactor * $n * (
+            $a
+            + (1 - $t + $c) * pow($a, 3) / 6
+            + (5 - 18 * $t + $t * $t + 72 * $c - 58 * $eccentricityPrimeSquared) * pow($a, 5) / 120
+        ) + 500000.0;
+
+        $northing = $scaleFactor * (
+            $m
+            + $n * $tanLatitude * (
+                $a * $a / 2
+                + (5 - $t + 9 * $c + 4 * $c * $c) * pow($a, 4) / 24
+                + (61 - 58 * $t + $t * $t + 600 * $c - 330 * $eccentricityPrimeSquared) * pow($a, 6) / 720
+            )
+        );
+        if ($south) {
+            $northing += 10000000.0;
+        }
+
+        $projected = array(round($easting, 3), round($northing, 3));
+        for ($i = 2; $i < count($position); $i++) {
+            $projected[] = $position[$i];
+        }
+
+        return $projected;
     }
 
     /**
