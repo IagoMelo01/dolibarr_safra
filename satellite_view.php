@@ -227,7 +227,9 @@ if (empty($selectedIndex)) {
 }
 
 $consulta = GETPOST('consulta', 'alphanohtml');
-$selectedTalhaoId = (int) GETPOST('talhao_list', 'int');
+$selectedTalhaoValue = strtolower(GETPOST('talhao_list', 'alphanohtml'));
+$showAllTalhoes = ($selectedTalhaoValue === 'all');
+$selectedTalhaoId = $showAllTalhoes ? 0 : (int) $selectedTalhaoValue;
 $fileKey = GETPOST('arquivo', 'alphanohtml');
 $selectedDateRange = GETPOST('dateRange', 'alphanohtml');
 
@@ -236,7 +238,10 @@ if (!empty($consulta)) {
     if (count($consultaParts) >= 4) {
         $fileKey = $consultaParts[0] . '_' . $consultaParts[1] . '_' . $consultaParts[2];
         $selectedDateRange = $consultaParts[0] . '/' . $consultaParts[1];
-        if (!$selectedTalhaoId) {
+        if (strtolower($consultaParts[2]) === 'all') {
+            $showAllTalhoes = true;
+            $selectedTalhaoId = 0;
+        } elseif (!$selectedTalhaoId && !$showAllTalhoes) {
             $selectedTalhaoId = (int) $consultaParts[2];
         }
         if (empty($selectedIndex)) {
@@ -256,6 +261,7 @@ $listTalhao = $objTalhao->fetchAll();
 $talhaoGeoById = array();
 $talhaoAreaById = array();
 $talhaoLabelById = array();
+$totalTalhaoArea = 0.0;
 
 foreach ((array) $listTalhao as $talhao) {
     $id = (int) $talhao->id;
@@ -263,63 +269,107 @@ foreach ((array) $listTalhao as $talhao) {
     $talhaoGeoById[$id] = $talhao->geo_json;
     $talhaoAreaById[$id] = $talhao->area;
     $talhaoLabelById[$id] = $label;
+    if (is_numeric($talhao->area)) {
+        $totalTalhaoArea += (float) $talhao->area;
+    }
 }
 
 $selectedTalhaoLabel = '';
-if ($selectedTalhaoId > 0 && isset($talhaoLabelById[$selectedTalhaoId])) {
+if ($showAllTalhoes) {
+    $selectedTalhaoLabel = $langs->trans('SafraSatelliteAllTalhoes');
+} elseif ($selectedTalhaoId > 0 && isset($talhaoLabelById[$selectedTalhaoId])) {
     $selectedTalhaoLabel = $talhaoLabelById[$selectedTalhaoId];
 }
 
 $mapStatusMessage = '';
-if (!empty($fileKey) && $selectedTalhaoId > 0) {
-    $mapAbsoluteFile = safra_resolve_satellite_json_path($selectedMeta['folder'], $fileKey);
-    $validSelectedRange = !empty($selectedDateRange) && preg_match('/^\d{4}-\d{2}-\d{2}\/\d{4}-\d{2}-\d{2}$/', $selectedDateRange);
-    $selectedTalhao = new Talhao($db);
-    if ($validSelectedRange && $selectedTalhao->fetch($selectedTalhaoId) > 0) {
-        if ($selectedIndex === 'health') {
-            $sourceBase = str_replace('/', '_', $selectedDateRange) . '_' . $selectedTalhaoId;
-            $ndviPath = safra_resolve_satellite_json_path('ndvi', $sourceBase);
-            $ndmiPath = safra_resolve_satellite_json_path('ndmi', $sourceBase);
-            $swirPath = safra_resolve_satellite_json_path('swir', $sourceBase);
+$selectedTalhaoIds = $showAllTalhoes ? array_keys($talhaoLabelById) : array();
+if (!$showAllTalhoes && $selectedTalhaoId > 0 && isset($talhaoLabelById[$selectedTalhaoId])) {
+    $selectedTalhaoIds[] = $selectedTalhaoId;
+}
 
+if (!empty($fileKey) && !empty($selectedTalhaoIds)) {
+    $validSelectedRange = !empty($selectedDateRange) && preg_match('/^\d{4}-\d{2}-\d{2}\/\d{4}-\d{2}-\d{2}$/', $selectedDateRange);
+    $selectedTalhao = null;
+    if (!$showAllTalhoes) {
+        $selectedTalhao = new Talhao($db);
+        if ($selectedTalhao->fetch($selectedTalhaoId) <= 0) {
+            $selectedTalhao = null;
+        }
+    }
+
+    if ($validSelectedRange && ($showAllTalhoes || $selectedTalhao !== null)) {
+        $sourceBasePrefix = str_replace('/', '_', $selectedDateRange) . '_';
+
+        if ($selectedIndex === 'health') {
             dol_include_once('/safra/class/ndvi.class.php');
             dol_include_once('/safra/class/ndmi.class.php');
             dol_include_once('/safra/class/swir.class.php');
 
-            if (!safra_satellite_json_is_valid_file($ndviPath)) {
+            $missingNdvi = false;
+            $missingNdmi = false;
+            $missingSwir = false;
+            foreach ($selectedTalhaoIds as $talhaoId) {
+                $sourceBase = $sourceBasePrefix . (int) $talhaoId;
+                $missingNdvi = $missingNdvi || !safra_satellite_json_is_valid_file(safra_resolve_satellite_json_path('ndvi', $sourceBase));
+                $missingNdmi = $missingNdmi || !safra_satellite_json_is_valid_file(safra_resolve_satellite_json_path('ndmi', $sourceBase));
+                $missingSwir = $missingSwir || !safra_satellite_json_is_valid_file(safra_resolve_satellite_json_path('swir', $sourceBase));
+            }
+
+            if ($missingNdvi) {
                 $ndvi = new NDVI($db);
                 $ndvi->requestNDVIData(null, $selectedDateRange, $selectedTalhao);
             }
-            if (!safra_satellite_json_is_valid_file($ndmiPath)) {
+            if ($missingNdmi) {
                 $ndmi = new NDMI($db);
                 $ndmi->requestNDMIData(null, $selectedDateRange, $selectedTalhao);
             }
-            if (!safra_satellite_json_is_valid_file($swirPath)) {
+            if ($missingSwir) {
                 $swir = new SWIR($db);
                 $swir->requestSWIRData(null, $selectedDateRange, $selectedTalhao);
             }
 
             // Always regenerate health to apply the latest scoring model.
-            SafraSatelliteHealth::generateForRange($db, $selectedDateRange, $selectedTalhaoId);
-        } elseif (!safra_satellite_json_is_valid_file($mapAbsoluteFile)) {
-            if ($selectedIndex === 'ndvi') {
-                dol_include_once('/safra/class/ndvi.class.php');
-                $obj = new NDVI($db);
-                $obj->requestNDVIData(null, $selectedDateRange, $selectedTalhao);
-            } elseif ($selectedIndex === 'ndmi') {
-                dol_include_once('/safra/class/ndmi.class.php');
-                $obj = new NDMI($db);
-                $obj->requestNDMIData(null, $selectedDateRange, $selectedTalhao);
-            } elseif ($selectedIndex === 'swir') {
-                dol_include_once('/safra/class/swir.class.php');
-                $obj = new SWIR($db);
-                $obj->requestSWIRData(null, $selectedDateRange, $selectedTalhao);
+            SafraSatelliteHealth::generateForRange($db, $selectedDateRange, $showAllTalhoes ? 0 : $selectedTalhaoId);
+        } else {
+            $hasMissingMapFile = false;
+            foreach ($selectedTalhaoIds as $talhaoId) {
+                $sourceBase = $sourceBasePrefix . (int) $talhaoId;
+                if (!safra_satellite_json_is_valid_file(safra_resolve_satellite_json_path($selectedMeta['folder'], $sourceBase))) {
+                    $hasMissingMapFile = true;
+                    break;
+                }
+            }
+
+            if ($hasMissingMapFile) {
+                if ($selectedIndex === 'ndvi') {
+                    dol_include_once('/safra/class/ndvi.class.php');
+                    $obj = new NDVI($db);
+                    $obj->requestNDVIData(null, $selectedDateRange, $selectedTalhao);
+                } elseif ($selectedIndex === 'ndmi') {
+                    dol_include_once('/safra/class/ndmi.class.php');
+                    $obj = new NDMI($db);
+                    $obj->requestNDMIData(null, $selectedDateRange, $selectedTalhao);
+                } elseif ($selectedIndex === 'swir') {
+                    dol_include_once('/safra/class/swir.class.php');
+                    $obj = new SWIR($db);
+                    $obj->requestSWIRData(null, $selectedDateRange, $selectedTalhao);
+                }
             }
         }
     }
 
-    if (!safra_satellite_json_is_valid_file($mapAbsoluteFile)) {
+    $validMapFiles = 0;
+    foreach ($selectedTalhaoIds as $talhaoId) {
+        $sourceBase = str_replace('/', '_', $selectedDateRange) . '_' . (int) $talhaoId;
+        if (safra_satellite_json_is_valid_file(safra_resolve_satellite_json_path($selectedMeta['folder'], $sourceBase))) {
+            $validMapFiles++;
+        }
+    }
+
+    if ($validMapFiles === 0) {
         $mapStatusMessage = $langs->trans('SafraSatelliteMapMissingFile');
+    } elseif ($validMapFiles < count($selectedTalhaoIds)) {
+        $mapStatusMessage = sprintf($langs->trans('SafraSatelliteMapLoadedPartial'), $validMapFiles, count($selectedTalhaoIds));
     }
 }
 
@@ -422,23 +472,27 @@ if ($selectedTalhaoId > 0 && !$hasChartNumericData) {
 }
 
 $weeklyMessageText = '';
-switch ($weeklyMessageKey) {
-    case 'invalid_credentials':
-        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageInvalidCredentials');
-        break;
-    case 'credential_connection_error':
-        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageCredentialConnectionError');
-        break;
-    case 'missing_credentials':
-        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
-        break;
-    case 'missing_geometry':
-        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
-        break;
-    case 'no_data':
-    case 'talhao_not_found':
-        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageNoData');
-        break;
+if ($showAllTalhoes) {
+    $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyAllTalhoes');
+} else {
+    switch ($weeklyMessageKey) {
+        case 'invalid_credentials':
+            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageInvalidCredentials');
+            break;
+        case 'credential_connection_error':
+            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageCredentialConnectionError');
+            break;
+        case 'missing_credentials':
+            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
+            break;
+        case 'missing_geometry':
+            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
+            break;
+        case 'no_data':
+        case 'talhao_not_found':
+            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageNoData');
+            break;
+    }
 }
 
 $weeklySeries = isset($weeklySeriesByIndex[$selectedIndex]) && is_array($weeklySeriesByIndex[$selectedIndex])
@@ -601,6 +655,9 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
                         <label class="analysis-form__label" for="talhao_list">Talhao</label>
                         <select name="talhao_list" id="talhao_list" class="analysis-form__control">
                             <option value=""><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteChooseTalhao')); ?></option>
+                            <option value="all" data-area="<?php echo dol_escape_htmltag($totalTalhaoArea); ?>"<?php echo $showAllTalhoes ? ' selected' : ''; ?>>
+                                <?php echo dol_escape_htmltag($langs->trans('SafraSatelliteAllTalhoes')); ?>
+                            </option>
 <?php foreach ((array) $listTalhao as $talhao) {
     $talhaoId = (int) $talhao->id;
     $talhaoLabel = $talhao->label ? $talhao->label : $talhao->ref;
@@ -695,13 +752,17 @@ print '</div>';
 <script>
     const talhao_geo_map = <?php echo json_encode($talhaoGeoById, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     const talhao_area_map = <?php echo json_encode($talhaoAreaById, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-    const talhao_selected = <?php echo $selectedTalhaoId > 0 ? $selectedTalhaoId : 'null'; ?>;
+    const talhao_label_map = <?php echo json_encode($talhaoLabelById, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    const talhao_selected = <?php echo $showAllTalhoes ? json_encode('all') : ($selectedTalhaoId > 0 ? $selectedTalhaoId : 'null'); ?>;
     const arquivo_post = <?php echo json_encode($fileKey ? $fileKey : ''); ?>;
     const satellite_index_selected = <?php echo json_encode($selectedIndex); ?>;
     const satellite_index_options = <?php echo json_encode($indexClientConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     const satellite_json_endpoint = <?php echo json_encode(dol_buildpath('/safra/satellite_json.php', 1)); ?>;
     const map_choose_filters_message = <?php echo json_encode($langs->trans('SafraSatelliteMapChooseFilters')); ?>;
     const map_missing_file_message = <?php echo json_encode($langs->trans('SafraSatelliteMapMissingFile')); ?>;
+    const map_loaded_message = <?php echo json_encode($langs->trans('SafraSatelliteMapLoaded')); ?>;
+    const map_loaded_all_message = <?php echo json_encode($langs->trans('SafraSatelliteMapLoadedAll')); ?>;
+    const map_loaded_partial_message = <?php echo json_encode($langs->trans('SafraSatelliteMapLoadedPartial')); ?>;
     window.satelliteChartInstances = window.satelliteChartInstances || [];
     window.satelliteChartInstances.push(<?php echo json_encode($chartConfig, $jsOptions); ?>);
 </script>

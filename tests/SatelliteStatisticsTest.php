@@ -1,0 +1,87 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/bootstrap.php';
+require_once dirname(__DIR__) . '/class/safra_satellite_statistics.class.php';
+
+$assert = static function ($condition, string $message): void {
+    if (!$condition) {
+        throw new RuntimeException($message);
+    }
+};
+
+$geometry = array(
+    'type' => 'Polygon',
+    'coordinates' => array(
+        array(
+            array(-50.0000, -20.0000),
+            array(-49.9999, -20.0000),
+            array(-49.9999, -20.0001),
+            array(-50.0000, -20.0001),
+            array(-50.0000, -20.0000),
+        ),
+    ),
+);
+
+$metricBoundsMethod = new ReflectionMethod(SafraSatelliteStatistics::class, 'buildMetricBounds');
+$metricBoundsMethod->setAccessible(true);
+$metricBounds = $metricBoundsMethod->invoke(null, $geometry);
+
+$assert(is_array($metricBounds), 'WGS84 satellite geometry must be projected to metric bounds');
+$assert(
+    ($metricBounds['properties']['crs'] ?? '') === 'http://www.opengis.net/def/crs/EPSG/0/32722',
+    'Brazilian field geometry at longitude -50 must use UTM zone 22S'
+);
+
+$first = $metricBounds['geometry']['coordinates'][0][0] ?? null;
+$second = $metricBounds['geometry']['coordinates'][0][1] ?? null;
+$assert(is_array($first) && is_array($second), 'Projected UTM positions must be available');
+$assert($first[0] > 100000 && $first[0] < 900000, 'Projected UTM easting must be expressed in meters');
+$assert($first[1] > 0 && $first[1] < 10000000, 'Projected UTM northing must be expressed in meters');
+
+$projectedDistance = sqrt(pow($second[0] - $first[0], 2) + pow($second[1] - $first[1], 2));
+$assert($projectedDistance > 8 && $projectedDistance < 13, 'Projected distance must preserve approximately 10 meters');
+
+$multiPolygonBounds = $metricBoundsMethod->invoke(null, array(
+    'type' => 'MultiPolygon',
+    'coordinates' => array($geometry['coordinates']),
+));
+$assert(is_array($multiPolygonBounds), 'MultiPolygon satellite geometry must be projected to metric bounds');
+$assert(($multiPolygonBounds['geometry']['type'] ?? '') === 'MultiPolygon', 'Metric projection must preserve MultiPolygon type');
+
+$requestBodyMethod = new ReflectionMethod(SafraSatelliteStatistics::class, 'buildRequestBody');
+$requestBodyMethod->setAccessible(true);
+$requestBody = $requestBodyMethod->invoke(
+    null,
+    $metricBounds,
+    new DateTimeImmutable('2026-05-01T00:00:00Z'),
+    new DateTimeImmutable('2026-06-01T00:00:00Z'),
+    array(
+        'inputs' => array('B04', 'B08'),
+        'formula' => '(samples.B08 - samples.B04) / (samples.B08 + samples.B04)',
+    )
+);
+
+$assert(($requestBody['aggregation']['resx'] ?? null) === 10, 'Statistical API resx must be fixed at 10 meters');
+$assert(($requestBody['aggregation']['resy'] ?? null) === 10, 'Statistical API resy must be fixed at 10 meters');
+$assert(
+    ($requestBody['input']['bounds']['properties']['crs'] ?? '') === 'http://www.opengis.net/def/crs/EPSG/0/32722',
+    'Statistical API metric resolution must be paired with a metric UTM CRS'
+);
+
+$source = file_get_contents(dirname(__DIR__) . '/class/safra_satellite_statistics.class.php');
+$assert($source !== false, 'Unable to read satellite statistics source');
+$assert(strpos($source, "private const CACHE_VERSION = 'v3';") !== false, 'Resolution change must invalidate legacy statistics cache');
+$assert(strpos($source, "private const SPATIAL_RESOLUTION_METERS = 10;") !== false, 'Fixed 10 meter resolution constant is required');
+$assert(strpos($source, "'resx' => 20") === false, 'Legacy 20 degree statistical resolution must be removed');
+$assert(strpos($source, "'resy' => 20") === false, 'Legacy 20 degree statistical resolution must be removed');
+
+$wmsIndexClasses = array('ndvi', 'ndmi', 'ndwi', 'evi', 'swir');
+foreach ($wmsIndexClasses as $indexClass) {
+    $indexSource = file_get_contents(dirname(__DIR__) . '/class/' . $indexClass . '.class.php');
+    $assert($indexSource !== false, 'Unable to read ' . strtoupper($indexClass) . ' source');
+    $assert(strpos($indexSource, "'RESX' => '10m'") !== false, strtoupper($indexClass) . ' WMS RESX must remain fixed at 10m');
+    $assert(strpos($indexSource, "'RESY' => '10m'") !== false, strtoupper($indexClass) . ' WMS RESY must remain fixed at 10m');
+}
+
+return true;

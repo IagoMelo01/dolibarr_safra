@@ -19,6 +19,7 @@ ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_ro
 ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_ref (ref);
 ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_fk_project (fk_project);
 ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_status (status);
+ALTER TABLE llx_safra_recomendacaoadubo ADD INDEX idx_safra_recomendacaoadubo_analise_solo (analise_solo);
 -- END MODULEBUILDER INDEXES
 
 --ALTER TABLE llx_safra_recomendacaoadubo ADD UNIQUE INDEX uk_safra_recomendacaoadubo_fieldxy(fieldx, fieldy);

@@ -561,15 +561,20 @@
         const rangeFromColor = findRangeByColor(indexCode, colorHex);
         const range = rangeFromValue || rangeFromColor;
         const color = colorHex || (range ? range.color : '64748B');
+        const talhaoLabel = properties.SAFRA_TALHAO_LABEL ? String(properties.SAFRA_TALHAO_LABEL) : '';
 
         let valueLine = '';
         if (numericValue !== null) {
             const decimals = indexCode === 'health' ? 2 : 3;
             valueLine = `<div class="satellite-hover-legend__line"><strong>Valor:</strong> ${formatNumber(numericValue, decimals)}</div>`;
         }
+        const talhaoLine = talhaoLabel
+            ? `<div class="satellite-hover-legend__line"><strong>Talhao:</strong> ${escapeHtml(talhaoLabel)}</div>`
+            : '';
 
         hoverLegendElement.innerHTML = `
             <div class="satellite-hover-legend__title">${escapeHtml(getLegendTitle(indexCode))}</div>
+            ${talhaoLine}
             <div class="satellite-hover-legend__line">
                 <span class="satellite-hover-legend__chip" style="background:#${escapeHtml(color)}"></span>
                 <strong>Intervalo:</strong> ${escapeHtml(formatRangeLabel(indexCode, range))}
@@ -633,6 +638,14 @@
         }
     }
 
+    function formatStatusMessage(template, values) {
+        let formatted = template || '';
+        (values || []).forEach(function (value) {
+            formatted = formatted.replace('%s', String(value));
+        });
+        return formatted;
+    }
+
     function parseSelectedTalhaoId() {
         if (talhaoElement && talhaoElement.value) {
             return String(talhaoElement.value);
@@ -650,50 +663,89 @@
         return '';
     }
 
+    function getSelectedTalhaoIds() {
+        const talhaoId = parseSelectedTalhaoId();
+        if (talhaoId === 'all') {
+            return Object.keys(talhao_geo_map);
+        }
+
+        return talhaoId ? [talhaoId] : [];
+    }
+
     function renderTalhaoBoundary() {
         clearLayer(talhaoLayer);
         talhaoLayer = null;
 
-        const talhaoId = parseSelectedTalhaoId();
-        if (!talhaoId || !Object.prototype.hasOwnProperty.call(talhao_geo_map, talhaoId)) {
+        const talhaoIds = getSelectedTalhaoIds();
+        if (!talhaoIds.length) {
             return;
         }
 
-        const rawGeo = talhao_geo_map[talhaoId];
-        if (!rawGeo) {
-            return;
-        }
+        talhaoLayer = L.geoJSON(null, {
+            style: {
+                color: '#1f2937',
+                weight: 2,
+                fillColor: '#94a3b8',
+                fillOpacity: 0.12
+            }
+        }).addTo(map);
 
-        try {
-            const talhaoGeoJson = JSON.parse(rawGeo);
-            talhaoLayer = L.geoJSON(talhaoGeoJson, {
-                style: {
-                    color: '#1f2937',
-                    weight: 2,
-                    fillColor: '#94a3b8',
-                    fillOpacity: 0.12
-                }
-            }).addTo(map);
-        } catch (error) {
-            console.error('Erro ao renderizar talhao:', error);
-        }
+        talhaoIds.forEach(function (talhaoId) {
+            const rawGeo = Object.prototype.hasOwnProperty.call(talhao_geo_map, talhaoId) ? talhao_geo_map[talhaoId] : '';
+            if (!rawGeo) {
+                return;
+            }
+
+            try {
+                talhaoLayer.addData(JSON.parse(rawGeo));
+            } catch (error) {
+                console.error('Erro ao renderizar talhao:', error);
+            }
+        });
     }
 
-    function getDataUrl() {
-        if (!arquivoElement || !arquivoElement.value || !indexElement) {
-            return '';
+    function getSelectedDateRange() {
+        const rawRange = dateRangeElement && dateRangeElement.value ? dateRangeElement.value : '';
+        const rangeParts = rawRange.split('/');
+        if (rangeParts.length === 2 && rangeParts[0] && rangeParts[1]) {
+            return rangeParts;
+        }
+
+        const parsed = parseFileKey();
+        if (parsed && parsed.from && parsed.to) {
+            return [parsed.from, parsed.to];
+        }
+
+        return [];
+    }
+
+    function getDataRequests() {
+        if (!indexElement) {
+            return [];
         }
 
         const selectedIndex = indexElement.value;
         if (!selectedIndex || !Object.prototype.hasOwnProperty.call(satellite_index_options, selectedIndex)) {
-            return '';
+            return [];
         }
 
         if (!satellite_index_options[selectedIndex].folder || !satellite_json_endpoint) {
-            return '';
+            return [];
         }
 
-        return `${satellite_json_endpoint}?index=${encodeURIComponent(selectedIndex)}&file=${encodeURIComponent(arquivoElement.value)}`;
+        const range = getSelectedDateRange();
+        const talhaoIds = getSelectedTalhaoIds();
+        if (range.length !== 2 || !talhaoIds.length) {
+            return [];
+        }
+
+        return talhaoIds.map(function (talhaoId) {
+            const fileBase = `${range[0]}_${range[1]}_${talhaoId}`;
+            return {
+                talhaoId: talhaoId,
+                url: `${satellite_json_endpoint}?index=${encodeURIComponent(selectedIndex)}&file=${encodeURIComponent(fileBase)}`
+            };
+        });
     }
 
     function featureStyle(feature) {
@@ -718,26 +770,56 @@
 
         renderTalhaoBoundary();
 
-        const dataUrl = getDataUrl();
-        if (!dataUrl) {
+        const dataRequests = getDataRequests();
+        if (!dataRequests.length) {
             setMapStatus(map_choose_filters_message);
-            if (talhaoLayer) {
+            if (talhaoLayer && talhaoLayer.getBounds().isValid()) {
                 map.fitBounds(talhaoLayer.getBounds());
             }
             return;
         }
 
-        fetch(dataUrl)
-            .then(function (response) {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(function (geojson) {
-                if (!geojson || !geojson.features || !geojson.features.length) {
+        Promise.all(dataRequests.map(function (request) {
+            return fetch(request.url)
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(function (geojson) {
+                    const features = geojson && Array.isArray(geojson.features) ? geojson.features : [];
+                    features.forEach(function (feature) {
+                        feature.properties = feature.properties || {};
+                        feature.properties.SAFRA_TALHAO_ID = request.talhaoId;
+                        feature.properties.SAFRA_TALHAO_LABEL = Object.prototype.hasOwnProperty.call(talhao_label_map, request.talhaoId)
+                            ? talhao_label_map[request.talhaoId]
+                            : request.talhaoId;
+                    });
+                    return {
+                        loaded: features.length > 0,
+                        features: features
+                    };
+                })
+                .catch(function (error) {
+                    console.error('Erro ao carregar geojson:', request.url, error);
+                    return {
+                        loaded: false,
+                        features: []
+                    };
+                });
+        }))
+            .then(function (results) {
+                const loadedCount = results.filter(function (result) {
+                    return result.loaded;
+                }).length;
+                const features = results.reduce(function (allFeatures, result) {
+                    return allFeatures.concat(result.features);
+                }, []);
+
+                if (!features.length) {
                     setMapStatus(map_missing_file_message);
-                    if (talhaoLayer) {
+                    if (talhaoLayer && talhaoLayer.getBounds().isValid()) {
                         map.fitBounds(talhaoLayer.getBounds());
                     }
                     return;
@@ -762,17 +844,17 @@
                     }
                 }).addTo(map);
 
-                setMapStatus('Mapa carregado com sucesso.');
+                if (dataRequests.length === 1) {
+                    setMapStatus(map_loaded_message);
+                } else if (loadedCount === dataRequests.length) {
+                    setMapStatus(formatStatusMessage(map_loaded_all_message, [loadedCount]));
+                } else {
+                    setMapStatus(formatStatusMessage(map_loaded_partial_message, [loadedCount, dataRequests.length]));
+                }
+
                 if (indexLayer.getBounds && indexLayer.getBounds().isValid()) {
                     map.fitBounds(indexLayer.getBounds());
-                } else if (talhaoLayer && talhaoLayer.getBounds) {
-                    map.fitBounds(talhaoLayer.getBounds());
-                }
-            })
-            .catch(function (error) {
-                console.error('Erro ao carregar geojson:', error);
-                setMapStatus(map_missing_file_message);
-                if (talhaoLayer && talhaoLayer.getBounds) {
+                } else if (talhaoLayer && talhaoLayer.getBounds().isValid()) {
                     map.fitBounds(talhaoLayer.getBounds());
                 }
             });

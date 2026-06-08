@@ -163,6 +163,81 @@ if (!$permissiontoread) {
 	accessforbidden();
 }
 
+/**
+ * Print the map used to pick or display the soil sample collection point.
+ *
+ * @param AnaliseSolo $object
+ * @param bool        $readonly
+ * @param bool        $insideTable
+ * @return void
+ */
+function safraAnaliseSoloPrintLocationMap($object, $readonly = false, $insideTable = false)
+{
+	global $langs;
+
+	static $cssPrinted = false;
+	static $scriptPrinted = false;
+
+	if (!$cssPrinted) {
+		print '<style>
+		.safra-location-map-panel{border:1px solid #d8dee4;background:#fff;border-radius:6px;padding:14px;margin:10px 0 16px;}
+		.safra-location-map-title{font-weight:600;margin-bottom:4px;}
+		.safra-location-map-hint{color:#586069;margin-bottom:10px;}
+		.safra-map-error{color:#b3261e!important;}
+		#safra-analisesolo-map{height:360px;min-height:320px;width:100%;border:1px solid #cfd7df;border-radius:6px;overflow:hidden;background:#eef2f5;}
+		@media (max-width: 700px){#safra-analisesolo-map{height:300px;}}
+		</style>';
+		$cssPrinted = true;
+	}
+
+	$lat = GETPOSTISSET('latitude') ? GETPOST('latitude', 'alphanohtml') : (isset($object->latitude) ? $object->latitude : '');
+	$lng = GETPOSTISSET('longitude') ? GETPOST('longitude', 'alphanohtml') : (isset($object->longitude) ? $object->longitude : '');
+	$talhaoId = GETPOSTISSET('fk_talhao') ? GETPOST('fk_talhao', 'int') : (isset($object->fk_talhao) ? $object->fk_talhao : 0);
+
+	$config = array(
+		'containerId' => 'safra-analisesolo-map',
+		'hintId' => 'safra-analisesolo-map-hint',
+		'ajaxTalhaoUrl' => dol_buildpath('/safra/ajax/talhao_geojson.php', 1),
+		'leafletCss' => dol_buildpath('/safra/css/leaflet.css', 1),
+		'leafletJs' => dol_buildpath('/safra/js/leaflet.js', 1),
+		'wellknownJs' => dol_buildpath('/safra/js/wellknown.js', 1),
+		'initialTalhaoId' => (string) $talhaoId,
+		'initialLat' => (string) $lat,
+		'initialLng' => (string) $lng,
+		'readonly' => (bool) $readonly,
+		'messages' => array(
+			'clickMap' => $langs->transnoentitiesnoconv('SafraAnaliseSoloMapHint'),
+			'viewHint' => $langs->transnoentitiesnoconv('SafraAnaliseSoloMapViewHint'),
+			'loading' => $langs->transnoentitiesnoconv('Loading'),
+			'empty' => $langs->transnoentitiesnoconv('SafraTalhaoMapEmpty'),
+			'error' => $langs->transnoentitiesnoconv('Error'),
+			'leafletError' => $langs->transnoentitiesnoconv('SafraMapLoadError'),
+		),
+	);
+
+	if ($insideTable) {
+		print '<tr class="field_safra_location_map"><td colspan="2">';
+	}
+
+	print '<div class="safra-location-map-panel">';
+	print '<div class="safra-location-map-title">'.dol_escape_htmltag($langs->trans('SafraAnaliseSoloCollectionMap')).'</div>';
+	print '<div id="safra-analisesolo-map-hint" class="safra-location-map-hint">'.dol_escape_htmltag($readonly ? $langs->trans('SafraAnaliseSoloMapViewHint') : $langs->trans('SafraAnaliseSoloMapHint')).'</div>';
+	print '<div id="safra-analisesolo-map"></div>';
+	print '</div>';
+
+	if ($insideTable) {
+		print '</td></tr>';
+	}
+
+	print '<script>window.SAFRA_ANALISESOLO_MAP = '.json_encode($config).';</script>';
+	if (!$scriptPrinted) {
+		$scriptPath = dol_buildpath('/safra/js/analisesolo_location.js', 0);
+		$scriptVersion = is_readable($scriptPath) ? filemtime($scriptPath) : DOL_VERSION;
+		print '<script src="'.dol_buildpath('/safra/js/analisesolo_location.js', 1).'?v='.urlencode((string) $scriptVersion).'"></script>';
+		$scriptPrinted = true;
+	}
+}
+
 
 /*
  * Actions
@@ -290,6 +365,8 @@ if ($action == 'create') {
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_add.tpl.php';
 
+	safraAnaliseSoloPrintLocationMap($object, false, true);
+
 	// Other attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_add.tpl.php';
 
@@ -325,6 +402,8 @@ if (($id || $ref) && $action == 'edit') {
 
 	// Common attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/commonfields_edit.tpl.php';
+
+	safraAnaliseSoloPrintLocationMap($object, false, true);
 
 	// Other attributes
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_edit.tpl.php';
@@ -462,6 +541,8 @@ if ($object->id > 0 && (empty($action) || ($action != 'edit' && $action != 'crea
 	print '</div>';
 
 	print '<div class="clearboth"></div>';
+
+	safraAnaliseSoloPrintLocationMap($object, true, false);
 
 	print dol_get_fiche_end();
 
