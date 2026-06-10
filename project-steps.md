@@ -1,6 +1,6 @@
 ﻿# Safra - Execucao do Plano (Sem Legado `aplicacao`)
 
-Data: 2026-06-03
+Data: 2026-06-09
 Escopo: `C:\wamp64\www\dolibarr_23\htdocs\custom\safra`
 
 ## Status por fase
@@ -50,6 +50,20 @@ Gate 2: **CONCLUIDO (validacao funcional local)**.
 
 Gate 3: **PARCIAL** (pendente homologacao/UAT).
 
+### Fase 4 - Operacao diaria e relatorios
+- [x] Duplicacao de atividade para varios talhoes, com recalculo de quantidades planejadas por area.
+- [x] Duplicatas resetam execucao, projeto/tarefa e movimentos de estoque.
+- [x] Kanban agricola com colunas Planejadas, Em execucao e Atrasadas.
+- [x] Relatorio de consumo liquido de insumos por safra, cultura, talhao e produto.
+- [x] Exportacao CSV do relatorio de consumo.
+- [x] Aba de anexos na atividade com documentos, fotos de campo e atalho de camera.
+- [x] Manual HTML do operador com fluxo visual, passos, checklist e atalhos reais.
+- [x] Comparacao temporal satelital com dois mapas, atalhos ou data anterior personalizada e cache persistente sob demanda.
+- [x] Exportacao PDF da comparacao satelital com mapas, grafico, legenda e marca Farmevo.
+- [ ] Homologacao funcional das novas telas em instancia Dolibarr real.
+
+Gate 4: **PARCIAL** (implementacao local concluida; homologacao pendente).
+
 ## Proximos passos imediatos
 
 1. Rotacionar credenciais Sentinel/Embrapa em `Configurações > Safra` e invalidar tokens anteriores.
@@ -60,6 +74,7 @@ Gate 3: **PARCIAL** (pendente homologacao/UAT).
    - Estoque por insumo (`origintype = 'safra_activity'`, `fk_stock_movement`, estorno em edicao/remocao)
    - API (`/api/index.php/sfactivities`)
 5. Emitir go/no-go com checklist de deploy e rollback.
+6. Homologar duplicacao, kanban, relatorio de consumo, anexos/fotos, manual do operador e comparacao satelital com dados reais.
 
 ## Observacoes
 

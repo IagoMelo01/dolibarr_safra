@@ -1,6 +1,6 @@
 ﻿# Safra - Activity workflow manual test
 
-Last updated: 2026-06-03
+Last updated: 2026-06-09
 
 Manual roteiro para validar o fluxo canonico `safra_activity*` em uma instancia Dolibarr real.
 
@@ -24,6 +24,11 @@ Manual roteiro para validar o fluxo canonico `safra_activity*` em uma instancia 
 | Concluir | Acionar **Concluir atividade** ou salvar/concluir pela aba Geral. | Status `Completed`; movimentos existentes permanecem consistentes. |
 | Cancelar | Acionar **Cancelar atividade**. | Status `Canceled` e movimentos ativos estornados. |
 | Excluir | Acionar **Excluir atividade**. | Registro removido; nao deve criar, fechar ou excluir tarefa de projeto automaticamente. |
+| Duplicar para varios talhoes | Abrir uma atividade, clicar **Duplicar atividade**, selecionar dois ou mais talhoes e confirmar. | Uma atividade planejada independente e criada por talhao; area e quantidades planejadas sao recalculadas, enquanto execucao, projeto/tarefa e movimentos de estoque ficam zerados. |
+| Kanban agricola | Abrir **Agenda de atividades** e aplicar filtros por safra, cultura, talhao, tipo e periodo. | Atividades ativas aparecem em Planejadas, Em execucao ou Atrasadas conforme status e prazo planejado. |
+| Relatorio de consumo | Abrir **Consumo de insumos**, filtrar por safra/cultura/talhao/produto e exportar CSV. | Apenas atividades em execucao/concluidas com movimento ativo entram no consumo liquido; devolucoes reduzem o total. |
+| Anexos e fotos | Abrir a aba **Anexos**, enviar um PDF e uma imagem, testar **Tirar foto** em celular e remover um arquivo. | Documentos e fotos ficam vinculados somente a atividade; imagens recebem miniatura; usuario sem escrita nao envia nem remove arquivos. |
+| Manual do operador | Abrir **Manual do operador** no menu Safra e testar os atalhos da pagina. | Fluxo, passos, checklist e atalhos abrem corretamente em desktop e celular. |
 
 ## Verificacoes complementares
 
@@ -43,6 +48,16 @@ Manual roteiro para validar o fluxo canonico `safra_activity*` em uma instancia 
    - `GET /api/index.php/sfactivities?sortfield=ref`
    - `GET /api/index.php/sfactivities/{id}?include_lines=1`
    - `POST /api/index.php/sfactivities/{id}/start|complete|cancel`
+6. Duplicacao:
+   - confirmar que nenhuma duplicata reutiliza `fk_stock_movement`.
+   - confirmar que recursos copiados mantem horas planejadas e zeram horas executadas.
+7. Relatorio:
+   - comparar quantidades com as linhas e movimentos ativos.
+   - validar agrupamentos e CSV com mais de uma safra, cultura, talhao e produto.
+8. Documentos:
+   - confirmar armazenamento em `safra/safra_activity/<ref>/`.
+   - validar upload, download, renomeacao, exclusao e miniaturas.
+   - validar captura pela camera em dispositivo movel.
 
 ## Observacoes
 

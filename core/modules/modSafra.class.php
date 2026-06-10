@@ -2080,6 +2080,22 @@ class modSafra extends DolibarrModules
                        'user' => 2,
                );
 
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuOperatorManual',
+                       'prefix' => img_picto('', 'fa-book-open', 'class="pictofixedwidth valignmiddle"'),
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_operator_manual',
+                       'url' => '/custom/safra/manual/operator_manual.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '$user->hasRight("safra", "SafraActivity", "read")',
+                       'target' => '',
+                       'user' => 2,
+               );
+
                // Cadastros
                $this->menu[$r++] = array(
                        'fk_menu' => 'fk_mainmenu=safra',
@@ -2287,6 +2303,36 @@ class modSafra extends DolibarrModules
                        );
                }
 
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_operacoes',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuAgendaAtividades',
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_activity_kanban',
+                       'url' => '/custom/safra/activity/activity_kanban.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '$user->hasRight("safra", "SafraActivity", "read")',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_operacoes',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuRelatorioConsumoInsumos',
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_input_consumption_report',
+                       'url' => '/custom/safra/report/input_consumption.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '$user->hasRight("safra", "SafraActivity", "read")',
+                       'target' => '',
+                       'user' => 2,
+               );
+
                // Monitoramento
                $this->menu[$r++] = array(
                        'fk_menu' => 'fk_mainmenu=safra',
@@ -2300,6 +2346,21 @@ class modSafra extends DolibarrModules
                        'position' => 1000 + $r,
                        'enabled' => 'isModEnabled("safra")',
                        'perms' => '1',
+                       'target' => '',
+                       'user' => 2,
+               );
+
+               $this->menu[$r++] = array(
+                       'fk_menu' => 'fk_mainmenu=safra,fk_leftmenu=safra_monitoramento',
+                       'type' => 'left',
+                       'titre' => 'SafraMenuSatelliteCompare',
+                       'mainmenu' => 'safra',
+                       'leftmenu' => 'safra_satellite_compare',
+                       'url' => '/custom/safra/satellite_compare.php',
+                       'langs' => 'safra@safra',
+                       'position' => 1000 + $r,
+                       'enabled' => 'isModEnabled("safra")',
+                       'perms' => '$user->hasRight("safra", "ndvi", "read") || $user->hasRight("safra", "ndmi", "read") || $user->hasRight("safra", "swir", "read")',
                        'target' => '',
                        'user' => 2,
                );

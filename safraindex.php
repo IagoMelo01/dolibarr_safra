@@ -58,9 +58,10 @@ if (!$res) {
 
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 include_once './class/talhao.class.php';
-include_once './class/ndvi.class.php';
+dol_include_once('/safra/class/FvActivity.class.php');
+dol_include_once('/safra/class/ActivityPlanningService.class.php');
 dol_include_once('/safra/class/safra_satellite_statistics.class.php');
-include_once './class/municipio.class.php';
+dol_include_once('/safra/class/safra_satellite_health.class.php');
 
 if (!function_exists('safra_format_number')) {
         /**
@@ -153,12 +154,12 @@ if (isset($user->socid) && $user->socid > 0) {
 $form = new Form($db);
 $formfile = new FormFile($db);
 
-llxHeader("", $langs->trans("SafraArea"), '', '', 0, 0, '', '', '', 'mod-safra page-index');
+llxHeader("", $langs->trans("SafraDashboard"), '', '', 0, 0, '', '', '', 'mod-safra page-index');
 
 print '<link rel="stylesheet" href="./css/leaflet.css">';
 print '<link rel="stylesheet" href="./css/leaflet.draw.css">';
 
-print load_fiche_titre($langs->trans("SafraArea"), '', 'safra.png@safra');
+print load_fiche_titre($langs->trans("SafraDashboard"), '', 'safra.png@safra');
 
 // Prepare dashboard data
 $talhaoObject = new Talhao($db);
@@ -167,28 +168,13 @@ if (!is_array($talhaoList)) {
         $talhaoList = array();
 }
 
-$municipioObject = new Municipio($db);
-$municipioRecords = $municipioObject->fetchAll('ASC', 't.label');
-$municipioCache = array();
-if (!is_array($municipioRecords)) {
-        $municipioRecords = array();
-}
-
 $talhaoData = array();
 $talhaoCache = array();
-$areaByMunicipio = array();
 $totalArea = 0;
-$largestTalhao = null;
-
-foreach ($municipioRecords as $municipio) {
-        $municipioCache[$municipio->id] = $municipio->label ?: $municipio->ref;
-}
 
 foreach ($talhaoList as $talhao) {
         $talhaoId = !empty($talhao->id) ? $talhao->id : $talhao->rowid;
         $talhaoLabel = $talhao->label ? $talhao->label : $talhao->ref;
-        $municipioId = !empty($talhao->municipio) ? (int) $talhao->municipio : 0;
-        $municipioLabel = $municipioId && isset($municipioCache[$municipioId]) ? $municipioCache[$municipioId] : '';
 
         $talhaoCache[$talhaoId] = array(
                 'label' => $talhaoLabel,
@@ -198,35 +184,125 @@ foreach ($talhaoList as $talhao) {
         $area = (float) $talhao->area;
         $totalArea += $area;
 
-        $municipioKey = $municipioLabel ?: $langs->trans('SafraUnknownMunicipio');
-        if (!isset($areaByMunicipio[$municipioKey])) {
-                $areaByMunicipio[$municipioKey] = 0;
-        }
-        $areaByMunicipio[$municipioKey] += $area;
-
-        if ($largestTalhao === null || $area > $largestTalhao['area']) {
-                $largestTalhao = array('label' => $talhaoLabel, 'area' => $area);
-        }
-
         $talhaoData[] = array(
                 'id' => $talhaoId,
                 'ref' => $talhao->ref,
                 'label' => $talhaoLabel,
                 'area' => $area,
-                'municipio' => $municipioLabel,
                 'geo_json' => trim((string) $talhao->geo_json),
         );
 }
 
 $countTalhoes = count($talhaoData);
-$averageArea = $countTalhoes > 0 ? ($totalArea / $countTalhoes) : 0;
 $countCulturas = safra_count_table($db, 'safra_cultura');
-$countAplicacoes = safra_count_table($db, 'safra_activity');
-$countEventos = safra_count_table($db, 'safra_evento');
-$countColheitas = safra_count_table($db, 'safra_colheita');
-$countMunicipios = count($areaByMunicipio);
 
-$summaryCards = array(
+$canReadActivities = !empty($user->rights->safra->SafraActivity->read);
+$canWriteActivities = !empty($user->rights->safra->SafraActivity->write);
+$canReadSatellite = !empty($user->rights->safra->ndvi->read)
+        || !empty($user->rights->safra->ndmi->read)
+        || !empty($user->rights->safra->swir->read);
+
+$activityCounts = array(
+        FvActivity::STATUS_DRAFT => 0,
+        FvActivity::STATUS_PLANNED => 0,
+        FvActivity::STATUS_IN_PROGRESS => 0,
+        FvActivity::STATUS_COMPLETED => 0,
+        FvActivity::STATUS_CANCELED => 0,
+);
+$activityAreaPlanned = 0;
+$activityAreaDone = 0;
+$activityOverdue = 0;
+$activeActivities = array();
+
+if ($canReadActivities) {
+        $sql = 'SELECT status, COUNT(*) as activity_count, SUM(area_planned) as area_planned, SUM(area_done) as area_done';
+        $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_activity';
+        $sql .= ' WHERE entity IN ('.getEntity('safra_activity').')';
+        $sql .= ' GROUP BY status';
+        $resql = $db->query($sql);
+        if ($resql) {
+                while ($obj = $db->fetch_object($resql)) {
+                        $status = FvActivity::normalizeStatus($obj->status);
+                        if (!isset($activityCounts[$status])) {
+                                $activityCounts[$status] = 0;
+                        }
+                        $activityCounts[$status] += (int) $obj->activity_count;
+                        if (in_array($status, array(FvActivity::STATUS_DRAFT, FvActivity::STATUS_PLANNED, FvActivity::STATUS_IN_PROGRESS), true)) {
+                                $activityAreaPlanned += (float) $obj->area_planned;
+                                $activityAreaDone += (float) $obj->area_done;
+                        }
+                }
+                $db->free($resql);
+        } else {
+                dol_syslog(__FILE__.': Error when loading activity summary - '.$db->lasterror(), LOG_ERR);
+        }
+
+        $sql = 'SELECT a.rowid, a.ref, a.label, a.type, a.status, a.priority, a.progress, a.season, a.crop_name,';
+        $sql .= ' a.area_planned, a.area_done, a.date_planned_start, a.date_planned_end,';
+        $sql .= ' t.ref as talhao_ref, t.label as talhao_label';
+        $sql .= ' FROM '.MAIN_DB_PREFIX.'safra_activity as a';
+        $sql .= ' LEFT JOIN '.MAIN_DB_PREFIX.'safra_talhao as t ON t.rowid = a.fk_fieldplot';
+        $sql .= ' WHERE a.entity IN ('.getEntity('safra_activity').')';
+        $sql .= ' AND a.status IN ('.FvActivity::STATUS_DRAFT.','.FvActivity::STATUS_PLANNED.','.FvActivity::STATUS_IN_PROGRESS.')';
+        $sql .= ' ORDER BY COALESCE(a.date_planned_end, a.date_planned_start, a.date_creation) ASC, a.priority DESC, a.rowid ASC';
+        $resql = $db->query($sql);
+        if ($resql) {
+                while ($obj = $db->fetch_object($resql)) {
+                        $obj->is_overdue = ActivityPlanningService::isOverdue($obj->status, $obj->date_planned_start, $obj->date_planned_end);
+                        $obj->deadline = !empty($obj->date_planned_end) ? $obj->date_planned_end : $obj->date_planned_start;
+                        if ($obj->is_overdue) {
+                                $activityOverdue++;
+                        }
+                        $activeActivities[] = $obj;
+                }
+                $db->free($resql);
+        } else {
+                dol_syslog(__FILE__.': Error when loading active activities - '.$db->lasterror(), LOG_ERR);
+        }
+
+        usort($activeActivities, static function ($left, $right) {
+                if ((bool) $left->is_overdue !== (bool) $right->is_overdue) {
+                        return $left->is_overdue ? -1 : 1;
+                }
+
+                $leftDeadline = !empty($left->deadline) ? strtotime($left->deadline) : PHP_INT_MAX;
+                $rightDeadline = !empty($right->deadline) ? strtotime($right->deadline) : PHP_INT_MAX;
+
+                return $leftDeadline <=> $rightDeadline;
+        });
+}
+
+$countActivities = array_sum($activityCounts);
+$countOpenActivities = $activityCounts[FvActivity::STATUS_DRAFT] + $activityCounts[FvActivity::STATUS_PLANNED] + $activityCounts[FvActivity::STATUS_IN_PROGRESS];
+
+$operationalSummaryCards = array(
+        array(
+                'title' => $langs->trans('SafraDashboardOpenActivities'),
+                'value' => safra_format_number($countOpenActivities),
+                'description' => $langs->trans('SafraDashboardOpenActivitiesDesc'),
+                'tone' => 'open',
+        ),
+        array(
+                'title' => $langs->trans('SafraActivityStatusInProgress'),
+                'value' => safra_format_number($activityCounts[FvActivity::STATUS_IN_PROGRESS]),
+                'description' => $langs->trans('SafraDashboardInProgressDesc'),
+                'tone' => 'running',
+        ),
+        array(
+                'title' => $langs->trans('SafraDashboardOverdue'),
+                'value' => safra_format_number($activityOverdue),
+                'description' => $langs->trans('SafraDashboardOverdueDesc'),
+                'tone' => 'overdue',
+        ),
+        array(
+                'title' => $langs->trans('SafraActivityStatusCompleted'),
+                'value' => safra_format_number($activityCounts[FvActivity::STATUS_COMPLETED]),
+                'description' => $langs->trans('SafraDashboardCompletedDesc'),
+                'tone' => 'done',
+        ),
+);
+
+$contextSummaryCards = array(
         array(
                 'title' => $langs->trans('SafraSummaryTalhoes'),
                 'value' => safra_format_number($countTalhoes),
@@ -238,131 +314,149 @@ $summaryCards = array(
                 'description' => $langs->trans('SafraSummaryAreaDesc'),
         ),
         array(
-                'title' => $langs->trans('SafraSummaryAverage'),
-                'value' => ($countTalhoes > 0 ? safra_format_number($averageArea, 2).' '.$langs->trans('SafraUnitHectareShort') : $langs->trans('SafraSummaryAverageEmpty')),
-                'description' => $langs->trans('SafraSummaryAverageDesc'),
-        ),
-        array(
-                'title' => $langs->trans('SafraSummaryLargest'),
-                'value' => ($largestTalhao ? safra_format_number($largestTalhao['area'], 2).' '.$langs->trans('SafraUnitHectareShort') : $langs->trans('SafraSummaryLargestEmpty')),
-                'description' => ($largestTalhao ? $largestTalhao['label'] : $langs->trans('SafraSummaryLargestDesc')),
-        ),
-        array(
                 'title' => $langs->trans('SafraSummaryCulturas'),
                 'value' => safra_format_number($countCulturas),
                 'description' => $langs->trans('SafraSummaryCulturasDesc'),
         ),
-        array(
-                'title' => $langs->trans('SafraSummaryAplicacoes'),
-                'value' => safra_format_number($countAplicacoes),
-                'description' => $langs->trans('SafraSummaryAplicacoesDesc'),
-        ),
 );
-
-$insights = array(
-        array(
-                'label' => $langs->trans('SafraSummaryMunicipios'),
-                'value' => safra_format_number($countMunicipios),
-                'description' => $langs->trans('SafraSummaryMunicipiosDesc'),
-        ),
-        array(
-                'label' => $langs->trans('SafraSummaryEventos'),
-                'value' => safra_format_number($countEventos),
-                'description' => $langs->trans('SafraSummaryEventosDesc'),
-        ),
-        array(
-                'label' => $langs->trans('SafraSummaryColheitas'),
-                'value' => safra_format_number($countColheitas),
-                'description' => $langs->trans('SafraSummaryColheitasDesc'),
-        ),
-);
+if ($canReadActivities) {
+        $contextSummaryCards[] = array(
+                'title' => $langs->trans('SafraDashboardTotalActivities'),
+                'value' => safra_format_number($countActivities),
+                'description' => $langs->trans('SafraDashboardTotalActivitiesDesc'),
+        );
+}
 
 $weatherLatitude = getDolGlobalString('SAFRA_LATITUDE');
 $weatherLongitude = getDolGlobalString('SAFRA_LONGITUDE');
 $weatherLocation = getDolGlobalString('SAFRA_FAZENDA');
 
-$ndviStatic = new NDVI($db);
-$ndviEntries = $ndviStatic->fetchAll('DESC', 't.data', 5);
-if (!is_array($ndviEntries)) {
-        $ndviEntries = array();
-}
-
-$dashboardWeeklySeries = array('points' => array());
-$dashboardWeeklyMessageKey = '';
-$dashboardTalhaoLabel = '';
+$dashboardChartConfig = null;
 $dashboardTalhaoId = 0;
-if (!empty($ndviEntries)) {
-        $latestEntry = reset($ndviEntries);
-        if ($latestEntry && !empty($latestEntry->talhao)) {
-                $dashboardTalhaoId = (int) $latestEntry->talhao;
-                if ($dashboardTalhaoId > 0) {
-                        if (isset($talhaoCache[$dashboardTalhaoId]['label'])) {
-                                $dashboardTalhaoLabel = $talhaoCache[$dashboardTalhaoId]['label'];
-                        }
-                        $dashboardWeeklySeries = SafraSatelliteStatistics::getWeeklySeries($db, $dashboardTalhaoId, 'ndvi', 8);
-                        if (!empty($dashboardWeeklySeries['message'])) {
-                                $dashboardWeeklyMessageKey = $dashboardWeeklySeries['message'];
+$dashboardTalhaoLabel = '';
+$dashboardWeeklyMessage = '';
+$dashboardWeeklyChartTitle = $langs->trans('SafraDashboardSatelliteEvolution');
+$hasDashboardSeries = false;
+if ($canReadSatellite && !empty($talhaoCache)) {
+        $requestedDashboardTalhaoId = GETPOSTINT('dashboard_talhao');
+        $dashboardTalhaoIds = array_keys($talhaoCache);
+        $dashboardTalhaoId = $requestedDashboardTalhaoId > 0 && isset($talhaoCache[$requestedDashboardTalhaoId])
+                ? $requestedDashboardTalhaoId
+                : (int) $dashboardTalhaoIds[0];
+        $dashboardTalhaoLabel = isset($talhaoCache[$dashboardTalhaoId]['label']) ? $talhaoCache[$dashboardTalhaoId]['label'] : '';
+
+        $dashboardSeriesDefinitions = array(
+                'ndvi' => array('axis' => 'index', 'label' => 'SafraIndexNDVIShort', 'color' => '#16a34a', 'decimals' => 3),
+                'ndmi' => array('axis' => 'index', 'label' => 'SafraIndexNDMIShort', 'color' => '#2563eb', 'decimals' => 3),
+                'swir' => array('axis' => 'index', 'label' => 'SafraIndexSWIRShort', 'color' => '#f97316', 'decimals' => 3),
+                'health' => array('axis' => 'health', 'label' => 'SafraIndexHealthShort', 'color' => '#7c3aed', 'decimals' => 2, 'valueUnit' => 'pts'),
+        );
+        $dashboardSeriesByIndex = array();
+        foreach ($dashboardSeriesDefinitions as $seriesCode => $seriesDefinition) {
+                $dashboardSeriesByIndex[$seriesCode] = $seriesCode === 'health'
+                        ? SafraSatelliteHealth::getWeeklySeries($db, $dashboardTalhaoId, 12)
+                        : SafraSatelliteStatistics::getWeeklySeries($db, $dashboardTalhaoId, $seriesCode, 12);
+        }
+
+        $hasDashboardSeries = false;
+        $dashboardGeneratedAt = null;
+        $dashboardValidUntil = null;
+        foreach ($dashboardSeriesByIndex as $seriesPayload) {
+                if (!empty($seriesPayload['generatedAt']) && ($dashboardGeneratedAt === null || strtotime($seriesPayload['generatedAt']) > strtotime($dashboardGeneratedAt))) {
+                        $dashboardGeneratedAt = $seriesPayload['generatedAt'];
+                }
+                if (!empty($seriesPayload['validUntil']) && ($dashboardValidUntil === null || strtotime($seriesPayload['validUntil']) < strtotime($dashboardValidUntil))) {
+                        $dashboardValidUntil = $seriesPayload['validUntil'];
+                }
+                foreach (isset($seriesPayload['points']) && is_array($seriesPayload['points']) ? $seriesPayload['points'] : array() as $seriesPoint) {
+                        if (isset($seriesPoint['mean']) && is_numeric($seriesPoint['mean'])) {
+                                $hasDashboardSeries = true;
+                                break;
                         }
                 }
         }
-}
 
-$dashboardWeeklyMessage = '';
-switch ($dashboardWeeklyMessageKey) {
-        case 'missing_credentials':
-                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
-                break;
-        case 'missing_geometry':
-                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
-                break;
-        case 'no_data':
-        case 'talhao_not_found':
-                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageNoData');
-                break;
-}
+        if (!$hasDashboardSeries) {
+                $messagePriority = array('invalid_credentials', 'missing_credentials', 'credential_connection_error', 'missing_geometry', 'talhao_not_found', 'no_data');
+                $dashboardWeeklyMessageKey = 'no_data';
+                foreach ($messagePriority as $messageCode) {
+                        foreach ($dashboardSeriesByIndex as $seriesPayload) {
+                                if (!empty($seriesPayload['message']) && $seriesPayload['message'] === $messageCode) {
+                                        $dashboardWeeklyMessageKey = $messageCode;
+                                        break 2;
+                                }
+                        }
+                }
 
-if (!isset($dashboardWeeklySeries['points']) || !is_array($dashboardWeeklySeries['points'])) {
-        $dashboardWeeklySeries['points'] = array();
-}
-$dashboardWeeklySeries['message'] = $dashboardWeeklyMessage;
-$hasDashboardSeries = !empty($dashboardWeeklySeries['points']);
-$dashboardChartConfig = null;
-if ($hasDashboardSeries) {
+                switch ($dashboardWeeklyMessageKey) {
+                        case 'invalid_credentials':
+                                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageInvalidCredentials');
+                                break;
+                        case 'credential_connection_error':
+                                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageCredentialConnectionError');
+                                break;
+                        case 'missing_credentials':
+                                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
+                                break;
+                        case 'missing_geometry':
+                                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
+                                break;
+                        default:
+                                $dashboardWeeklyMessage = $langs->trans('SafraSatelliteWeeklyMessageNoData');
+                                break;
+                }
+        }
+
+        $dashboardChartSeries = array();
+        foreach ($dashboardSeriesDefinitions as $seriesCode => $seriesDefinition) {
+                $seriesPayload = isset($dashboardSeriesByIndex[$seriesCode]) && is_array($dashboardSeriesByIndex[$seriesCode])
+                        ? $dashboardSeriesByIndex[$seriesCode]
+                        : array();
+                $dashboardChartSeries[] = array(
+                        'code' => $seriesCode,
+                        'axis' => $seriesDefinition['axis'],
+                        'label' => $langs->trans($seriesDefinition['label']),
+                        'color' => $seriesDefinition['color'],
+                        'decimals' => $seriesDefinition['decimals'],
+                        'valueUnit' => isset($seriesDefinition['valueUnit']) ? $seriesDefinition['valueUnit'] : '',
+                        'points' => isset($seriesPayload['points']) && is_array($seriesPayload['points']) ? array_values($seriesPayload['points']) : array(),
+                );
+        }
+
+        $dashboardCombinedLabel = $langs->trans('SafraSatelliteWeeklyCombinedLabel');
+        $dashboardWeeklyChartTitle = sprintf($langs->trans('SafraSatelliteWeeklyTitle'), $dashboardCombinedLabel);
         $dashboardChartConfig = array(
-                'canvasId' => 'dashboardWeeklyChart',
-                'emptyId' => null,
+                'canvasId' => 'dashboardSatelliteSeriesChart',
+                'emptyId' => 'dashboardSatelliteChartEmpty',
                 'metaId' => 'dashboardWeeklyMeta',
                 'data' => array(
-                        'points' => array_values($dashboardWeeklySeries['points']),
-                        'generatedAt' => isset($dashboardWeeklySeries['generatedAt']) ? $dashboardWeeklySeries['generatedAt'] : null,
-                        'validUntil' => isset($dashboardWeeklySeries['validUntil']) ? $dashboardWeeklySeries['validUntil'] : null,
-                        'message' => '',
+                        'series' => $dashboardChartSeries,
+                        'generatedAt' => $dashboardGeneratedAt,
+                        'validUntil' => $dashboardValidUntil,
+                        'message' => $dashboardWeeklyMessage,
                 ),
                 'options' => array(
-                        'label' => $langs->trans('SafraIndexNDVIShort'),
-                        'color' => '#2563eb',
-                        'gradient' => array('rgba(37, 99, 235, 0.32)', 'rgba(37, 99, 235, 0.06)'),
-                        'decimals' => 3,
+                        'label' => $dashboardCombinedLabel,
                         'emptyMessage' => $langs->trans('SafraSatelliteWeeklyEmpty'),
                         'tooltipLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
                         'tooltipMeanLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
-                        'tooltipMinLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
-                        'tooltipMaxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
-                        'minLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
-                        'maxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
-                        'rangeFillColor' => 'rgba(37, 99, 235, 0.16)',
-                        'rangeLineColor' => 'rgba(37, 99, 235, 0.32)',
                         'updatedLabel' => $langs->trans('SafraSatelliteWeeklyUpdated'),
                         'nextLabel' => $langs->trans('SafraSatelliteWeeklyNextUpdate'),
-                        'valueUnit' => '',
-                        'range' => array('min' => -0.2, 'max' => 1),
+                        'showLegend' => true,
+                        'leftAxis' => array(
+                                'min' => -0.5,
+                                'max' => 1,
+                                'decimals' => 3,
+                                'title' => $langs->trans('SafraSatelliteWeeklyAxisIndices'),
+                        ),
+                        'rightAxis' => array(
+                                'min' => 0,
+                                'max' => 100,
+                                'decimals' => 2,
+                                'title' => $langs->trans('SafraSatelliteWeeklyAxisHealth'),
+                        ),
                 ),
         );
-}
-
-$areaByMunicipioData = array();
-foreach ($areaByMunicipio as $label => $area) {
-        $areaByMunicipioData[] = array('label' => $label, 'area' => $area);
 }
 
 $weatherDescriptions = array(
@@ -396,25 +490,66 @@ $weatherDescriptions = array(
         '99' => $langs->transnoentities('SafraWeatherDesc99'),
 );
 
+$quickActions = array();
+if ($canWriteActivities) {
+        $quickActions[] = array(
+                'icon' => 'fa-plus',
+                'title' => $langs->trans('SafraDashboardActionNewActivity'),
+                'description' => $langs->trans('SafraDashboardActionNewActivityDesc'),
+                'url' => dol_buildpath('/safra/activity/activity_card.php', 1).'?action=create',
+        );
+}
+if ($canReadActivities) {
+        $quickActions[] = array(
+                'icon' => 'fa-columns',
+                'title' => $langs->trans('SafraDashboardActionAgenda'),
+                'description' => $langs->trans('SafraDashboardActionAgendaDesc'),
+                'url' => dol_buildpath('/safra/activity/activity_kanban.php', 1),
+        );
+        $quickActions[] = array(
+                'icon' => 'fa-list',
+                'title' => $langs->trans('SafraDashboardActionActivityList'),
+                'description' => $langs->trans('SafraDashboardActionActivityListDesc'),
+                'url' => dol_buildpath('/safra/activity/activity_list.php', 1),
+        );
+        $quickActions[] = array(
+                'icon' => 'fa-chart-bar',
+                'title' => $langs->trans('SafraDashboardActionConsumption'),
+                'description' => $langs->trans('SafraDashboardActionConsumptionDesc'),
+                'url' => dol_buildpath('/safra/report/input_consumption.php', 1),
+        );
+        $quickActions[] = array(
+                'icon' => 'fa-book-open',
+                'title' => $langs->trans('SafraDashboardActionManual'),
+                'description' => $langs->trans('SafraDashboardActionManualDesc'),
+                'url' => dol_buildpath('/safra/manual/operator_manual.php', 1),
+        );
+}
+if ($canReadSatellite) {
+        $quickActions[] = array(
+                'icon' => 'fa-satellite',
+                'title' => $langs->trans('SafraDashboardActionSatellite'),
+                'description' => $langs->trans('SafraDashboardActionSatelliteDesc'),
+                'url' => dol_buildpath('/safra/satellite_view.php', 1),
+        );
+        $quickActions[] = array(
+                'icon' => 'fa-exchange-alt',
+                'title' => $langs->trans('SafraDashboardActionSatelliteCompare'),
+                'description' => $langs->trans('SafraDashboardActionSatelliteCompareDesc'),
+                'url' => dol_buildpath('/safra/satellite_compare.php', 1),
+        );
+}
+
 print '<div class="safra-dashboard">';
+print '<p class="safra-dashboard__intro">'.$langs->trans('SafraDashboardIntro').'</p>';
 print '<div class="safra-dashboard__grid">';
 
-print '<section class="safra-card safra-card--summary">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraSummaryTitle').'</h2></div>';
-print '<div class="safra-summary-grid">';
-foreach ($summaryCards as $card) {
-        print '<div class="safra-summary-card">';
-        print '<div class="safra-summary-card__value">'.dol_escape_htmltag($card['value']).'</div>';
-        print '<div class="safra-summary-card__label">'.dol_escape_htmltag($card['title']).'</div>';
-        if (!empty($card['description'])) {
-                print '<div class="safra-summary-card__description">'.dol_escape_htmltag($card['description']).'</div>';
-        }
-        print '</div>';
-}
-print '</div>';
+print '<section class="safra-card safra-card--main safra-card--map">';
+print '<div class="safra-card__header"><h2>'.$langs->trans('SafraMapTitle').'</h2></div>';
+print '<div id="mapIndex" class="safra-map"><div id="boxLoading" class="display"></div></div>';
 print '</section>';
 
-print '<section class="safra-card safra-card--weather">';
+print '<section class="safra-card safra-card--side safra-card--weather">';
 print '<div class="safra-card__header"><h2>'.$langs->trans('SafraWeatherTitle').'</h2>';
 if (!empty($weatherLocation)) {
         print '<span class="safra-chip">'.dol_escape_htmltag($weatherLocation).'</span>';
@@ -423,88 +558,117 @@ print '</div>';
 print '<div id="weather-content" class="safra-weather">'.$langs->trans('SafraWeatherLoading').'</div>';
 print '</section>';
 
-print '<section class="safra-card safra-card--map">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraMapTitle').'</h2></div>';
-print '<div id="mapIndex" class="safra-map"><div id="boxLoading" class="display"></div></div>';
-print '</section>';
-
-print '<section class="safra-card safra-card--chart">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByTalhao').'</h2></div>';
-if ($countTalhoes > 0) {
-        print '<div class="safra-chart-container"><canvas id="talhaoAreaChart" class="safra-chart"></canvas></div>';
-} else {
-        print '<p class="safra-empty">'.$langs->trans('SafraNoTalhaoData').'</p>';
+if ($canReadSatellite) {
+        print '<section class="safra-card safra-card--wide safra-card--chart">';
+        print '<div class="safra-card__header safra-dashboard-chart-header"><div><h2>'.dol_escape_htmltag($dashboardWeeklyChartTitle).'</h2>';
+        print '<p>'.$langs->trans('SafraSatelliteWeeklySubtitle').'</p></div>';
+        if (!empty($talhaoCache)) {
+                print '<form method="GET" action="'.dol_escape_htmltag($_SERVER['PHP_SELF']).'" class="safra-dashboard-field-switcher">';
+                print '<label for="dashboard_talhao">'.$langs->trans('SafraDashboardSatelliteField').'</label>';
+                print '<select name="dashboard_talhao" id="dashboard_talhao" class="flat">';
+                foreach ($talhaoCache as $talhaoId => $talhaoInfo) {
+                        print '<option value="'.((int) $talhaoId).'"'.($dashboardTalhaoId === (int) $talhaoId ? ' selected' : '').'>'.dol_escape_htmltag($talhaoInfo['label']).'</option>';
+                }
+                print '</select>';
+                print '<button type="submit" class="button small">'.$langs->trans('SafraDashboardChangeField').'</button>';
+                print '</form>';
+        }
+        print '</div>';
+        if (!empty($talhaoCache)) {
+                print '<div class="safra-dashboard-chart-field">'.$langs->trans('SafraTalhaoShort').': <strong>'.dol_escape_htmltag($dashboardTalhaoLabel).'</strong></div>';
+                print '<div class="safra-chart-container safra-chart-container--large">';
+                print '<canvas id="dashboardSatelliteSeriesChart" class="safra-chart"></canvas>';
+                print '<p class="safra-empty" id="dashboardSatelliteChartEmpty">'.dol_escape_htmltag($dashboardWeeklyMessage ?: $langs->trans('SafraSatelliteWeeklyEmpty')).'</p>';
+                print '</div>';
+                print '<p class="safra-chart__meta" id="dashboardWeeklyMeta"></p>';
+        } else {
+                print '<p class="safra-empty">'.$langs->trans('SafraNoTalhaoData').'</p>';
+        }
+        print '</section>';
 }
-print '</section>';
 
-print '<section class="safra-card safra-card--chart">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraAreaByMunicipio').'</h2></div>';
-if (!empty($areaByMunicipioData)) {
-        print '<div class="safra-chart-container"><canvas id="municipioAreaChart" class="safra-chart"></canvas></div>';
-} else {
-        print '<p class="safra-empty">'.$langs->trans('SafraNoMunicipioData').'</p>';
+if ($canReadActivities) {
+        print '<section class="safra-card safra-card--wide safra-card--operations">';
+        print '<div class="safra-card__header"><h2>'.$langs->trans('SafraDashboardOperationsTitle').'</h2>';
+        print '<a href="'.dol_buildpath('/safra/activity/activity_kanban.php', 1).'">'.$langs->trans('SafraDashboardActionAgenda').'</a></div>';
+        print '<div class="safra-operation-grid">';
+        foreach ($operationalSummaryCards as $card) {
+                print '<div class="safra-operation-metric safra-operation-metric--'.dol_escape_htmltag($card['tone']).'">';
+                print '<div class="safra-operation-metric__value">'.dol_escape_htmltag($card['value']).'</div>';
+                print '<div class="safra-operation-metric__label">'.dol_escape_htmltag($card['title']).'</div>';
+                print '<div class="safra-operation-metric__description">'.dol_escape_htmltag($card['description']).'</div>';
+                print '</div>';
+        }
+        print '</div>';
+        print '<div class="safra-operation-area">';
+        print '<span><strong>'.dol_escape_htmltag(safra_format_number($activityAreaPlanned, 2).' '.$langs->trans('SafraUnitHectareShort')).'</strong>'.$langs->trans('SafraDashboardActiveAreaPlanned').'</span>';
+        print '<span><strong>'.dol_escape_htmltag(safra_format_number($activityAreaDone, 2).' '.$langs->trans('SafraUnitHectareShort')).'</strong>'.$langs->trans('SafraDashboardActiveAreaDone').'</span>';
+        print '</div>';
+        print '</section>';
+
+        print '<section class="safra-card safra-card--main">';
+        print '<div class="safra-card__header"><h2>'.$langs->trans('SafraDashboardActiveAgendaTitle').'</h2>';
+        print '<a href="'.dol_buildpath('/safra/activity/activity_list.php', 1).'">'.$langs->trans('List').'</a></div>';
+        if (!empty($activeActivities)) {
+                print '<ul class="safra-activity-list">';
+                foreach (array_slice($activeActivities, 0, 6) as $row) {
+                        $activity = new FvActivity($db);
+                        $activity->id = (int) $row->rowid;
+                        $activity->ref = $row->ref;
+                        $activity->label = $row->label;
+                        $statusTone = $row->is_overdue ? 'overdue' : 'status-'.((int) $row->status);
+                        $statusLabel = $row->is_overdue ? $langs->trans('SafraDashboardOverdue') : FvActivity::getStatusLabel($row->status, $langs);
+                        $talhaoLabel = trim((string) (($row->talhao_ref ? $row->talhao_ref.' - ' : '').$row->talhao_label));
+                        print '<li class="safra-activity-list__item">';
+                        print '<div class="safra-activity-list__top"><div><div class="safra-activity-list__ref">'.$activity->getNomUrl(1).'</div>';
+                        print '<strong>'.dol_escape_htmltag($row->label).'</strong></div>';
+                        print '<span class="safra-activity-status safra-activity-status--'.dol_escape_htmltag($statusTone).'">'.dol_escape_htmltag($statusLabel).'</span></div>';
+                        print '<div class="safra-activity-list__meta">';
+                        print '<span>'.dol_escape_htmltag(FvActivity::getTypeLabel($row->type, $langs)).'</span>';
+                        if ($talhaoLabel !== '') {
+                                print '<span>'.dol_escape_htmltag($talhaoLabel).'</span>';
+                        }
+                        if (!empty($row->deadline)) {
+                                print '<span>'.$langs->trans('SafraDashboardDeadline').': '.dol_print_date($db->jdate($row->deadline), 'dayhour').'</span>';
+                        }
+                        if ((float) $row->area_planned > 0) {
+                                print '<span>'.dol_escape_htmltag(safra_format_number($row->area_planned, 2).' '.$langs->trans('SafraUnitHectareShort')).'</span>';
+                        }
+                        print '</div></li>';
+                }
+                print '</ul>';
+        } else {
+                print '<p class="safra-empty">'.$langs->trans('SafraDashboardActiveAgendaEmpty').'</p>';
+        }
+        print '</section>';
 }
-print '</section>';
 
-$dashboardEmptyText = $dashboardWeeklyMessage ?: $langs->trans('SafraSatelliteWeeklyDashboardEmpty');
-print '<section class="safra-card safra-card--chart">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraSatelliteWeeklyDashboardTitle').'</h2>';
-if (!empty($dashboardTalhaoLabel)) {
-        print '<span class="safra-chip">'.dol_escape_htmltag($dashboardTalhaoLabel).'</span>';
+if (!empty($quickActions)) {
+        print '<section class="safra-card safra-card--side">';
+        print '<div class="safra-card__header"><h2>'.$langs->trans('SafraDashboardQuickActions').'</h2></div>';
+        print '<div class="safra-action-grid">';
+        foreach ($quickActions as $actionCard) {
+                print '<a class="safra-action-card" href="'.dol_escape_htmltag($actionCard['url']).'">';
+                print '<span class="fas '.dol_escape_htmltag($actionCard['icon']).'"></span><span><strong>'.dol_escape_htmltag($actionCard['title']).'</strong>';
+                print '<small>'.dol_escape_htmltag($actionCard['description']).'</small></span></a>';
+        }
+        print '</div></section>';
+}
+
+print '<section class="safra-card safra-card--wide safra-card--context">';
+print '<div class="safra-card__header"><div><h2>'.$langs->trans('SafraDashboardOperationalBase').'</h2>';
+print '<p>'.$langs->trans('SafraDashboardOperationalBaseDesc').'</p></div></div>';
+print '<div class="safra-context-grid">';
+foreach ($contextSummaryCards as $card) {
+        print '<div class="safra-context-card">';
+        print '<div class="safra-context-card__value">'.dol_escape_htmltag($card['value']).'</div>';
+        print '<div class="safra-context-card__label">'.dol_escape_htmltag($card['title']).'</div>';
+        if (!empty($card['description'])) {
+                print '<div class="safra-context-card__description">'.dol_escape_htmltag($card['description']).'</div>';
+        }
+        print '</div>';
 }
 print '</div>';
-if ($hasDashboardSeries) {
-        print '<div class="safra-chart-container"><canvas id="dashboardWeeklyChart" class="safra-chart"></canvas></div>';
-        print '<p class="safra-chart__meta" id="dashboardWeeklyMeta"></p>';
-} else {
-        print '<p class="safra-empty">'.dol_escape_htmltag($dashboardEmptyText).'</p>';
-}
-print '</section>';
-
-print '<section class="safra-card safra-card--insights">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraHighlights').'</h2></div>';
-print '<ul class="safra-insights">';
-foreach ($insights as $insight) {
-        print '<li class="safra-insights__item">';
-        print '<div class="safra-insights__value">'.dol_escape_htmltag($insight['value']).'</div>';
-        print '<div class="safra-insights__label">'.dol_escape_htmltag($insight['label']).'</div>';
-        if (!empty($insight['description'])) {
-                print '<div class="safra-insights__description">'.dol_escape_htmltag($insight['description']).'</div>';
-        }
-        print '</li>';
-}
-print '</ul>';
-print '</section>';
-
-print '<section class="safra-card safra-card--list">';
-print '<div class="safra-card__header"><h2>'.$langs->trans('SafraLatestNdvi').'</h2></div>';
-if (!empty($ndviEntries)) {
-        print '<ul class="safra-list">';
-        foreach ($ndviEntries as $entry) {
-                $talhaoLabel = '';
-                if (!empty($entry->talhao)) {
-                        $entryTalhaoId = (int) $entry->talhao;
-                        if (isset($talhaoCache[$entryTalhaoId]['label'])) {
-                                $talhaoLabel = $talhaoCache[$entryTalhaoId]['label'];
-                        }
-                }
-                $dateLabel = !empty($entry->data) ? dol_print_date($db->jdate($entry->data), 'day') : '';
-                print '<li class="safra-list__item">';
-                print '<div class="safra-list__primary">'.$entry->getNomUrl(1).'</div>';
-                print '<div class="safra-list__meta">';
-                if ($talhaoLabel) {
-                        print '<span>'.dol_escape_htmltag($langs->trans('SafraTalhaoShort').': '.$talhaoLabel).'</span>';
-                }
-                if ($dateLabel) {
-                        print '<span>'.dol_escape_htmltag($langs->trans('Date').': '.$dateLabel).'</span>';
-                }
-                print '</div>';
-                print '</li>';
-        }
-        print '</ul>';
-} else {
-        print '<p class="safra-empty">'.$langs->trans('SafraNoNdvi').'</p>';
-}
 print '</section>';
 
 print '</div>';
@@ -515,9 +679,8 @@ $jsOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 print '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
 print '<script>';
 print 'window.safraTalhoes = '.json_encode(array_values($talhaoData), $jsOptions).';';
-print 'window.safraAreaByMunicipio = '.json_encode($areaByMunicipioData, $jsOptions).';';
 print 'window.safraWeatherConfig = '.json_encode(array('latitude' => $weatherLatitude, 'longitude' => $weatherLongitude, 'location' => $weatherLocation), $jsOptions).';';
-if ($hasDashboardSeries && $dashboardChartConfig) {
+if ($dashboardChartConfig) {
         print 'window.satelliteChartInstances = window.satelliteChartInstances || [];';
         print 'window.satelliteChartInstances.push('.json_encode($dashboardChartConfig, $jsOptions).');';
 }

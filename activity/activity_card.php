@@ -34,6 +34,7 @@ if (!$res) {
 require_once DOL_DOCUMENT_ROOT . '/core/class/html.form.class.php';
 dol_include_once('/safra/class/FvActivity.class.php');
 dol_include_once('/safra/class/FvActivityLine.class.php');
+dol_include_once('/safra/lib/safra_activity.lib.php');
 
 global $db, $langs, $user, $conf;
 
@@ -427,27 +428,6 @@ function safra_activity_load_fleet_options($db, $className, $table, $labelColumn
     }
 
     return array();
-}
-
-function safra_activity_tab_url($activityId, $tab)
-{
-    return dol_buildpath('/safra/activity/activity_card.php', 1) . '?id=' . ((int) $activityId) . '&tab=' . urlencode($tab);
-}
-
-function safra_activity_prepare_head(FvActivity $activity, $langs)
-{
-    if (empty($activity->id)) {
-        return array();
-    }
-
-    return array(
-        array(safra_activity_tab_url($activity->id, 'card'), $langs->trans('SafraActivityGeneralTab'), 'card'),
-        array(safra_activity_tab_url($activity->id, 'inputs'), $langs->trans('SafraActivityInputs'), 'inputs'),
-        array(safra_activity_tab_url($activity->id, 'mixture'), $langs->trans('SafraAplicacaoCaldaCalculation'), 'mixture'),
-        array(safra_activity_tab_url($activity->id, 'team'), $langs->trans('SafraActivityTeam'), 'team'),
-        array(safra_activity_tab_url($activity->id, 'vehicles'), $langs->trans('SafraVehicleLabel'), 'vehicles'),
-        array(safra_activity_tab_url($activity->id, 'implements'), $langs->trans('SafraImplementsLabel'), 'implements'),
-    );
 }
 
 $projectOptions = safra_activity_load_options($db, 'projet', 'CONCAT(ref, " - ", title)', 'entity IN (0, ' . ((int) $conf->entity) . ')');
@@ -1318,6 +1298,9 @@ if (!$isCreateMode) {
 
 if ($activity->id) {
     print '<div class="tabsAction safra-actions">';
+    if ($permissiontowrite) {
+        print '<a class="button safra-btn-secondary" href="' . dol_buildpath('/safra/activity/activity_duplicate.php', 1) . '?id=' . ((int) $activity->id) . '">' . $langs->trans('SafraActivityDuplicate') . '</a>';
+    }
     if (!$activity->isInProgress() && !$activity->isCompleted() && !$activity->isCanceled()) {
         print '<form method="POST" action="' . $_SERVER['PHP_SELF'] . '"><input type="hidden" name="token" value="' . newToken() . '"><input type="hidden" name="id" value="' . ((int) $activity->id) . '"><input type="hidden" name="action" value="start"><button class="button safra-btn-primary" type="submit">' . $langs->trans('SafraActivityStart') . '</button></form>';
     }

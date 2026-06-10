@@ -173,24 +173,27 @@ if ($action === 'consult') {
 
 llxHeader('', $langs->trans('ZoneamentoViewTitle'), '', '', 0, 0, '', '', '', 'mod-safra zoneamento-page');
 
-print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/zoneamento.css', 1) . '?v=2">';
+print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/zoneamento.css', 1) . '?v=3">';
 
 $monthLabels = safra_zoneamento_get_month_labels($langs);
 $displayWindow = safra_zoneamento_build_month_window($consultationMonth['month'], $consultationMonth['year'], 6, $monthLabels);
 $windowSummaryLabel = safra_zoneamento_format_window_summary($displayWindow);
 
-print '<div class="zoneamento-hero">';
-print '<div class="zoneamento-hero__content">';
-print '<h2 class="zoneamento-hero__title">' . dol_escape_htmltag($langs->trans('ZoneamentoViewTitle')) . '</h2>';
-print '<p class="zoneamento-hero__subtitle">' . dol_escape_htmltag($langs->trans('ZoneamentoViewSubtitle')) . '</p>';
-print '</div>';
-print '<div class="zoneamento-hero__legend">';
-print '<div class="zoneamento-legend__intro">' . dol_escape_htmltag($langs->trans('ZoneamentoFiltersHelp')) . '</div>';
 $legendItems = array(
     array('risk' => '20', 'label' => $langs->trans('ZoneamentoLegend20')),
     array('risk' => '30', 'label' => $langs->trans('ZoneamentoLegend30')),
     array('risk' => '40', 'label' => $langs->trans('ZoneamentoLegend40')),
 );
+
+print load_fiche_titre($langs->trans('ZoneamentoViewTitle'), '', 'fa-calendar');
+print '<div class="fichecenter zoneamento-page__content">';
+
+print '<div class="zoneamento-intro">';
+print '<div class="zoneamento-intro__text">';
+print '<div class="opacitymedium">' . dol_escape_htmltag($langs->trans('ZoneamentoViewSubtitle')) . '</div>';
+print '<div class="zoneamento-intro__help">' . dol_escape_htmltag($langs->trans('ZoneamentoFiltersHelp')) . '</div>';
+print '</div>';
+print '<div class="zoneamento-risk-legend">';
 foreach ($legendItems as $legendItem) {
     print '<div class="zoneamento-legend__item zoneamento-legend__item--risk' . $legendItem['risk'] . '">';
     print '<span class="zoneamento-legend__dot zoneamento-legend__dot--risk' . $legendItem['risk'] . '"></span>';
@@ -202,10 +205,14 @@ print '</div>';
 
 print '<form method="post" class="zoneamento-form">';
 print '<input type="hidden" name="action" value="consult">';
-print '<div class="zoneamento-form__field zoneamento-form__field--municipio">';
-print '<label for="municipio" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMunicipio')) . '</label>';
+print '<div class="div-table-responsive-no-min">';
+print '<table class="border centpercent tableforfield zoneamento-filter-table"><tbody>';
+
+print '<tr>';
+print '<td class="titlefieldcreate fieldrequired">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMunicipio')) . '</td>';
+print '<td>';
 $municipioPlaceholder = $langs->trans('ZoneamentoMunicipioPlaceholder');
-print '<select id="municipio" name="municipio" class="zoneamento-form__select zoneamento-form__select--search" data-placeholder="' . dol_escape_htmltag($municipioPlaceholder) . '">';
+print '<select id="municipio" name="municipio" class="flat minwidth500 zoneamento-form__select zoneamento-form__select--search" data-placeholder="' . dol_escape_htmltag($municipioPlaceholder) . '">';
 print '<option value=""></option>';
 foreach ($municipioOptions as $codigo => $info) {
     $isSelectedMunicipio = ($codigoIBGEInput !== '' && (string) $codigo === (string) $codigoIBGEInput) ? ' selected' : '';
@@ -214,38 +221,48 @@ foreach ($municipioOptions as $codigo => $info) {
 }
 print '</select>';
 print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoMunicipioHelp')) . '</div>';
-print '</div>';
+print '</td>';
+print '</tr>';
 
-print '<div class="zoneamento-form__field">';
-print '<label for="risco" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterRisk')) . '</label>';
-print '<select name="risco" id="risco" class="zoneamento-form__select">';
+print '<tr>';
+print '<td>' . dol_escape_htmltag($langs->trans('ZoneamentoFilterRisk')) . '</td>';
+print '<td>';
+print '<select name="risco" id="risco" class="flat minwidth200 zoneamento-form__select">';
 foreach (array('20', '30', '40') as $riskValue) {
     $selected = $riskValue === $highlightRisk ? ' selected' : '';
     print '<option value="' . $riskValue . '"' . $selected . '>' . dol_escape_htmltag($langs->trans('ZoneamentoRiskLabel', $riskValue)) . '</option>';
 }
 print '</select>';
-print '</div>';
+print '</td>';
+print '</tr>';
 
 $monthInputValue = safra_zoneamento_format_consultation_value($consultationMonth['month'], $consultationMonth['year']);
-print '<div class="zoneamento-form__field">';
-print '<label for="consultaMes" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMonth')) . '</label>';
-print '<input type="month" class="zoneamento-form__input" id="consultaMes" name="consultaMes" value="' . dol_escape_htmltag($monthInputValue) . '">';
+print '<tr>';
+print '<td>' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMonth')) . '</td>';
+print '<td>';
+print '<input type="month" class="flat zoneamento-form__input" id="consultaMes" name="consultaMes" value="' . dol_escape_htmltag($monthInputValue) . '">';
 print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterMonthHelp')) . '</div>';
-print '</div>';
+print '</td>';
+print '</tr>';
 
-print '<div class="zoneamento-form__field zoneamento-form__field--full zoneamento-form__field--multiselect">';
-print '<label for="culturas" class="zoneamento-form__label">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterCultures')) . '</label>';
-print '<select name="culturas[]" id="culturas" multiple size="12" class="zoneamento-form__multiselect">';
+print '<tr>';
+print '<td class="fieldrequired">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterCultures')) . '</td>';
+print '<td>';
+print '<select name="culturas[]" id="culturas" multiple size="12" class="flat centpercent zoneamento-form__multiselect">';
 foreach ($cultureOptions as $embrapaId => $label) {
     $isSelected = isset($selectedCultures[$embrapaId]) ? ' selected' : '';
     print '<option value="' . (int) $embrapaId . '"' . $isSelected . '>' . dol_escape_htmltag(safra_zoneamento_clean_label($label)) . '</option>';
 }
 print '</select>';
 print '<div class="zoneamento-form__help">' . dol_escape_htmltag($langs->trans('ZoneamentoSelectedCount', count($selectedCultures), $maxCultures)) . '</div>';
+print '</td>';
+print '</tr>';
+
+print '</tbody></table>';
 print '</div>';
 
-print '<div class="zoneamento-form__actions zoneamento-form__field--full">';
-print '<button type="submit" class="zoneamento-form__submit butAction">' . dol_escape_htmltag($langs->trans('ZoneamentoFilterSubmit')) . '</button>';
+print '<div class="tabsAction zoneamento-form__actions">';
+print '<button type="submit" class="button button-save zoneamento-form__submit"><span class="fa fa-search" aria-hidden="true"></span> ' . dol_escape_htmltag($langs->trans('ZoneamentoFilterSubmit')) . '</button>';
 print '</div>';
 print '</form>';
 
@@ -376,6 +393,8 @@ if (!empty($results)) {
 } elseif ($action === 'consult' && empty($results)) {
     print '<div class="zoneamento-empty">' . dol_escape_htmltag($langs->trans('ZoneamentoRiskNoData')) . '</div>';
 }
+
+print '</div>';
 
 $municipioPlaceholderJs = dol_escape_js($langs->trans('ZoneamentoMunicipioPlaceholder'));
 $municipioNoResultsJs = dol_escape_js($langs->trans('ZoneamentoMunicipioNoResults'));

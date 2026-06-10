@@ -825,7 +825,12 @@
                     return;
                 }
 
-                indexLayer = L.geoJSON(geojson, {
+                const indexGeoJson = {
+                    type: 'FeatureCollection',
+                    features: features
+                };
+
+                indexLayer = L.geoJSON(indexGeoJson, {
                     style: featureStyle,
                     onEachFeature: function (feature, layer) {
                         layer.on({

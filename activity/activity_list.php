@@ -130,6 +130,8 @@ $newButton = '';
 if ($user->rights->safra->SafraActivity->write ?? 0) {
     $newButton = '<a class="butAction" href="' . dol_buildpath('/safra/activity/activity_card.php', 1) . '?action=create">' . $langs->trans('New') . '</a>';
 }
+$newButton .= '<a class="butAction" href="' . dol_buildpath('/safra/activity/activity_kanban.php', 1) . '">' . $langs->trans('SafraActivityKanbanTitle') . '</a>';
+$newButton .= '<a class="butAction" href="' . dol_buildpath('/safra/report/input_consumption.php', 1) . '">' . $langs->trans('SafraInputConsumptionReport') . '</a>';
 
 print load_fiche_titre($langs->trans('SafraActivityListTitle'), $newButton, 'fa-tractor');
 
@@ -187,7 +189,11 @@ while ($obj = $db->fetch_object($resql)) {
     print '<td class="center">' . (!empty($obj->date_planned_start) ? dol_print_date($db->jdate($obj->date_planned_start), 'dayhour') : '') . '</td>';
     print '<td class="right">' . price($obj->area_planned, 0, '', 1, 4) . '</td>';
     print '<td class="right">' . price($obj->progress, 0, '', 1, 0) . '%</td>';
-    print '<td class="right"><a class="button small" href="' . dol_buildpath('/safra/activity/activity_card.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . $langs->trans('Card') . '</a></td>';
+    print '<td class="right"><a class="button small" href="' . dol_buildpath('/safra/activity/activity_card.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . $langs->trans('Card') . '</a>';
+    if ($user->rights->safra->SafraActivity->write ?? 0) {
+        print ' <a class="button small" href="' . dol_buildpath('/safra/activity/activity_duplicate.php', 1) . '?id=' . ((int) $obj->rowid) . '">' . $langs->trans('SafraActivityDuplicate') . '</a>';
+    }
+    print '</td>';
 
     print '</tr>';
 }

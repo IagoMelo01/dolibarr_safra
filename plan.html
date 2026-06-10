@@ -292,7 +292,7 @@
     <h1>Plano do Modulo Safra</h1>
     <p class="subtitle">Avaliacao do estado atual, proximos passos de homologacao e roadmap de futuras funcoes para transformar o modulo em uma operacao agricola simples, integrada ao Dolibarr e segura para producao.</p>
     <div class="meta">
-      <span class="pill">Atualizado em: 2026-06-03</span>
+      <span class="pill">Atualizado em: 2026-06-10</span>
       <span class="pill">Escopo: custom/safra</span>
       <span class="pill">Status: pre-homologacao</span>
       <span class="pill">Checks locais: passando</span>
@@ -460,7 +460,7 @@
             <td><span class="tag p1">P1</span></td>
             <td>Manual curto do operador</td>
             <td>O modulo deve ser usado por produtor/equipe de campo, nao por desenvolvedor.</td>
-            <td>Documento com passos: criar atividade, adicionar insumo, conferir estoque, cancelar/reabrir.</td>
+            <td>Implementado em 2026-06-09 com fluxo visual, passos operacionais, checklist e atalhos; homologacao pendente.</td>
           </tr>
         </tbody>
       </table>
@@ -476,22 +476,22 @@
       <div class="phase">
         <h3>Fase 2 - Melhorar operacao diaria</h3>
         <small>Objetivo: reduzir clique e erro do usuario.</small>
-        <p>Adicionar filtros melhores na lista, acoes em massa, duplicar atividade, modelos de atividade por cultura, busca por safra/talhao/status e mensagens de validacao mais simples.</p>
+        <p>Duplicacao para varios talhoes e kanban de planejadas/em execucao/atrasadas foram implementados em desenvolvimento. Permanecem modelos de atividade por cultura, acoes em massa e mensagens de validacao mais simples.</p>
       </div>
       <div class="phase">
         <h3>Fase 3 - Relatorios e custo agricola</h3>
         <small>Objetivo: transformar lancamento operacional em gestao.</small>
-        <p>Consolidar custo planejado e realizado por atividade, talhao, safra, cultura e produto. Cruzar uso de insumo, estoque, horas de equipe/frota e produtividade.</p>
+        <p>Relatorio de consumo liquido por safra, cultura, talhao e produto foi implementado em desenvolvimento. Permanecem custo planejado/realizado completo, horas de equipe/frota e produtividade.</p>
       </div>
       <div class="phase">
         <h3>Fase 4 - Monitoramento e alertas</h3>
         <small>Objetivo: usar dados satelitais e historico para acao.</small>
-        <p>Melhorar cron, alertas de queda de vigor, falha de cache, ausencia de imagem, cloud cover, comparativo entre talhoes e historico por safra.</p>
+        <p>Comparacao temporal lado a lado para um talhao foi implementada com atalhos ou data anterior personalizada, busca sob demanda, reaproveitamento do armazenamento e exportacao PDF visual com marca Farmevo. Permanecem alertas de queda de vigor, falha de cache, ausencia de imagem, cloud cover, comparativo entre talhoes e historico por safra.</p>
       </div>
       <div class="phase">
         <h3>Fase 5 - Campo e mobilidade</h3>
         <small>Objetivo: facilitar uso fora do escritorio.</small>
-        <p>Implementar tela mobile simplificada para apontamento, leitura de codigo de barras/QR, anexos/fotos, geolocalizacao opcional e modo offline se o ambiente exigir.</p>
+        <p>Anexos e captura de fotos ja estao disponiveis na atividade. Permanecem tela mobile simplificada para apontamento, leitura de codigo de barras/QR, geolocalizacao opcional e modo offline se o ambiente exigir.</p>
       </div>
       <div class="phase">
         <h3>Fase 6 - Planejamento avancado</h3>
@@ -522,19 +522,19 @@
             <td>Duplicar atividade</td>
             <td>Agiliza lancamento para varios talhoes com a mesma operacao.</td>
             <td>Baixa</td>
-            <td>Curto prazo.</td>
+            <td>Implementado em 2026-06-09; homologacao pendente.</td>
           </tr>
           <tr>
             <td>Agenda ou kanban agricola</td>
             <td>Mostra atividades planejadas, em execucao e atrasadas.</td>
             <td>Media</td>
-            <td>Depois dos filtros da lista.</td>
+            <td>Implementado em 2026-06-09; homologacao pendente.</td>
           </tr>
           <tr>
             <td>Relatorio de consumo de insumos</td>
             <td>Mostra quanto foi usado por safra, cultura, talhao e produto.</td>
             <td>Media</td>
-            <td>Logo apos homologacao.</td>
+            <td>Implementado em 2026-06-09; homologacao pendente.</td>
           </tr>
           <tr>
             <td>Relatorio de custo agricola</td>
@@ -570,13 +570,19 @@
             <td>Anexos e fotos na atividade</td>
             <td>Registra comprovantes, receituarios, fotos de campo e ocorrencias.</td>
             <td>Media</td>
-            <td>Curto/medio prazo.</td>
+            <td>Implementado em 2026-06-09 com aba de documentos e captura de foto; homologacao pendente.</td>
           </tr>
           <tr>
             <td>Alertas satelitais</td>
             <td>Chama atencao para queda de vigor, falha de desenvolvimento ou area sem dado.</td>
             <td>Alta</td>
             <td>Depois de validar satelite em staging.</td>
+          </tr>
+          <tr>
+            <td>Comparacao temporal satelital</td>
+            <td>Compara o mesmo talhao e indicador entre a janela atual e 1 semana, 1 mes, 3 meses, 1 ano antes ou uma data anterior personalizada.</td>
+            <td>Media</td>
+            <td>Implementado em 2026-06-10 com exportacao PDF; homologacao pendente.</td>
           </tr>
           <tr>
             <td>Comparativo entre safras</td>
@@ -675,6 +681,12 @@
       <h2>Arquivos de referencia</h2>
       <ul class="list">
         <li><code>activity/activity_card.php</code> - tela principal da atividade agricola.</li>
+        <li><code>activity/activity_duplicate.php</code> e <code>class/ActivityPlanningService.class.php</code> - duplicacao planejada para varios talhoes.</li>
+        <li><code>activity/activity_kanban.php</code> - agenda kanban de atividades planejadas, em execucao e atrasadas.</li>
+        <li><code>activity/activity_documents.php</code> e <code>lib/safra_activity.lib.php</code> - anexos, fotos e abas compartilhadas da atividade.</li>
+        <li><code>report/input_consumption.php</code> - consumo liquido de insumos por safra, cultura, talhao e produto.</li>
+        <li><code>manual/operator_manual.php</code> - manual HTML direto para produtor e equipe de campo.</li>
+        <li><code>satellite_compare.php</code> e <code>lib/safra_satellite_compare.lib.php</code> - comparacao temporal de mapas com busca sob demanda e cache persistente.</li>
         <li><code>class/FvActivity.class.php</code> - status, persistencia, linhas e regras da atividade.</li>
         <li><code>class/FvActivityLine.class.php</code> - insumos e rastreio de movimento de estoque.</li>
         <li><code>class/ActivityStockService.class.php</code> - integracao com <code>MouvementStock</code>.</li>
@@ -689,7 +701,7 @@
   </main>
 
   <footer>
-    Este plano reflete a avaliacao local em 2026-06-03. Atualize-o sempre que uma fase for homologada, descartada ou repriorizada.
+    Este plano reflete a avaliacao local em 2026-06-10. Atualize-o sempre que uma fase for homologada, descartada ou repriorizada.
   </footer>
 </body>
 </html>
