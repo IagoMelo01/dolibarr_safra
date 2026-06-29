@@ -176,6 +176,34 @@ body.mod-safra.page-index {
     gap: 8px;
 }
 
+.analysis-form__row--checkbox {
+    padding: 12px;
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    border-radius: 10px;
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.analysis-form__checkbox {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--satellite-text);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.analysis-form__checkbox input {
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    accent-color: var(--satellite-primary);
+}
+
+.analysis-form__row--checkbox .analysis-form__hint {
+    margin: 0 0 0 26px;
+}
+
 .analysis-form__label {
     font-size: 14px;
     color: var(--satellite-subtle);

@@ -10,8 +10,10 @@ dol_include_once('/safra/lib/safra_storage.lib.php');
 class SafraSatelliteStatistics
 {
     private const TOKEN_FILENAME = 'token.json';
-    private const CACHE_VERSION = 'v3';
+    private const CACHE_VERSION = 'v4';
     private const SPATIAL_RESOLUTION_METERS = 10;
+    private const MIN_RELIABLE_VALID_PIXEL_RATIO = 0.55;
+    private const MIN_USABLE_VALID_PIXEL_RATIO = 0.20;
     private static $lastCredentialError = '';
 
     private static $indexConfig = array(
@@ -248,7 +250,7 @@ class SafraSatelliteStatistics
      */
     private static function buildEvalscript($config)
     {
-        $inputs = array_unique(array_merge($config['inputs'], array('dataMask')));
+        $inputs = array_unique(array_merge($config['inputs'], array('SCL', 'CLM', 'dataMask')));
         $inputBands = '"' . implode('", "', $inputs) . '"';
 
         $formula = $config['formula'];
@@ -262,12 +264,23 @@ class SafraSatelliteStatistics
         $script .= "    ]\n";
         $script .= "  };\n";
         $script .= "}\n\n";
+        $script .= "function isCloudFree(samples) {\n";
+        $script .= "  return samples.dataMask === 1\n";
+        $script .= "    && samples.CLM === 0\n";
+        $script .= "    && samples.SCL !== 0\n";
+        $script .= "    && samples.SCL !== 1\n";
+        $script .= "    && samples.SCL !== 3\n";
+        $script .= "    && samples.SCL !== 8\n";
+        $script .= "    && samples.SCL !== 9\n";
+        $script .= "    && samples.SCL !== 10\n";
+        $script .= "    && samples.SCL !== 11;\n";
+        $script .= "}\n\n";
         $script .= "function evaluatePixel(samples) {\n";
         $script .= "  let value = $formula;\n";
         $script .= "  if (!isFinite(value)) value = -1;\n";
         $script .= "  return {\n";
         $script .= "    index: [value],\n";
-        $script .= "    dataMask: [samples.dataMask]\n";
+        $script .= "    dataMask: [isCloudFree(samples) ? 1 : 0]\n";
         $script .= "  };\n";
         $script .= "}\n";
 
@@ -299,7 +312,8 @@ class SafraSatelliteStatistics
                         'type' => 'sentinel-2-l2a',
                         'dataFilter' => array(
                             'timeRange' => $timeRange,
-                            'maxCloudCoverage' => 100,
+                            'mosaickingOrder' => 'leastCC',
+                            'maxCloudCoverage' => 80,
                         ),
                     ),
                 ),
@@ -806,9 +820,16 @@ class SafraSatelliteStatistics
             $max = null;
             $stDev = null;
             $sampleCount = 0;
+            $noDataCount = 0;
+            $validPixelRatio = 0.0;
+            $quality = 'rejected';
 
             if ($stats) {
                 $sampleCount = !empty($stats['sampleCount']) ? (int) $stats['sampleCount'] : 0;
+                $noDataCount = !empty($stats['noDataCount']) ? (int) $stats['noDataCount'] : 0;
+                $totalPixelCount = $sampleCount + $noDataCount;
+                $validPixelRatio = $totalPixelCount > 0 ? $sampleCount / $totalPixelCount : 0.0;
+                $quality = self::classifyPixelCoverage($validPixelRatio);
                 $rawMean = isset($stats['mean']) ? (float) $stats['mean'] : null;
                 if ($sampleCount > 0 && $rawMean !== null && is_finite($rawMean)) {
                     $mean = round($rawMean, (int) $decimals);
@@ -826,10 +847,32 @@ class SafraSatelliteStatistics
                 'max' => $max,
                 'stDev' => $stDev,
                 'sampleCount' => $sampleCount,
+                'noDataCount' => $noDataCount,
+                'validPixelRatio' => round($validPixelRatio, 4),
+                'quality' => $quality,
             );
         }
 
         return $points;
+    }
+
+    /**
+     * Classify weekly statistics according to the cloud-free pixel coverage.
+     *
+     * @param float $validPixelRatio
+     *
+     * @return string
+     */
+    private static function classifyPixelCoverage($validPixelRatio)
+    {
+        if ($validPixelRatio >= self::MIN_RELIABLE_VALID_PIXEL_RATIO) {
+            return 'good';
+        }
+        if ($validPixelRatio >= self::MIN_USABLE_VALID_PIXEL_RATIO) {
+            return 'low';
+        }
+
+        return 'rejected';
     }
 
     /**

@@ -442,6 +442,12 @@ if ($canReadSatellite && !empty($talhaoCache)) {
                         'tooltipMeanLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
                         'updatedLabel' => $langs->trans('SafraSatelliteWeeklyUpdated'),
                         'nextLabel' => $langs->trans('SafraSatelliteWeeklyNextUpdate'),
+                        'validCoverageLabel' => $langs->trans('SafraSatelliteWeeklyValidCoverage'),
+                        'lowQualityLabel' => $langs->trans('SafraSatelliteWeeklyLowQuality'),
+                        'rejectedQualityLabel' => $langs->trans('SafraSatelliteWeeklyRejectedQuality'),
+                        'cloudWarningSummary' => $langs->trans('SafraSatelliteWeeklyCloudWarningSummary'),
+                        'qualityNoticeLabel' => $langs->trans('SafraSatelliteWeeklyQualityNotice'),
+                        'qualityNoticeDetailLabel' => $langs->trans('SafraSatelliteWeeklyQualityNoticeDetail'),
                         'showLegend' => true,
                         'leftAxis' => array(
                                 'min' => -0.5,

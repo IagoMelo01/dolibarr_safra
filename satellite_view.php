@@ -220,6 +220,224 @@ $indexDefinitions = array(
     ),
 );
 
+$chartSeriesDefinitions = array(
+    'ndvi' => array('axis' => 'index'),
+    'ndmi' => array('axis' => 'index'),
+    'swir' => array('axis' => 'index'),
+    'health' => array('axis' => 'health'),
+);
+
+function safra_satellite_build_weekly_chart_payload($db, $langs, array $indexDefinitions, array $chartSeriesDefinitions, $selectedIndex, $selectedTalhaoId, $showAllTalhoes)
+{
+    $selectedMeta = $indexDefinitions[$selectedIndex];
+    $weeklySeriesByIndex = array();
+    $weeklyWindowWeeks = 12;
+
+    if ($selectedTalhaoId > 0) {
+        foreach ($chartSeriesDefinitions as $seriesCode => $seriesDefinition) {
+            if ($seriesCode === 'health') {
+                $weeklySeriesByIndex[$seriesCode] = SafraSatelliteHealth::getWeeklySeries($db, $selectedTalhaoId, $weeklyWindowWeeks);
+            } else {
+                $weeklySeriesByIndex[$seriesCode] = SafraSatelliteStatistics::getWeeklySeries($db, $selectedTalhaoId, $seriesCode, $weeklyWindowWeeks);
+            }
+        }
+    }
+
+    $pickLatestIsoDate = function (array $values) {
+        $selectedDate = null;
+        $selectedTimestamp = null;
+
+        foreach ($values as $value) {
+            if (empty($value)) {
+                continue;
+            }
+            $timestamp = strtotime((string) $value);
+            if ($timestamp === false) {
+                continue;
+            }
+            if ($selectedTimestamp === null || $timestamp > $selectedTimestamp) {
+                $selectedTimestamp = $timestamp;
+                $selectedDate = (string) $value;
+            }
+        }
+
+        return $selectedDate;
+    };
+
+    $pickEarliestIsoDate = function (array $values) {
+        $selectedDate = null;
+        $selectedTimestamp = null;
+
+        foreach ($values as $value) {
+            if (empty($value)) {
+                continue;
+            }
+            $timestamp = strtotime((string) $value);
+            if ($timestamp === false) {
+                continue;
+            }
+            if ($selectedTimestamp === null || $timestamp < $selectedTimestamp) {
+                $selectedTimestamp = $timestamp;
+                $selectedDate = (string) $value;
+            }
+        }
+
+        return $selectedDate;
+    };
+
+    $generatedCandidates = array();
+    $validCandidates = array();
+    $hasChartNumericData = false;
+    foreach ($weeklySeriesByIndex as $seriesPayload) {
+        if (!empty($seriesPayload['generatedAt'])) {
+            $generatedCandidates[] = $seriesPayload['generatedAt'];
+        }
+        if (!empty($seriesPayload['validUntil'])) {
+            $validCandidates[] = $seriesPayload['validUntil'];
+        }
+        if (empty($seriesPayload['points']) || !is_array($seriesPayload['points'])) {
+            continue;
+        }
+        foreach ($seriesPayload['points'] as $seriesPoint) {
+            if (isset($seriesPoint['mean']) && is_numeric($seriesPoint['mean'])) {
+                $hasChartNumericData = true;
+                break 2;
+            }
+        }
+    }
+
+    $weeklyMessageKey = '';
+    if ($selectedTalhaoId > 0 && !$hasChartNumericData) {
+        $messagePriority = array('invalid_credentials', 'missing_credentials', 'credential_connection_error', 'missing_geometry', 'talhao_not_found', 'no_data');
+        foreach ($messagePriority as $messageCode) {
+            foreach ($weeklySeriesByIndex as $seriesPayload) {
+                if (!empty($seriesPayload['message']) && $seriesPayload['message'] === $messageCode) {
+                    $weeklyMessageKey = $messageCode;
+                    break 2;
+                }
+            }
+        }
+        if (empty($weeklyMessageKey)) {
+            $weeklyMessageKey = 'no_data';
+        }
+    }
+
+    $weeklyMessageText = '';
+    if ($showAllTalhoes) {
+        $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyAllTalhoes');
+    } else {
+        switch ($weeklyMessageKey) {
+            case 'invalid_credentials':
+                $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageInvalidCredentials');
+                break;
+            case 'credential_connection_error':
+                $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageCredentialConnectionError');
+                break;
+            case 'missing_credentials':
+                $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
+                break;
+            case 'missing_geometry':
+                $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
+                break;
+            case 'no_data':
+            case 'talhao_not_found':
+                $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageNoData');
+                break;
+        }
+    }
+
+    $weeklySeries = isset($weeklySeriesByIndex[$selectedIndex]) && is_array($weeklySeriesByIndex[$selectedIndex])
+        ? $weeklySeriesByIndex[$selectedIndex]
+        : array('points' => array());
+    $weeklySeries['message'] = $weeklyMessageText;
+
+    $weeklyCombinedLabel = $langs->trans('SafraSatelliteWeeklyCombinedLabel');
+    if (empty($weeklyCombinedLabel) || $weeklyCombinedLabel === 'SafraSatelliteWeeklyCombinedLabel') {
+        $weeklyCombinedLabel = 'NDVI + NDMI + SWIR + ' . $langs->trans('SafraIndexHealthShort');
+    }
+
+    $chartSeriesPayload = array();
+    foreach ($chartSeriesDefinitions as $seriesCode => $seriesDefinition) {
+        $seriesPayload = isset($weeklySeriesByIndex[$seriesCode]) && is_array($weeklySeriesByIndex[$seriesCode])
+            ? $weeklySeriesByIndex[$seriesCode]
+            : array();
+        $seriesMeta = $indexDefinitions[$seriesCode];
+        $seriesChartMeta = $seriesMeta['chart'];
+
+        $chartSeriesPayload[] = array(
+            'code' => $seriesCode,
+            'axis' => $seriesDefinition['axis'],
+            'label' => $langs->trans($seriesMeta['labelKey']),
+            'color' => $seriesChartMeta['color'],
+            'gradient' => $seriesChartMeta['gradient'],
+            'range' => isset($seriesChartMeta['range']) && is_array($seriesChartMeta['range']) ? $seriesChartMeta['range'] : array(),
+            'decimals' => isset($seriesChartMeta['decimals']) ? (int) $seriesChartMeta['decimals'] : 2,
+            'rangeFillColor' => isset($seriesChartMeta['rangeFillColor']) ? $seriesChartMeta['rangeFillColor'] : '',
+            'rangeLineColor' => isset($seriesChartMeta['rangeLineColor']) ? $seriesChartMeta['rangeLineColor'] : '',
+            'valueUnit' => $seriesCode === 'health' ? 'pts' : '',
+            'points' => isset($seriesPayload['points']) && is_array($seriesPayload['points']) ? array_values($seriesPayload['points']) : array(),
+        );
+    }
+
+    $chartConfig = array(
+        'canvasId' => 'satelliteSeriesChart',
+        'emptyId' => 'satelliteChartEmpty',
+        'metaId' => 'satelliteChartMeta',
+        'data' => array(
+            'points' => isset($weeklySeries['points']) && is_array($weeklySeries['points']) ? array_values($weeklySeries['points']) : array(),
+            'series' => $chartSeriesPayload,
+            'generatedAt' => $pickLatestIsoDate($generatedCandidates),
+            'validUntil' => $pickEarliestIsoDate($validCandidates),
+            'message' => isset($weeklySeries['message']) ? $weeklySeries['message'] : '',
+        ),
+        'options' => array(
+            'label' => $weeklyCombinedLabel,
+            'color' => $selectedMeta['chart']['color'],
+            'gradient' => $selectedMeta['chart']['gradient'],
+            'decimals' => $selectedMeta['chart']['decimals'],
+            'emptyMessage' => $langs->trans('SafraSatelliteWeeklyEmpty'),
+            'tooltipLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
+            'tooltipMeanLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
+            'tooltipMinLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
+            'tooltipMaxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
+            'minLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
+            'maxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
+            'rangeFillColor' => $selectedMeta['chart']['rangeFillColor'],
+            'rangeLineColor' => $selectedMeta['chart']['rangeLineColor'],
+            'updatedLabel' => $langs->trans('SafraSatelliteWeeklyUpdated'),
+            'nextLabel' => $langs->trans('SafraSatelliteWeeklyNextUpdate'),
+            'validCoverageLabel' => $langs->trans('SafraSatelliteWeeklyValidCoverage'),
+            'lowQualityLabel' => $langs->trans('SafraSatelliteWeeklyLowQuality'),
+            'rejectedQualityLabel' => $langs->trans('SafraSatelliteWeeklyRejectedQuality'),
+            'cloudWarningSummary' => $langs->trans('SafraSatelliteWeeklyCloudWarningSummary'),
+            'qualityNoticeLabel' => $langs->trans('SafraSatelliteWeeklyQualityNotice'),
+            'qualityNoticeDetailLabel' => $langs->trans('SafraSatelliteWeeklyQualityNoticeDetail'),
+            'valueUnit' => $selectedIndex === 'health' ? 'pts' : '',
+            'range' => $selectedMeta['chart']['range'],
+            'showLegend' => true,
+            'leftAxis' => array(
+                'min' => -0.5,
+                'max' => 1,
+                'decimals' => 3,
+                'title' => $langs->trans('SafraSatelliteWeeklyAxisIndices'),
+            ),
+            'rightAxis' => array(
+                'min' => 0,
+                'max' => 100,
+                'decimals' => 2,
+                'title' => $langs->trans('SafraSatelliteWeeklyAxisHealth'),
+            ),
+        ),
+    );
+
+    return array(
+        'chartConfig' => $chartConfig,
+        'chartTitle' => sprintf($langs->trans('SafraSatelliteWeeklyTitle'), $weeklyCombinedLabel),
+        'chartSubtitle' => $langs->trans('SafraSatelliteWeeklySubtitle'),
+        'selectedIndexLabel' => $langs->trans($selectedMeta['labelKey']),
+    );
+}
+
 $allowedIndexes = array_keys($indexDefinitions);
 $selectedIndex = strtolower(GETPOST('sat_index', 'aZ09'));
 if (empty($selectedIndex)) {
@@ -255,6 +473,14 @@ if (!in_array($selectedIndex, $allowedIndexes, true)) {
 }
 
 $selectedMeta = $indexDefinitions[$selectedIndex];
+$chartPayload = safra_satellite_build_weekly_chart_payload($db, $langs, $indexDefinitions, $chartSeriesDefinitions, $selectedIndex, $selectedTalhaoId, $showAllTalhoes);
+
+if (GETPOST('ajax', 'aZ09') === 'chart') {
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode($chartPayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $db->close();
+    exit;
+}
 
 $objTalhao = new Talhao($db);
 $listTalhao = $objTalhao->fetchAll();
@@ -373,218 +599,29 @@ if (!empty($fileKey) && !empty($selectedTalhaoIds)) {
     }
 }
 
-$chartSeriesDefinitions = array(
-    'ndvi' => array('axis' => 'index'),
-    'ndmi' => array('axis' => 'index'),
-    'swir' => array('axis' => 'index'),
-    'health' => array('axis' => 'health'),
-);
-
-$weeklySeriesByIndex = array();
-$weeklyWindowWeeks = 12;
-if ($selectedTalhaoId > 0) {
-    foreach ($chartSeriesDefinitions as $seriesCode => $seriesDefinition) {
-        if ($seriesCode === 'health') {
-            $weeklySeriesByIndex[$seriesCode] = SafraSatelliteHealth::getWeeklySeries($db, $selectedTalhaoId, $weeklyWindowWeeks);
-        } else {
-            $weeklySeriesByIndex[$seriesCode] = SafraSatelliteStatistics::getWeeklySeries($db, $selectedTalhaoId, $seriesCode, $weeklyWindowWeeks);
-        }
-    }
-}
-
-$pickLatestIsoDate = function (array $values) {
-    $selectedDate = null;
-    $selectedTimestamp = null;
-
-    foreach ($values as $value) {
-        if (empty($value)) {
-            continue;
-        }
-        $timestamp = strtotime((string) $value);
-        if ($timestamp === false) {
-            continue;
-        }
-        if ($selectedTimestamp === null || $timestamp > $selectedTimestamp) {
-            $selectedTimestamp = $timestamp;
-            $selectedDate = (string) $value;
-        }
-    }
-
-    return $selectedDate;
-};
-
-$pickEarliestIsoDate = function (array $values) {
-    $selectedDate = null;
-    $selectedTimestamp = null;
-
-    foreach ($values as $value) {
-        if (empty($value)) {
-            continue;
-        }
-        $timestamp = strtotime((string) $value);
-        if ($timestamp === false) {
-            continue;
-        }
-        if ($selectedTimestamp === null || $timestamp < $selectedTimestamp) {
-            $selectedTimestamp = $timestamp;
-            $selectedDate = (string) $value;
-        }
-    }
-
-    return $selectedDate;
-};
-
-$generatedCandidates = array();
-$validCandidates = array();
-$hasChartNumericData = false;
-foreach ($weeklySeriesByIndex as $seriesPayload) {
-    if (!empty($seriesPayload['generatedAt'])) {
-        $generatedCandidates[] = $seriesPayload['generatedAt'];
-    }
-    if (!empty($seriesPayload['validUntil'])) {
-        $validCandidates[] = $seriesPayload['validUntil'];
-    }
-    if (empty($seriesPayload['points']) || !is_array($seriesPayload['points'])) {
-        continue;
-    }
-    foreach ($seriesPayload['points'] as $seriesPoint) {
-        if (isset($seriesPoint['mean']) && is_numeric($seriesPoint['mean'])) {
-            $hasChartNumericData = true;
-            break 2;
-        }
-    }
-}
-
-$weeklyMessageKey = '';
-if ($selectedTalhaoId > 0 && !$hasChartNumericData) {
-    $messagePriority = array('invalid_credentials', 'missing_credentials', 'credential_connection_error', 'missing_geometry', 'talhao_not_found', 'no_data');
-    foreach ($messagePriority as $messageCode) {
-        foreach ($weeklySeriesByIndex as $seriesPayload) {
-            if (!empty($seriesPayload['message']) && $seriesPayload['message'] === $messageCode) {
-                $weeklyMessageKey = $messageCode;
-                break 2;
-            }
-        }
-    }
-    if (empty($weeklyMessageKey)) {
-        $weeklyMessageKey = 'no_data';
-    }
-}
-
-$weeklyMessageText = '';
-if ($showAllTalhoes) {
-    $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyAllTalhoes');
-} else {
-    switch ($weeklyMessageKey) {
-        case 'invalid_credentials':
-            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageInvalidCredentials');
-            break;
-        case 'credential_connection_error':
-            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageCredentialConnectionError');
-            break;
-        case 'missing_credentials':
-            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingCredentials');
-            break;
-        case 'missing_geometry':
-            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageMissingGeometry');
-            break;
-        case 'no_data':
-        case 'talhao_not_found':
-            $weeklyMessageText = $langs->trans('SafraSatelliteWeeklyMessageNoData');
-            break;
-    }
-}
-
-$weeklySeries = isset($weeklySeriesByIndex[$selectedIndex]) && is_array($weeklySeriesByIndex[$selectedIndex])
-    ? $weeklySeriesByIndex[$selectedIndex]
-    : array('points' => array());
-$weeklySeries['message'] = $weeklyMessageText;
-
 $weeklyIndexLabel = $langs->trans($selectedMeta['labelKey']);
-$weeklyCombinedLabel = $langs->trans('SafraSatelliteWeeklyCombinedLabel');
-if (empty($weeklyCombinedLabel) || $weeklyCombinedLabel === 'SafraSatelliteWeeklyCombinedLabel') {
-    $weeklyCombinedLabel = 'NDVI + NDMI + SWIR + ' . $langs->trans('SafraIndexHealthShort');
-}
-$weeklyChartTitle = sprintf($langs->trans('SafraSatelliteWeeklyTitle'), $weeklyCombinedLabel);
-$weeklyChartSubtitle = $langs->trans('SafraSatelliteWeeklySubtitle');
-$chartGeneratedAt = $pickLatestIsoDate($generatedCandidates);
-$chartValidUntil = $pickEarliestIsoDate($validCandidates);
+$weeklyChartTitle = isset($chartPayload['chartTitle']) ? $chartPayload['chartTitle'] : '';
+$weeklyChartSubtitle = isset($chartPayload['chartSubtitle']) ? $chartPayload['chartSubtitle'] : '';
+$chartConfig = isset($chartPayload['chartConfig']) && is_array($chartPayload['chartConfig']) ? $chartPayload['chartConfig'] : array();
 
 $indexClientConfig = array();
 foreach ($indexDefinitions as $indexCode => $definition) {
     $indexClientConfig[$indexCode] = array(
         'folder' => $definition['folder'],
         'label' => $langs->trans($definition['labelKey']),
+        'headerTitle' => $definition['headerTitle'],
+        'headerSubtitle' => $definition['headerSubtitle'],
+        'mapTitle' => $definition['mapTitle'],
+        'mapSubtitle' => $definition['mapSubtitle'],
+        'tips' => $definition['tips'],
+        'legendTitle' => $definition['legendTitle'],
+        'legendSubtitle' => $definition['legendSubtitle'],
+        'legendGradient' => $definition['legendGradient'],
+        'legendTicks' => $definition['legendTicks'],
+        'legendDescription' => $definition['legendDescription'],
+        'legendHighlights' => $definition['legendHighlights'],
     );
 }
-
-$chartSeriesPayload = array();
-foreach ($chartSeriesDefinitions as $seriesCode => $seriesDefinition) {
-    $seriesPayload = isset($weeklySeriesByIndex[$seriesCode]) && is_array($weeklySeriesByIndex[$seriesCode])
-        ? $weeklySeriesByIndex[$seriesCode]
-        : array();
-    $seriesMeta = $indexDefinitions[$seriesCode];
-    $seriesChartMeta = $seriesMeta['chart'];
-
-    $chartSeriesPayload[] = array(
-        'code' => $seriesCode,
-        'axis' => $seriesDefinition['axis'],
-        'label' => $langs->trans($seriesMeta['labelKey']),
-        'color' => $seriesChartMeta['color'],
-        'gradient' => $seriesChartMeta['gradient'],
-        'range' => isset($seriesChartMeta['range']) && is_array($seriesChartMeta['range']) ? $seriesChartMeta['range'] : array(),
-        'decimals' => isset($seriesChartMeta['decimals']) ? (int) $seriesChartMeta['decimals'] : 2,
-        'rangeFillColor' => isset($seriesChartMeta['rangeFillColor']) ? $seriesChartMeta['rangeFillColor'] : '',
-        'rangeLineColor' => isset($seriesChartMeta['rangeLineColor']) ? $seriesChartMeta['rangeLineColor'] : '',
-        'valueUnit' => $seriesCode === 'health' ? 'pts' : '',
-        'points' => isset($seriesPayload['points']) && is_array($seriesPayload['points']) ? array_values($seriesPayload['points']) : array(),
-    );
-}
-
-$chartConfig = array(
-    'canvasId' => 'satelliteSeriesChart',
-    'emptyId' => 'satelliteChartEmpty',
-    'metaId' => 'satelliteChartMeta',
-    'data' => array(
-        'points' => isset($weeklySeries['points']) && is_array($weeklySeries['points']) ? array_values($weeklySeries['points']) : array(),
-        'series' => $chartSeriesPayload,
-        'generatedAt' => $chartGeneratedAt,
-        'validUntil' => $chartValidUntil,
-        'message' => isset($weeklySeries['message']) ? $weeklySeries['message'] : '',
-    ),
-    'options' => array(
-        'label' => $weeklyCombinedLabel,
-        'color' => $selectedMeta['chart']['color'],
-        'gradient' => $selectedMeta['chart']['gradient'],
-        'decimals' => $selectedMeta['chart']['decimals'],
-        'emptyMessage' => $langs->trans('SafraSatelliteWeeklyEmpty'),
-        'tooltipLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
-        'tooltipMeanLabel' => $langs->trans('SafraSatelliteWeeklyTooltip'),
-        'tooltipMinLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
-        'tooltipMaxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
-        'minLabel' => $langs->trans('SafraSatelliteWeeklyMin'),
-        'maxLabel' => $langs->trans('SafraSatelliteWeeklyMax'),
-        'rangeFillColor' => $selectedMeta['chart']['rangeFillColor'],
-        'rangeLineColor' => $selectedMeta['chart']['rangeLineColor'],
-        'updatedLabel' => $langs->trans('SafraSatelliteWeeklyUpdated'),
-        'nextLabel' => $langs->trans('SafraSatelliteWeeklyNextUpdate'),
-        'valueUnit' => $selectedIndex === 'health' ? 'pts' : '',
-        'range' => $selectedMeta['chart']['range'],
-        'showLegend' => true,
-        'leftAxis' => array(
-            'min' => -0.5,
-            'max' => 1,
-            'decimals' => 3,
-            'title' => $langs->trans('SafraSatelliteWeeklyAxisIndices'),
-        ),
-        'rightAxis' => array(
-            'min' => 0,
-            'max' => 100,
-            'decimals' => 2,
-            'title' => $langs->trans('SafraSatelliteWeeklyAxisHealth'),
-        ),
-    ),
-);
 $jsOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
 $form = new Form($db);
@@ -592,15 +629,15 @@ $formfile = new FormFile($db);
 
 llxHeader('', $langs->trans('SafraMenuSatelliteUnified'), '', '', 0, 0, '', '', '', 'mod-safra page-index');
 
-print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/satellite-analysis.css', 1) . '?v=2">';
+print '<link rel="stylesheet" href="' . dol_buildpath('/safra/css/satellite-analysis.css', 1) . '?v=3">';
 print load_fiche_titre($langs->trans('SafraMenuSatelliteUnified'), '', 'safra.png@safra');
 print '<div class="fichecenter satellite-analysis-wrapper">';
 ?>
 
 <div class="satellite-analysis-page">
     <header class="satellite-header">
-        <h2 class="satellite-header__title"><?php echo dol_escape_htmltag($selectedMeta['headerTitle']); ?></h2>
-        <p class="satellite-header__subtitle"><?php echo dol_escape_htmltag($selectedMeta['headerSubtitle']); ?></p>
+        <h2 class="satellite-header__title" id="satelliteHeaderTitle"><?php echo dol_escape_htmltag($selectedMeta['headerTitle']); ?></h2>
+        <p class="satellite-header__subtitle" id="satelliteHeaderSubtitle"><?php echo dol_escape_htmltag($selectedMeta['headerSubtitle']); ?></p>
     </header>
 
     <div class="satellite-grid">
@@ -608,8 +645,8 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
             <div class="satellite-card satellite-card--map">
                 <div class="satellite-card__header">
                     <span class="satellite-card__eyebrow">Mapa interativo</span>
-                    <h3 class="satellite-card__title"><?php echo dol_escape_htmltag($selectedMeta['mapTitle']); ?></h3>
-                    <p class="satellite-card__subtitle"><?php echo dol_escape_htmltag($selectedMeta['mapSubtitle']); ?></p>
+                    <h3 class="satellite-card__title" id="satelliteMapTitle"><?php echo dol_escape_htmltag($selectedMeta['mapTitle']); ?></h3>
+                    <p class="satellite-card__subtitle" id="satelliteMapSubtitle"><?php echo dol_escape_htmltag($selectedMeta['mapSubtitle']); ?></p>
                 </div>
                 <div id="mapIndex" class="satellite-map"></div>
                 <div class="satellite-map__meta">
@@ -620,8 +657,8 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
             <div class="satellite-card satellite-card--chart">
                 <div class="satellite-card__header">
                     <span class="satellite-card__eyebrow"><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteWeeklyEyebrow')); ?></span>
-                    <h3 class="satellite-card__title"><?php echo dol_escape_htmltag($weeklyChartTitle); ?></h3>
-                    <p class="satellite-card__subtitle"><?php echo dol_escape_htmltag($weeklyChartSubtitle); ?></p>
+                    <h3 class="satellite-card__title" id="satelliteChartTitle"><?php echo dol_escape_htmltag($weeklyChartTitle); ?></h3>
+                    <p class="satellite-card__subtitle" id="satelliteChartSubtitle"><?php echo dol_escape_htmltag($weeklyChartSubtitle); ?></p>
                 </div>
                 <div class="satellite-chart">
                     <canvas id="satelliteSeriesChart" class="satellite-chart__canvas"></canvas>
@@ -680,6 +717,14 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
                         <select id="weekPicker" class="analysis-form__control"></select>
                     </div>
 
+                    <div class="analysis-form__row analysis-form__row--checkbox">
+                        <label class="analysis-form__checkbox" for="smoothVisualization">
+                            <input type="checkbox" id="smoothVisualization" checked>
+                            <span><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteSmoothVisualization')); ?></span>
+                        </label>
+                        <p class="analysis-form__hint"><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteSmoothVisualizationHelp')); ?></p>
+                    </div>
+
                     <button type="button" id="btnConsulta" class="analysis-form__button"><?php echo dol_escape_htmltag($langs->trans('Search')); ?></button>
                     <p class="analysis-form__hint" id="dateRangeDisplay"><?php echo dol_escape_htmltag($langs->trans('SafraSatelliteMapChooseWeek')); ?></p>
 
@@ -709,7 +754,7 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
 
                 <div class="satellite-tips">
                     <p class="satellite-tips__title">Dicas rapidas</p>
-                    <ul class="satellite-tips__list">
+                    <ul class="satellite-tips__list" id="satelliteTipsList">
 <?php foreach ($selectedMeta['tips'] as $tip) { ?>
                         <li><?php echo dol_escape_htmltag($tip); ?></li>
 <?php } ?>
@@ -720,22 +765,22 @@ print '<div class="fichecenter satellite-analysis-wrapper">';
             <div class="satellite-card satellite-card--legend">
                 <div class="satellite-card__header">
                     <span class="satellite-card__eyebrow">Interpretacao</span>
-                    <h3 class="satellite-card__title"><?php echo dol_escape_htmltag($selectedMeta['legendTitle']); ?></h3>
-                    <p class="satellite-card__subtitle"><?php echo dol_escape_htmltag($selectedMeta['legendSubtitle']); ?></p>
+                    <h3 class="satellite-card__title" id="satelliteLegendTitle"><?php echo dol_escape_htmltag($selectedMeta['legendTitle']); ?></h3>
+                    <p class="satellite-card__subtitle" id="satelliteLegendSubtitle"><?php echo dol_escape_htmltag($selectedMeta['legendSubtitle']); ?></p>
                 </div>
                 <div class="satellite-legend">
                     <div class="satellite-legend__scale">
                         <div class="satellite-legend__gradients">
-                            <div class="gradient" style="top: 0; bottom: 0; background: <?php echo dol_escape_htmltag($selectedMeta['legendGradient']); ?>;"></div>
+                            <div class="gradient" id="satelliteLegendGradient" style="top: 0; bottom: 0; background: <?php echo dol_escape_htmltag($selectedMeta['legendGradient']); ?>;"></div>
                         </div>
-                        <div class="satellite-legend__ticks">
+                        <div class="satellite-legend__ticks" id="satelliteLegendTicks">
 <?php foreach ($selectedMeta['legendTicks'] as $tick) { ?>
                             <span class="tick" style="bottom: <?php echo dol_escape_htmltag($tick['bottom']); ?>;"><?php echo dol_escape_htmltag($tick['label']); ?></span>
 <?php } ?>
                         </div>
                     </div>
-                    <p class="satellite-legend__description"><?php echo dol_escape_htmltag($selectedMeta['legendDescription']); ?></p>
-                    <ul class="satellite-legend__highlights">
+                    <p class="satellite-legend__description" id="satelliteLegendDescription"><?php echo dol_escape_htmltag($selectedMeta['legendDescription']); ?></p>
+                    <ul class="satellite-legend__highlights" id="satelliteLegendHighlights">
 <?php foreach ($selectedMeta['legendHighlights'] as $highlight) { ?>
                         <li><?php echo dol_escape_htmltag($highlight); ?></li>
 <?php } ?>
@@ -758,6 +803,7 @@ print '</div>';
     const satellite_index_selected = <?php echo json_encode($selectedIndex); ?>;
     const satellite_index_options = <?php echo json_encode($indexClientConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
     const satellite_json_endpoint = <?php echo json_encode(dol_buildpath('/safra/satellite_json.php', 1)); ?>;
+    const satellite_chart_endpoint = <?php echo json_encode(dol_buildpath('/safra/satellite_view.php', 1)); ?>;
     const map_choose_filters_message = <?php echo json_encode($langs->trans('SafraSatelliteMapChooseFilters')); ?>;
     const map_missing_file_message = <?php echo json_encode($langs->trans('SafraSatelliteMapMissingFile')); ?>;
     const map_loaded_message = <?php echo json_encode($langs->trans('SafraSatelliteMapLoaded')); ?>;

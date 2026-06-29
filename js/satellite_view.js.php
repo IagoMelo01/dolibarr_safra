@@ -20,6 +20,21 @@
     const selectedFieldArea = document.getElementById('selectedFieldArea');
     const selectedPeriod = document.getElementById('selectedPeriod');
     const selectedBandLabel = document.getElementById('selectedBandLabel');
+    const smoothVisualizationElement = document.getElementById('smoothVisualization');
+    const satelliteHeaderTitleElement = document.getElementById('satelliteHeaderTitle');
+    const satelliteHeaderSubtitleElement = document.getElementById('satelliteHeaderSubtitle');
+    const satelliteMapTitleElement = document.getElementById('satelliteMapTitle');
+    const satelliteMapSubtitleElement = document.getElementById('satelliteMapSubtitle');
+    const satelliteChartTitleElement = document.getElementById('satelliteChartTitle');
+    const satelliteChartSubtitleElement = document.getElementById('satelliteChartSubtitle');
+    const satelliteTipsListElement = document.getElementById('satelliteTipsList');
+    const satelliteLegendTitleElement = document.getElementById('satelliteLegendTitle');
+    const satelliteLegendSubtitleElement = document.getElementById('satelliteLegendSubtitle');
+    const satelliteLegendGradientElement = document.getElementById('satelliteLegendGradient');
+    const satelliteLegendTicksElement = document.getElementById('satelliteLegendTicks');
+    const satelliteLegendDescriptionElement = document.getElementById('satelliteLegendDescription');
+    const satelliteLegendHighlightsElement = document.getElementById('satelliteLegendHighlights');
+    let chartRequestSerial = 0;
 
     function formatDate(date) {
         const day = date.getDate().toString().padStart(2, '0');
@@ -103,6 +118,124 @@
 
         const selectedOption = indexElement.options[indexElement.selectedIndex];
         selectedBandLabel.textContent = selectedOption ? selectedOption.textContent : '--';
+    }
+
+    function setElementText(element, value) {
+        if (element) {
+            element.textContent = value || '';
+        }
+    }
+
+    function renderTextList(element, items) {
+        if (!element) {
+            return;
+        }
+
+        element.innerHTML = '';
+        (Array.isArray(items) ? items : []).forEach(function (item) {
+            const li = document.createElement('li');
+            li.textContent = item || '';
+            element.appendChild(li);
+        });
+    }
+
+    function renderLegendTicks(ticks) {
+        if (!satelliteLegendTicksElement) {
+            return;
+        }
+
+        satelliteLegendTicksElement.innerHTML = '';
+        (Array.isArray(ticks) ? ticks : []).forEach(function (tick) {
+            const marker = document.createElement('span');
+            marker.className = 'tick';
+            marker.style.bottom = tick && tick.bottom ? tick.bottom : '0%';
+            marker.textContent = tick && tick.label ? tick.label : '';
+            satelliteLegendTicksElement.appendChild(marker);
+        });
+    }
+
+    function getSelectedIndexMeta() {
+        if (!indexElement || !indexElement.value || !satellite_index_options) {
+            return null;
+        }
+
+        return Object.prototype.hasOwnProperty.call(satellite_index_options, indexElement.value)
+            ? satellite_index_options[indexElement.value]
+            : null;
+    }
+
+    function updateIndexPageContent() {
+        const meta = getSelectedIndexMeta();
+        if (!meta) {
+            return;
+        }
+
+        setElementText(satelliteHeaderTitleElement, meta.headerTitle);
+        setElementText(satelliteHeaderSubtitleElement, meta.headerSubtitle);
+        setElementText(satelliteMapTitleElement, meta.mapTitle);
+        setElementText(satelliteMapSubtitleElement, meta.mapSubtitle);
+        setElementText(satelliteLegendTitleElement, meta.legendTitle);
+        setElementText(satelliteLegendSubtitleElement, meta.legendSubtitle);
+        setElementText(satelliteLegendDescriptionElement, meta.legendDescription);
+        if (satelliteLegendGradientElement && meta.legendGradient) {
+            satelliteLegendGradientElement.style.background = meta.legendGradient;
+        }
+        renderLegendTicks(meta.legendTicks);
+        renderTextList(satelliteTipsListElement, meta.tips);
+        renderTextList(satelliteLegendHighlightsElement, meta.legendHighlights);
+    }
+
+    function applyChartPayload(payload) {
+        if (!payload || !payload.chartConfig) {
+            return;
+        }
+
+        setElementText(satelliteChartTitleElement, payload.chartTitle);
+        setElementText(satelliteChartSubtitleElement, payload.chartSubtitle);
+        if (payload.selectedIndexLabel && selectedBandLabel) {
+            selectedBandLabel.textContent = payload.selectedIndexLabel;
+        }
+
+        if (window.SafraSatelliteCharts && typeof window.SafraSatelliteCharts.update === 'function') {
+            window.SafraSatelliteCharts.update(payload.chartConfig);
+            return;
+        }
+
+        window.satelliteChartInstances = Array.isArray(window.satelliteChartInstances) ? window.satelliteChartInstances : [];
+        window.satelliteChartInstances[0] = payload.chartConfig;
+    }
+
+    function updateChartData() {
+        if (!satellite_chart_endpoint || !indexElement || !talhaoElement) {
+            return;
+        }
+
+        const requestSerial = ++chartRequestSerial;
+        const url = new URL(satellite_chart_endpoint, window.location.href);
+        url.searchParams.set('ajax', 'chart');
+        url.searchParams.set('sat_index', indexElement.value || 'ndvi');
+        url.searchParams.set('talhao_list', talhaoElement.value || '');
+
+        fetch(url.toString(), {
+            headers: {
+                Accept: 'application/json'
+            }
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                if (requestSerial !== chartRequestSerial) {
+                    return;
+                }
+                applyChartPayload(payload);
+            })
+            .catch(function (error) {
+                console.error('Erro ao atualizar grafico satelital:', error);
+            });
     }
 
     function getCurrentWeekNumber() {
@@ -266,13 +399,22 @@
         talhaoElement.addEventListener('change', function () {
             updateSelectedFieldSummary();
             loadMapData();
+            updateChartData();
         });
     }
 
     if (indexElement) {
         indexElement.addEventListener('change', function () {
             updateSelectedBandSummary();
+            updateIndexPageContent();
             loadMapData();
+            updateChartData();
+        });
+    }
+
+    if (smoothVisualizationElement) {
+        smoothVisualizationElement.addEventListener('change', function () {
+            renderLoadedIndexData(false);
         });
     }
 
@@ -284,6 +426,7 @@
     applyInitialSelection();
     updateSelectedFieldSummary();
     updateSelectedBandSummary();
+    updateIndexPageContent();
     updateDateRangeDisplay(dateRangeElement.value || '');
 </script>
 
@@ -292,6 +435,9 @@
     const mapStatusElement = document.getElementById('mapStatus');
     let talhaoLayer = null;
     let indexLayer = null;
+    let loadedIndexGeoJson = null;
+    let smoothedIndexLayer = null;
+    let rawIndexLayer = null;
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data &copy; OpenStreetMap contributors'
@@ -608,11 +754,15 @@
     }
 
     function resetFeatureHighlight(event) {
-        if (!indexLayer || !indexLayer.resetStyle) {
+        if (indexLayer && indexLayer.resetStyle) {
+            indexLayer.resetStyle(event.target);
             return;
         }
 
-        indexLayer.resetStyle(event.target);
+        const layer = event && event.target ? event.target : null;
+        if (layer && layer.feature && layer.setStyle) {
+            layer.setStyle(isSmoothVisualizationEnabled() ? smoothedFeatureStyle(layer.feature) : featureStyle(layer.feature));
+        }
     }
 
     hoverLegendControl.onAdd = function () {
@@ -763,9 +913,242 @@
         };
     }
 
+    function isSmoothVisualizationEnabled() {
+        return !smoothVisualizationElement || smoothVisualizationElement.checked;
+    }
+
+    function cloneCoordinate(coordinate) {
+        return (coordinate || []).map(function (value) {
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : value;
+        });
+    }
+
+    function samePosition(left, right) {
+        if (!left || !right || left.length < 2 || right.length < 2) {
+            return false;
+        }
+
+        return Math.abs(Number(left[0]) - Number(right[0])) < 1e-12
+            && Math.abs(Number(left[1]) - Number(right[1])) < 1e-12;
+    }
+
+    function interpolateCoordinate(left, right, ratio) {
+        const dimensions = Math.max(left.length, right.length);
+        const output = [];
+
+        for (let i = 0; i < dimensions; i += 1) {
+            const leftValue = Number(left[i]);
+            const rightValue = Number(right[i]);
+            if (Number.isFinite(leftValue) && Number.isFinite(rightValue)) {
+                output.push(leftValue + ((rightValue - leftValue) * ratio));
+            } else {
+                output.push(left[i] !== undefined ? left[i] : right[i]);
+            }
+        }
+
+        return output;
+    }
+
+    function smoothPolygonRing(ring) {
+        if (!Array.isArray(ring) || ring.length < 4) {
+            return Array.isArray(ring) ? ring.map(cloneCoordinate) : ring;
+        }
+
+        let points = ring
+            .filter(function (coordinate) {
+                return Array.isArray(coordinate)
+                    && Number.isFinite(Number(coordinate[0]))
+                    && Number.isFinite(Number(coordinate[1]));
+            })
+            .map(cloneCoordinate);
+
+        if (points.length < 4) {
+            return ring.map(cloneCoordinate);
+        }
+
+        if (samePosition(points[0], points[points.length - 1])) {
+            points = points.slice(0, points.length - 1);
+        }
+
+        if (points.length < 3) {
+            return ring.map(cloneCoordinate);
+        }
+
+        const smoothed = [];
+        for (let i = 0; i < points.length; i += 1) {
+            const current = points[i];
+            const next = points[(i + 1) % points.length];
+            smoothed.push(interpolateCoordinate(current, next, 0.25));
+            smoothed.push(interpolateCoordinate(current, next, 0.75));
+        }
+
+        smoothed.push(cloneCoordinate(smoothed[0]));
+        return smoothed;
+    }
+
+    function cloneGeometryCoordinates(coordinates) {
+        if (!Array.isArray(coordinates)) {
+            return coordinates;
+        }
+
+        if (typeof coordinates[0] === 'number' || typeof coordinates[0] === 'string') {
+            return cloneCoordinate(coordinates);
+        }
+
+        return coordinates.map(cloneGeometryCoordinates);
+    }
+
+    function smoothGeoJsonGeometry(geometry) {
+        if (!geometry || !geometry.type) {
+            return geometry;
+        }
+
+        if (geometry.type === 'Polygon') {
+            return {
+                type: 'Polygon',
+                coordinates: (geometry.coordinates || []).map(smoothPolygonRing)
+            };
+        }
+
+        if (geometry.type === 'MultiPolygon') {
+            return {
+                type: 'MultiPolygon',
+                coordinates: (geometry.coordinates || []).map(function (polygon) {
+                    return (polygon || []).map(smoothPolygonRing);
+                })
+            };
+        }
+
+        if (geometry.type === 'GeometryCollection') {
+            return {
+                type: 'GeometryCollection',
+                geometries: (geometry.geometries || []).map(smoothGeoJsonGeometry)
+            };
+        }
+
+        return {
+            type: geometry.type,
+            coordinates: cloneGeometryCoordinates(geometry.coordinates)
+        };
+    }
+
+    function buildSmoothedGeoJson(indexGeoJson) {
+        return {
+            type: 'FeatureCollection',
+            features: (indexGeoJson.features || []).map(function (feature) {
+                return {
+                    type: feature.type || 'Feature',
+                    id: feature.id,
+                    properties: Object.assign({}, feature.properties || {}),
+                    geometry: smoothGeoJsonGeometry(feature.geometry)
+                };
+            })
+        };
+    }
+
+    function smoothedFeatureStyle(feature) {
+        const style = featureStyle(feature);
+        style.weight = 1.15;
+        style.opacity = 0.95;
+        style.fillOpacity = 0.94;
+        style.lineCap = 'round';
+        style.lineJoin = 'round';
+        style.smoothFactor = 1.2;
+        return style;
+    }
+
+    function continuityFeatureStyle(feature) {
+        const style = featureStyle(feature);
+        style.stroke = false;
+        style.weight = 0;
+        style.fillOpacity = 0.96;
+        style.interactive = false;
+        return style;
+    }
+
+    function bindIndexFeatureEvents(feature, layer) {
+        layer.on({
+            mouseover: function (event) {
+                highlightFeature(event);
+                updateHoverLegend(feature);
+            },
+            mousemove: function () {
+                updateHoverLegend(feature);
+            },
+            mouseout: function (event) {
+                resetFeatureHighlight(event);
+                resetHoverLegend();
+            }
+        });
+    }
+
+    function renderSmoothedIndexLayer(indexGeoJson) {
+        const continuityLayer = L.geoJSON(indexGeoJson, {
+            style: continuityFeatureStyle,
+            interactive: false
+        });
+        const smoothedLayer = L.geoJSON(buildSmoothedGeoJson(indexGeoJson), {
+            style: smoothedFeatureStyle,
+            onEachFeature: bindIndexFeatureEvents
+        });
+
+        return L.featureGroup([continuityLayer, smoothedLayer]).addTo(map);
+    }
+
+    function renderRawIndexLayer(indexGeoJson) {
+        return L.geoJSON(indexGeoJson, {
+            style: featureStyle,
+            onEachFeature: bindIndexFeatureEvents
+        }).addTo(map);
+    }
+
+    function renderLoadedIndexData(fitBounds) {
+        clearLayer(indexLayer);
+        indexLayer = null;
+        resetHoverLegend();
+
+        if (!loadedIndexGeoJson || !loadedIndexGeoJson.features || !loadedIndexGeoJson.features.length) {
+            return;
+        }
+
+        if (isSmoothVisualizationEnabled()) {
+            try {
+                if (!smoothedIndexLayer) {
+                    smoothedIndexLayer = renderSmoothedIndexLayer(loadedIndexGeoJson);
+                } else {
+                    smoothedIndexLayer.addTo(map);
+                }
+                indexLayer = smoothedIndexLayer;
+            } catch (error) {
+                console.error('Erro ao suavizar GeoJSON; exibindo camada crua:', error);
+                if (!rawIndexLayer) {
+                    rawIndexLayer = renderRawIndexLayer(loadedIndexGeoJson);
+                } else {
+                    rawIndexLayer.addTo(map);
+                }
+                indexLayer = rawIndexLayer;
+            }
+        } else {
+            if (!rawIndexLayer) {
+                rawIndexLayer = renderRawIndexLayer(loadedIndexGeoJson);
+            } else {
+                rawIndexLayer.addTo(map);
+            }
+            indexLayer = rawIndexLayer;
+        }
+
+        if (fitBounds && indexLayer.getBounds && indexLayer.getBounds().isValid()) {
+            map.fitBounds(indexLayer.getBounds());
+        }
+    }
+
     function loadMapData() {
         clearLayer(indexLayer);
         indexLayer = null;
+        loadedIndexGeoJson = null;
+        smoothedIndexLayer = null;
+        rawIndexLayer = null;
         resetHoverLegend();
 
         renderTalhaoBoundary();
@@ -825,29 +1208,12 @@
                     return;
                 }
 
-                const indexGeoJson = {
+                loadedIndexGeoJson = {
                     type: 'FeatureCollection',
                     features: features
                 };
 
-                indexLayer = L.geoJSON(indexGeoJson, {
-                    style: featureStyle,
-                    onEachFeature: function (feature, layer) {
-                        layer.on({
-                            mouseover: function (event) {
-                                highlightFeature(event);
-                                updateHoverLegend(feature);
-                            },
-                            mousemove: function () {
-                                updateHoverLegend(feature);
-                            },
-                            mouseout: function (event) {
-                                resetFeatureHighlight(event);
-                                resetHoverLegend();
-                            }
-                        });
-                    }
-                }).addTo(map);
+                renderLoadedIndexData(true);
 
                 if (dataRequests.length === 1) {
                     setMapStatus(map_loaded_message);
@@ -857,9 +1223,8 @@
                     setMapStatus(formatStatusMessage(map_loaded_partial_message, [loadedCount, dataRequests.length]));
                 }
 
-                if (indexLayer.getBounds && indexLayer.getBounds().isValid()) {
-                    map.fitBounds(indexLayer.getBounds());
-                } else if (talhaoLayer && talhaoLayer.getBounds().isValid()) {
+                if ((!indexLayer || !indexLayer.getBounds || !indexLayer.getBounds().isValid())
+                    && talhaoLayer && talhaoLayer.getBounds().isValid()) {
                     map.fitBounds(talhaoLayer.getBounds());
                 }
             });

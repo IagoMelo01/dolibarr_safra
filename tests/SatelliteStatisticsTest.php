@@ -68,10 +68,43 @@ $assert(
     ($requestBody['input']['bounds']['properties']['crs'] ?? '') === 'http://www.opengis.net/def/crs/EPSG/0/32722',
     'Statistical API metric resolution must be paired with a metric UTM CRS'
 );
+$assert(
+    ($requestBody['input']['data'][0]['dataFilter']['mosaickingOrder'] ?? '') === 'leastCC',
+    'Statistical API must prefer the least cloudy Sentinel tile'
+);
+$assert(
+    ($requestBody['input']['data'][0]['dataFilter']['maxCloudCoverage'] ?? null) === 80,
+    'Statistical API must reject heavily clouded Sentinel tiles'
+);
+$evalscript = $requestBody['aggregation']['evalscript'] ?? '';
+$assert(strpos($evalscript, '"SCL"') !== false, 'Cloud masking must request the Sentinel scene classification band');
+$assert(strpos($evalscript, '"CLM"') !== false, 'Cloud masking must request the Sentinel cloud mask band');
+$assert(strpos($evalscript, 'samples.SCL !== 3') !== false, 'Cloud masking must reject cloud-shadow pixels');
+$assert(strpos($evalscript, 'samples.CLM === 0') !== false, 'Cloud masking must reject pixels marked as cloud');
+
+$pointsMethod = new ReflectionMethod(SafraSatelliteStatistics::class, 'buildContinuousWeeklyPoints');
+$pointsMethod->setAccessible(true);
+$points = $pointsMethod->invoke(
+    null,
+    array(
+        '2026-05-01T00:00:00Z|2026-05-08T00:00:00Z' => array(
+            'stats' => array('mean' => 0.5, 'min' => 0.2, 'max' => 0.7, 'sampleCount' => 600, 'noDataCount' => 400),
+        ),
+        '2026-05-08T00:00:00Z|2026-05-15T00:00:00Z' => array(
+            'stats' => array('mean' => 0.8, 'min' => 0.5, 'max' => 0.9, 'sampleCount' => 300, 'noDataCount' => 700),
+        ),
+    ),
+    new DateTimeImmutable('2026-05-01T00:00:00Z'),
+    2,
+    3
+);
+$assert(($points[0]['quality'] ?? '') === 'good', 'Weeks with at least 55% cloud-free coverage must be trusted');
+$assert(($points[1]['quality'] ?? '') === 'low', 'Weeks with limited cloud-free coverage must be flagged');
+$assert(abs(($points[0]['validPixelRatio'] ?? 0) - 0.6) < 0.0001, 'Weekly point must expose its cloud-free pixel ratio');
 
 $source = file_get_contents(dirname(__DIR__) . '/class/safra_satellite_statistics.class.php');
 $assert($source !== false, 'Unable to read satellite statistics source');
-$assert(strpos($source, "private const CACHE_VERSION = 'v3';") !== false, 'Resolution change must invalidate legacy statistics cache');
+$assert(strpos($source, "private const CACHE_VERSION = 'v4';") !== false, 'Cloud masking change must invalidate legacy statistics cache');
 $assert(strpos($source, "private const SPATIAL_RESOLUTION_METERS = 10;") !== false, 'Fixed 10 meter resolution constant is required');
 $assert(strpos($source, "'resx' => 20") === false, 'Legacy 20 degree statistical resolution must be removed');
 $assert(strpos($source, "'resy' => 20") === false, 'Legacy 20 degree statistical resolution must be removed');

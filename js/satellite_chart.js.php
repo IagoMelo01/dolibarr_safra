@@ -129,6 +129,89 @@
             return lookup;
         }
 
+        function isTrustedPoint(point) {
+            if (!point || !point.quality) {
+                return true;
+            }
+
+            return point.quality === 'good';
+        }
+
+        function buildContinuityValues(points, valueResolver) {
+            let lastTrustedValue = null;
+            let lastDisplayedValue = null;
+
+            return (points || []).map(point => {
+                if (!point) {
+                    return null;
+                }
+
+                const currentValue = valueResolver(point);
+                if (isTrustedPoint(point)) {
+                    if (currentValue !== null) {
+                        lastTrustedValue = currentValue;
+                        lastDisplayedValue = currentValue;
+                    }
+                    return currentValue;
+                }
+
+                if (lastTrustedValue !== null) {
+                    lastDisplayedValue = lastTrustedValue;
+                    return lastTrustedValue;
+                }
+
+                if (lastDisplayedValue !== null) {
+                    return lastDisplayedValue;
+                }
+
+                if (currentValue !== null) {
+                    lastDisplayedValue = currentValue;
+                    return currentValue;
+                }
+
+                return null;
+            });
+        }
+
+        function buildWarningValues(points, displayedValues) {
+            return (points || []).map((point, index) => {
+                return point && !isTrustedPoint(point) ? displayedValues[index] : null;
+            });
+        }
+
+        function getQualityLabel(point, options) {
+            if (!point || !point.quality || point.quality === 'good') {
+                return '';
+            }
+
+            return point.quality === 'rejected'
+                ? (options.rejectedQualityLabel || 'Rejected due to cloud influence')
+                : (options.lowQualityLabel || 'Low confidence due to cloud influence');
+        }
+
+        function formatCoverage(point, options) {
+            const ratio = point ? parseValue(point.validPixelRatio) : null;
+            if (ratio === null) {
+                return '';
+            }
+
+            return formatLabel(options.validCoverageLabel || 'Valid coverage: %s', `${Math.round(ratio * 100)}%`);
+        }
+
+        function countCloudAffectedWeeks(seriesList) {
+            const affected = {};
+            (seriesList || []).forEach(series => {
+                (series.points || []).forEach(point => {
+                    if (!point || !point.quality || point.quality === 'good') {
+                        return;
+                    }
+                    affected[`${point.from || ''}|${point.to || ''}`] = true;
+                });
+            });
+
+            return Object.keys(affected).length;
+        }
+
         function updateMeta(entry, data, metaElement) {
             if (!metaElement) {
                 return;
@@ -144,15 +227,27 @@
             if (nextUpdate) {
                 parts.push(formatLabel(options.nextLabel, nextUpdate));
             }
+            const qualitySeries = Array.isArray(data.series) && data.series.length
+                ? data.series
+                : [{ points: Array.isArray(data.points) ? data.points : [] }];
+            const cloudAffectedWeeks = countCloudAffectedWeeks(qualitySeries);
+            if (cloudAffectedWeeks > 0) {
+                parts.push(formatLabel(options.cloudWarningSummary, String(cloudAffectedWeeks)));
+            }
 
             metaElement.textContent = parts.filter(Boolean).join(' - ');
             metaElement.style.display = parts.length ? 'block' : 'none';
         }
 
-        function buildDefaultTooltipCallbacks(defaultDecimals) {
+        function buildDefaultTooltipCallbacks(defaultDecimals, options) {
+            const tooltipOptions = options || {};
             return {
                 label: context => {
                     const dataset = context.dataset || {};
+                    if (dataset.isQualityWarning) {
+                        return buildQualityNoticeLines(tooltipOptions);
+                    }
+
                     const prefix = dataset.tooltipLabel || dataset.label || '';
                     const decimals = typeof dataset.tooltipDecimals === 'number' ? dataset.tooltipDecimals : defaultDecimals;
                     const unit = dataset.tooltipUnit || '';
@@ -163,6 +258,70 @@
                     const value = Number(raw).toFixed(decimals);
                     return prefix ? `${prefix}: ${value}${unit}` : `${value}${unit}`;
                 },
+                labelColor: context => {
+                    const dataset = context.dataset || {};
+                    if (dataset.isQualityWarning) {
+                        return {
+                            backgroundColor: '#f59e0b',
+                            borderColor: '#f59e0b',
+                            borderWidth: 2
+                        };
+                    }
+
+                    const pointColor = Array.isArray(dataset.pointBackgroundColor)
+                        ? dataset.pointBackgroundColor[context.dataIndex]
+                        : dataset.pointBackgroundColor;
+                    const color = pointColor || dataset.borderColor || dataset.backgroundColor || '#64748b';
+
+                    return {
+                        backgroundColor: color,
+                        borderColor: dataset.borderColor || color,
+                        borderWidth: 2
+                    };
+                },
+            };
+        }
+
+        function hasWarningValue(dataset, dataIndex) {
+            const value = dataset && Array.isArray(dataset.data) ? dataset.data[dataIndex] : null;
+            return value !== null && Number.isFinite(value);
+        }
+
+        function isFirstQualityWarningContext(context) {
+            const chart = context.chart || {};
+            const datasets = chart.data && Array.isArray(chart.data.datasets) ? chart.data.datasets : [];
+
+            for (let datasetIndex = 0; datasetIndex < datasets.length; datasetIndex += 1) {
+                const dataset = datasets[datasetIndex];
+                if (!dataset || !dataset.isQualityWarning || !hasWarningValue(dataset, context.dataIndex)) {
+                    continue;
+                }
+
+                return datasetIndex === context.datasetIndex;
+            }
+
+            return false;
+        }
+
+        function shouldShowTooltipItem(context) {
+            const dataset = context.dataset || {};
+            if (!dataset.isQualityWarning) {
+                return true;
+            }
+
+            return isFirstQualityWarningContext(context);
+        }
+
+        function buildQualityNoticeLines(options) {
+            const notice = options.qualityNoticeLabel || 'Attention: indices with low reliability due to cloud cover.';
+            const detail = options.qualityNoticeDetailLabel || 'The line holds the previous trusted value to preserve the trend; use this point with caution.';
+            return detail ? [notice, detail] : [notice];
+        }
+
+        function buildDefaultTooltipOptions(defaultDecimals, options) {
+            return {
+                filter: shouldShowTooltipItem,
+                callbacks: buildDefaultTooltipCallbacks(defaultDecimals, options),
             };
         }
 
@@ -176,14 +335,16 @@
 
             const labels = points.map(point => formatRange(point.from, point.to));
             const decimals = typeof options.decimals === 'number' ? options.decimals : 2;
-            const values = points.map(point => parseValue(point.mean));
-            if (!hasNumericValue(values)) {
+            const rawValues = points.map(point => parseValue(point.mean));
+            const values = buildContinuityValues(points, point => parseValue(point.mean));
+            const warningValues = buildWarningValues(points, values);
+            if (!hasNumericValue(rawValues)) {
                 showEmpty(entry, data);
                 return;
             }
 
-            const minValues = points.map(point => parseValue(point.min));
-            const maxValues = points.map(point => parseValue(point.max));
+            const minValues = buildContinuityValues(points, point => parseValue(point.min));
+            const maxValues = buildContinuityValues(points, point => parseValue(point.max));
             const hasRange = hasNumericValue(minValues) && hasNumericValue(maxValues);
 
             const ctx = canvas.getContext('2d');
@@ -208,7 +369,7 @@
                     pointRadius: 0,
                     pointHoverRadius: 0,
                     hitRadius: 10,
-                    spanGaps: true,
+                    spanGaps: false,
                     tooltipLabel: options.tooltipMinLabel || minLabel,
                     tooltipDecimals: decimals,
                     tooltipUnit: '',
@@ -225,7 +386,7 @@
                     pointRadius: 0,
                     pointHoverRadius: 0,
                     hitRadius: 10,
-                    spanGaps: true,
+                    spanGaps: false,
                     tooltipLabel: options.tooltipMaxLabel || maxLabel,
                     tooltipDecimals: decimals,
                     tooltipUnit: '',
@@ -245,11 +406,35 @@
                 pointBackgroundColor: datasetColor,
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                spanGaps: true,
+                spanGaps: false,
                 tooltipLabel: options.tooltipMeanLabel || options.tooltipLabel || options.label || '',
                 tooltipDecimals: decimals,
                 tooltipUnit: options.valueUnit ? ` ${options.valueUnit}` : '',
+                pointMeta: points,
             });
+
+            if (hasNumericValue(warningValues)) {
+                datasets.push({
+                    label: options.label || '',
+                    data: warningValues,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    showLine: false,
+                    pointRadius: points.map(point => !isTrustedPoint(point) ? 6 : 0),
+                    pointHoverRadius: points.map(point => !isTrustedPoint(point) ? 8 : 0),
+                    pointStyle: points.map(point => point && point.quality === 'rejected' ? 'crossRot' : 'triangle'),
+                    pointBackgroundColor: points.map(point => point && point.quality === 'rejected' ? '#dc2626' : '#f59e0b'),
+                    pointBorderColor: points.map(point => point && point.quality === 'rejected' ? '#dc2626' : '#f59e0b'),
+                    pointBorderWidth: 2,
+                    tooltipLabel: options.tooltipMeanLabel || options.tooltipLabel || options.label || '',
+                    tooltipDecimals: decimals,
+                    tooltipUnit: options.valueUnit ? ` ${options.valueUnit}` : '',
+                    pointMeta: points,
+                    isQualityWarning: true,
+                });
+            }
 
             if (charts[entry.canvasId]) {
                 charts[entry.canvasId].destroy();
@@ -281,9 +466,7 @@
                     },
                     plugins: {
                         legend: { display: false },
-                        tooltip: {
-                            callbacks: buildDefaultTooltipCallbacks(decimals),
-                        },
+                        tooltip: buildDefaultTooltipOptions(decimals, options),
                     },
                 },
             });
@@ -312,12 +495,24 @@
             seriesList.forEach(series => {
                 const points = Array.isArray(series.points) ? series.points : [];
                 const lookup = buildPointLookup(points);
-                const values = timeline.map(slot => {
-                    const point = lookup[slot.key];
-                    return point ? parseValue(point.mean) : null;
+                const pointMeta = timeline.map(slot => lookup[slot.key] || null);
+                const rawValues = pointMeta.map(point => point ? parseValue(point.mean) : null);
+                const values = buildContinuityValues(pointMeta, point => parseValue(point.mean));
+                const warningValues = buildWarningValues(pointMeta, values);
+                const warningColors = pointMeta.map(point => {
+                    return point && point.quality === 'rejected' ? '#dc2626' : '#f59e0b';
+                });
+                const warningStyles = pointMeta.map(point => {
+                    return point && point.quality === 'rejected' ? 'crossRot' : 'triangle';
+                });
+                const warningRadius = pointMeta.map(point => {
+                    return point && !isTrustedPoint(point) ? 6 : 0;
+                });
+                const warningHoverRadius = pointMeta.map(point => {
+                    return point && !isTrustedPoint(point) ? 8 : 0;
                 });
 
-                if (!hasNumericValue(values)) {
+                if (!hasNumericValue(rawValues)) {
                     return;
                 }
 
@@ -325,9 +520,10 @@
                 const isHealthAxis = series.axis === 'health';
                 const color = series.color || '#2563eb';
                 const decimals = typeof series.decimals === 'number' ? series.decimals : (isHealthAxis ? 2 : 3);
+                const label = series.label || (series.code ? String(series.code).toUpperCase() : '');
 
                 datasets.push({
-                    label: series.label || (series.code ? String(series.code).toUpperCase() : ''),
+                    label: label,
                     data: values,
                     borderColor: color,
                     borderWidth: 2,
@@ -339,11 +535,38 @@
                     pointBackgroundColor: color,
                     pointBorderColor: '#fff',
                     pointBorderWidth: 1.5,
-                    spanGaps: true,
+                    spanGaps: false,
                     yAxisID: isHealthAxis ? 'yHealth' : 'yIndex',
-                    tooltipLabel: series.label || '',
+                    tooltipLabel: label,
                     tooltipDecimals: decimals,
                     tooltipUnit: series.valueUnit ? ` ${series.valueUnit}` : '',
+                    pointMeta: pointMeta,
+                });
+
+                if (!hasNumericValue(warningValues)) {
+                    return;
+                }
+
+                datasets.push({
+                    label: label,
+                    data: warningValues,
+                    borderColor: 'transparent',
+                    borderWidth: 0,
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    showLine: false,
+                    pointRadius: warningRadius,
+                    pointHoverRadius: warningHoverRadius,
+                    pointStyle: warningStyles,
+                    pointBackgroundColor: warningColors,
+                    pointBorderColor: warningColors,
+                    pointBorderWidth: 2,
+                    yAxisID: isHealthAxis ? 'yHealth' : 'yIndex',
+                    tooltipLabel: label,
+                    tooltipDecimals: decimals,
+                    tooltipUnit: series.valueUnit ? ` ${series.valueUnit}` : '',
+                    pointMeta: pointMeta,
+                    isQualityWarning: true,
                 });
             });
 
@@ -412,10 +635,16 @@
                         },
                     },
                     plugins: {
-                        legend: { display: options.showLegend !== false },
-                        tooltip: {
-                            callbacks: buildDefaultTooltipCallbacks(2),
+                        legend: {
+                            display: options.showLegend !== false,
+                            labels: {
+                                filter: (legendItem, chartData) => {
+                                    const dataset = chartData.datasets[legendItem.datasetIndex] || {};
+                                    return !dataset.isQualityWarning;
+                                },
+                            },
                         },
+                        tooltip: buildDefaultTooltipOptions(2, options),
                     },
                 },
             });
@@ -450,6 +679,27 @@
             const instances = Array.isArray(window.satelliteChartInstances) ? window.satelliteChartInstances : [];
             instances.forEach(renderEntry);
         }
+
+        function updateChartEntry(entry) {
+            if (!entry || !entry.canvasId) {
+                return;
+            }
+
+            window.satelliteChartInstances = Array.isArray(window.satelliteChartInstances) ? window.satelliteChartInstances : [];
+            const existingIndex = window.satelliteChartInstances.findIndex(instance => instance && instance.canvasId === entry.canvasId);
+            if (existingIndex >= 0) {
+                window.satelliteChartInstances[existingIndex] = Object.assign({}, window.satelliteChartInstances[existingIndex], entry);
+            } else {
+                window.satelliteChartInstances.push(entry);
+            }
+
+            renderEntry(window.satelliteChartInstances[existingIndex >= 0 ? existingIndex : window.satelliteChartInstances.length - 1]);
+        }
+
+        window.SafraSatelliteCharts = {
+            render: renderCharts,
+            update: updateChartEntry,
+        };
 
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', renderCharts);

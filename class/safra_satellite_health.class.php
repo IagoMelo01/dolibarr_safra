@@ -336,6 +336,25 @@ class SafraSatelliteHealth
                     (int) ($swirPoint['sampleCount'] ?? 0)
                 )
                 : 0;
+            $noDataCount = $hasCompleteMean
+                ? max(
+                    (int) ($ndviPoint['noDataCount'] ?? 0),
+                    (int) ($ndmiPoint['noDataCount'] ?? 0),
+                    (int) ($swirPoint['noDataCount'] ?? 0)
+                )
+                : 0;
+            $validPixelRatio = $hasCompleteMean
+                ? min(
+                    (float) ($ndviPoint['validPixelRatio'] ?? 0),
+                    (float) ($ndmiPoint['validPixelRatio'] ?? 0),
+                    (float) ($swirPoint['validPixelRatio'] ?? 0)
+                )
+                : 0.0;
+            $quality = self::resolveWorstQuality(array(
+                $ndviPoint['quality'] ?? 'rejected',
+                $ndmiPoint['quality'] ?? 'rejected',
+                $swirPoint['quality'] ?? 'rejected',
+            ));
 
             $points[] = array(
                 'from' => $bucket['from'],
@@ -344,10 +363,32 @@ class SafraSatelliteHealth
                 'min' => $minScore !== null ? round($minScore, 2) : null,
                 'max' => $maxScore !== null ? round($maxScore, 2) : null,
                 'sampleCount' => $sampleCount,
+                'noDataCount' => $noDataCount,
+                'validPixelRatio' => round($validPixelRatio, 4),
+                'quality' => $quality,
             );
         }
 
         return $points;
+    }
+
+    /**
+     * Resolve the least reliable quality from the source indices.
+     *
+     * @param array $qualities
+     *
+     * @return string
+     */
+    private static function resolveWorstQuality(array $qualities)
+    {
+        if (in_array('rejected', $qualities, true)) {
+            return 'rejected';
+        }
+        if (in_array('low', $qualities, true)) {
+            return 'low';
+        }
+
+        return 'good';
     }
 
     /**

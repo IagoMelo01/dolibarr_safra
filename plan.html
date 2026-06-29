@@ -382,9 +382,9 @@
           </tr>
           <tr>
             <td>Satelite</td>
-            <td>Indices, cache e visao satelital existem. O mapa unificado permite visualizar um talhao ou todos os talhoes da semana selecionada. Estatisticas semanais usam geometria UTM e resolucao fixa de 10 metros por pixel. SSL de cURL foi endurecido no codigo atual.</td>
+            <td>Indices, cache e visao satelital existem. O mapa unificado permite visualizar um talhao ou todos os talhoes da semana selecionada. Estatisticas semanais usam geometria UTM, resolucao fixa de 10 metros por pixel e mascara SCL/CLM. O grafico exclui da curva principal semanas com baixa cobertura valida e as destaca como alerta. SSL de cURL foi endurecido no codigo atual.</td>
             <td><span class="warn">Precisa UAT</span></td>
-            <td>Validar credenciais reais, geometria, cobertura de nuvem, no-data e a execucao semanal do cron de NDVI, NDMI, SWIR e saude geral.</td>
+            <td>Validar em staging os limites de cobertura valida, credenciais reais, geometria, no-data e a execucao semanal do cron de NDVI, NDMI, SWIR e saude geral.</td>
           </tr>
           <tr>
             <td>Catalogo e produtos</td>
@@ -486,7 +486,7 @@
       <div class="phase">
         <h3>Fase 4 - Monitoramento e alertas</h3>
         <small>Objetivo: usar dados satelitais e historico para acao.</small>
-        <p>Comparacao temporal lado a lado para um talhao foi implementada com atalhos ou data anterior personalizada, busca sob demanda, reaproveitamento do armazenamento e exportacao PDF visual com marca Farmevo. Permanecem alertas de queda de vigor, falha de cache, ausencia de imagem, cloud cover, comparativo entre talhoes e historico por safra.</p>
+        <p>Comparacao temporal lado a lado para um talhao foi implementada com atalhos ou data anterior personalizada, busca sob demanda, reaproveitamento do armazenamento e exportacao PDF visual com marca Farmevo. A serie temporal agora mascara nuvens e destaca semanas com baixa confianca. Permanecem alertas de queda de vigor, falha de cache, ausencia de imagem, comparativo entre talhoes e historico por safra.</p>
       </div>
       <div class="phase">
         <h3>Fase 5 - Campo e mobilidade</h3>
